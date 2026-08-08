@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimal-ui, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="screen-orientation" content="portrait" />
+    <title>A股-研报详情</title>
+    <meta name="keywords" content="">
+    <meta name="description" content="sina.cn">
+
+     <!-- head头添加分享图片 -->
+    <link rel="apple-touch-icon-precomposed" sizes="171x171" href="//n.sinaimg.cn/finance/hqcenter_sharepic/hqcenter_171x171.jpg">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="//n.sinaimg.cn/finance/hqcenter_sharepic/hqcenter_114x114.jpg">
+    <link rel="apple-touch-icon-precomposed" href="//n.sinaimg.cn/finance/hqcenter_sharepic/hqcenter_57x57.jpg">
+    <link rel="stylesheet" type="text/css" href="//n.sinaimg.cn/finance/2022/app/ybdetail/stockReportDetail.css?ts=250124">
+
+    <script type="text/javascript" charset="utf-8" src="//mjs.sinaimg.cn/wap/public/suda/201705021130/suda_log.min.js"></script>
+    
+    <script>
+        window.pageConfig = {
+            pc_url: 'http://stock.finance.sina.com.cn/stock/go.php/vReport_Show/kind/lastest/rptid/833644386223/index.phtml?cref=cj'
+        }
+    </script>
+    <script type="text/javascript">
+        (function(doc, win) {
+            var MAX_WIDTH = 400.0125;
+            var resizing = null;
+            var dpr, rem, scale;
+            var metaEl = doc.querySelector('meta[name="viewport"]');
+            win.onresize = function() {
+                if (resizing) {
+                    clearTimeout(resizing);
+                }
+                resizing = setTimeout(adjustBase, 100);
+            };
+
+            function adjustBase() {
+                var clientWidth = doc.body.clientWidth || doc.documentElement.clientWidth;
+                if (clientWidth > MAX_WIDTH) {
+                    clientWidth = MAX_WIDTH;
+                }
+                doc.querySelector('html').style['font-size'] = (clientWidth / 750) * 10000 / 16 + '%';
+                resizing = null;
+            }
+            if (!doc.documentElement.addEventListener) return;
+            doc.addEventListener('DOMContentLoaded', adjustBase, false);
+        })(document, window);
+        var symbol = "";
+        var reportid = "833644386223";
+    </script>
+
+</head>
+
+
+<body>
+
+<div>
+    <div id="cn_report_detail_vue">
+    </div>
+</div>
+
+<!-- 组件 -->
+<script type="text/javascript" src="//n.sinaimg.cn/finance/global/wap/vue.min.js"></script>
+<script type="text/javascript" src="//finance.sina.com.cn/other/src/app/build.callUpApp.min.js"></script>
+<!-- 当前页js -->
+<script type="text/javascript" charset="utf-8" src="//n.sinaimg.cn/finance/2022/app/ybdetail/stockReportDetail.js?ts=250124"></script>
+
+</body>
+</html>

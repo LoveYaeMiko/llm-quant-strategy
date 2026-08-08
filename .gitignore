@@ -1,6 +1,29 @@
 # Claude Code 本地设置（机器相关，不提交）
 .claude/settings.local.json
 
+# 密钥与环境变量（含 DeepSeek API key）
+.env
+.env.*
+!.env.example
+
+# 大体积研究材料——论文 PDF 与克隆的参考仓库不进版本库
+paper/papers/
+paper/repos/
+
 # 操作系统文件
 .DS_Store
 Thumbs.db
+
+# 运行时产物
+outputs/
+*.db
+__pycache__/
+.pytest_cache/
+
+# 构建/测试产物（未来可能的依赖与覆盖率文件）
+node_modules/
+.venv/
+venv/
+*.pyc
+.coverage
+htmlcov/

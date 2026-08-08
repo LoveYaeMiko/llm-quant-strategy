@@ -1,0 +1,44 @@
+# =====================================================================
+# FACTOR THRESHOLDS — layered IC / RankIC / ICIR gates (review.md §5).
+#
+# The blueprint's single IC>0.02 cut-off is replaced by a layered
+# evaluation ladder:
+#   keep      -> stays in the factor pool
+#   good      -> eligible for online export (distillation)
+#   strong    -> very strong signal (NVIDIA AlphaCrafter reference)
+# =====================================================================
+
+ic:
+  keep_threshold: 0.02          # 初筛 —— minimum to keep in pool
+  good_threshold: 0.04          # 优质 —— eligible for online export
+  strong_threshold: 0.05        # 极强 —— very strong signal
+
+rank_ic:
+  keep_threshold: 0.035
+  good_threshold: 0.05
+
+icir:
+  keep_threshold: 0.30
+  good_threshold: 0.60
+  evoalpha_reference: 0.24      # EvoAlpha 15-iteration ICIR reference point
+
+sharpe:
+  good_threshold: 1.5           # Phase-2 roadmap target
+  max_drawdown_limit: 0.15      # Phase-2 roadmap target
+
+multiple_hypothesis:
+  alpha: 0.05
+  bonferroni: true              # FINSABER compliance: correct for 100s of trials
+  min_t_stats: 3.0
+
+diversity:
+  min_ast_distance: 0.40        # minimum AST tree distance between kept factors
+  max_pool_size: 200
+  subtree_frequency_penalty: 0.15   # AlphaJungle frequent-subtree avoidance strength
+
+pit:
+  validation_timestamp: "2023-12-31"
+  forbidden_future_date: "2024-01-01"
+
+online:
+  export_ic_threshold: 0.04     # a factor passing this is distilled to online/

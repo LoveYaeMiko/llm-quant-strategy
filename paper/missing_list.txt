@@ -1,0 +1,8 @@
+/c/Users/wyxwi/Desktop/FQA/paper/webpages/arxiv_abs_2605.19337.html|https://arxiv.org/abs/2605.19337
+/c/Users/wyxwi/Desktop/FQA/paper/webpages/arxiv_abs_2606.08285.html|https://arxiv.org/abs/2606.08285
+/c/Users/wyxwi/Desktop/FQA/paper/papers/EvoAlpha_IEEE11463591.pdf|https://ieeexplore.ieee.org/document/11463591
+/c/Users/wyxwi/Desktop/FQA/paper/papers/FactorMAD_ACM.pdf|https://dl.acm.org/doi/pdf/10.1145/3768292.3770377
+/c/Users/wyxwi/Desktop/FQA/paper/papers/NavigatingAlphaJungle_AAAI2026.pdf|https://ojs.aaai.org/index.php/AAAI/article/download/37069/41031
+/c/Users/wyxwi/Desktop/FQA/paper/papers/CognitiveAlphaMining_ACL2026.pdf|https://aclanthology.org/2026.acl-long.538.pdf
+/c/Users/wyxwi/Desktop/FQA/paper/papers/HybridSentiment_MDPI_AI-07-00138.pdf|https://mdpi-res.com/d_attachment/ai/ai-07-00138/article_deploy/ai-07-00138.pdf
+/c/Users/wyxwi/Desktop/FQA/paper/papers/AgenticTradingSurvey_2605.19337.pdf|https://arxiv.org/pdf/2605.19337

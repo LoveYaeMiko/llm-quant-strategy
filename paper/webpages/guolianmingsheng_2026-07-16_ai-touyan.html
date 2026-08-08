@@ -1,0 +1,1154 @@
+
+<!DOCTYPE html>
+<!-- [ published at 2026-07-16 19:18:03 ] -->
+
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+	<meta content="always" name="referrer">
+	<meta property="bytedance:published_time" content="2026-07-16T19:00:00+08:00" />
+<meta property="bytedance:lrDate_time" content="2026-07-16T19:17:47+08:00" />
+<meta property="bytedance:updated_time" content="2026-07-16T19:17:47+08:00" />
+   	
+<meta name="sudameta" content="urlpath:o/; allCIDs:202214,257,51894,51070,258,405393,255946,391462">
+<title>AI投研新范式：2026年AAAI与ICLR前沿论文综述 | 国联民生金工_新浪财经_新浪网</title>
+<meta name="keywords" content="AI投研新范式：2026年AAAI与ICLR前沿论文综述 | 国联民生金工" />
+<meta name="tags" content="" />
+<meta name="description" content="（来源：叶尔乐
+                尔乐量化）- 报告摘要 -SUMMARY➤ AI在量化投研中的研究重心正在从“调用通用模型”转向“围绕金融约束重构模型”。从AAAI2026、ICLR2026主会及金融AI Workshop代..." />
+
+<meta property="og:type" content="news" />
+<meta property="og:title" content="AI投研新范式：2026年AAAI与ICLR前沿论文综述 | 国联民生金工" />
+<meta property="og:description" content="AI投研新范式：2026年AAAI与ICLR前沿论文综述 | 国联民生金工" />
+<meta property="og:url" content="https://finance.sina.com.cn/wm/2026-07-16/doc-inihyyvy4515788.shtml" />
+<meta property="og:image" content="//n.sinaimg.cn/spider20260716/494/w907h387/20260716/8040-2aa4e66d8947c0187f821fb88bd098c4.png" />
+<meta name="weibo: article:create_at" content="2026-07-16 19:00:00" />
+<link rel="alternate" type="text/markdown" href="https://finance.sina.com.cn/wm/2026-07-16/doc-inihyyvy4515788.shtml.md" title="AI-readable content">
+<!--news_web_article_v2017_meta -->
+
+
+<meta name="stencil" content="PGLS000526" />
+<meta name="publishid" content="nihyyvy4515788" />
+<meta name="comment" content="cj:comos-nihyyvy4515788" />
+<meta name="sudameta" content="comment_channel:cj;comment_id:comos-nihyyvy4515788" />
+
+
+
+<meta name="mediaid" content="市场资讯">
+<meta name="sudameta" content="sinaog:0" />
+<!-- web_article_v2015_mobile_agent_meta begin-->
+<meta name="mobile-agent" content="format=html5; url=https://finance.sina.cn/2026-07-16/detail-inihyyvy4515788.d.html">
+<meta name="mobile-agent" content="format=xhtml; url=https://finance.sina.cn/2026-07-16/detail-inihyyvy4515788.d.html">
+<meta name="mobile-agent" content="format=wml; url=https://finance.sina.cn/2026-07-16/detail-inihyyvy4515788.d.html">
+<!-- web_article_v2015_mobile_agent_meta end -->
+
+
+
+
+<meta property="article:published_time" content="2026-07-16T19:17:48+08:00" />
+<meta property="article:author" content="叶尔乐
+                尔乐量化" />
+
+
+<meta name='sinaPlistaAD' content='{"article":"false","articleID":"artibody","video":"false","photos":"false","photosID":"","buttonPDPS":"PDPS000000044099","plistaPDPS":"PDPS000000059666"}'>
+
+	<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+
+<script type="text/javascript" src="//finance.sina.com.cn/other/src/doc/httpsjp.js"></script>
+    <script src="//news.sina.com.cn/268/2015/0112/jquery.newest.js" charset="utf-8"></script>
+    <script src="//finance.sina.com.cn/other/src/article-widgets.min.js"></script>
+    <script type="text/javascript" src="//tech.sina.com.cn/js/717/20140827/index2014/top.js" charset="gb2312"></script>
+    <script language='javascript' charset='utf-8' src='//i.sso.sina.com.cn/js/ssologin.js'></script>
+    <script type="text/javascript" src="//news.sina.com.cn/sso/outlogin_layer.js" charset="utf-8"></script>
+    <script type="text/javascript" src="//news.sina.com.cn/sso/user_panel_new_version.js" charset="utf-8"></script>
+	
+	
+<link rel="stylesheet" type="text/css" href="//n3.sinaimg.cn/default/cf7470f9/20190830/cms_style.css?t=202112091430">
+<meta name="sudameta" content="dataid:comos:nihyyvy4515788" /></head>
+<!-- import sinaads.js start-->
+<script>(function(d,s,id){var s,n=d.getElementsByTagName(s)[0];if(d.getElementById(id))return;s=d.createElement(s);s.id=id;s.setAttribute('charset','utf-8');s.src='//d'+Math.floor(0+Math.random()*(9-0+1))+'.sina.com.cn/litong/zhitou/sinaads/release/sinaads.js';n.parentNode.insertBefore(s,n);})(document,'script','sinaads-script');</script>
+<!-- import sinaads.js end-->
+<body><!-- body code begin -->
+
+<!-- SUDA_CODE_START --> 
+<script type="text/javascript"> 
+//<!--
+(function(){var an="V=2.1.16";var ah=window,F=document,s=navigator,W=s.userAgent,ao=ah.screen,j=ah.location.href;var aD="https:"==ah.location.protocol?"https://s":"http://",ay="beacon.sina.com.cn";var N=aD+ay+"/a.gif?",z=aD+ay+"/g.gif?",R=aD+ay+"/f.gif?",ag=aD+ay+"/e.gif?",aB=aD+"beacon.sinauda.com/i.gif?";var aA=F.referrer.toLowerCase();var aa="SINAGLOBAL",Y="FSINAGLOBAL",H="Apache",P="ULV",l="SUP",aE="UOR",E="_s_acc",X="_s_tentry",n=false,az=false,B=(document.domain=="sina.com.cn")?true:false;var o=0;var aG=false,A=false;var al="";var m=16777215,Z=0,C,K=0;var r="",b="",a="";var M=[],S=[],I=[];var u=0;var v=0;var p="";var am=false;var w=false;function O(){var e=document.createElement("iframe");e.src=aD+ay+"/data.html?"+new Date().getTime();e.id="sudaDataFrame";e.style.height="0px";e.style.width="1px";e.style.overflow="hidden";e.frameborder="0";e.scrolling="no";document.getElementsByTagName("head")[0].appendChild(e)}function k(){var e=document.createElement("iframe");e.src=aD+ay+"/ckctl.html";e.id="ckctlFrame";e.style.height="0px";e.style.width="1px";e.style.overflow="hidden";e.frameborder="0";e.scrolling="no";document.getElementsByTagName("head")[0].appendChild(e)}function q(){var e=document.createElement("script");e.src=aD+ay+"/h.js";document.getElementsByTagName("head")[0].appendChild(e)}function h(aH,i){var D=F.getElementsByName(aH);var e=(i>0)?i:0;return(D.length>e)?D[e].content:""}function aF(){var aJ=F.getElementsByName("sudameta");var aR=[];for(var aO=0;aO<aJ.length;aO++){var aK=aJ[aO].content;if(aK){if(aK.indexOf(";")!=-1){var D=aK.split(";");for(var aH=0;aH<D.length;aH++){var aP=aw(D[aH]);if(!aP){continue}aR.push(aP)}}else{aR.push(aK)}}}var aM=F.getElementsByTagName("meta");for(var aO=0,aI=aM.length;aO<aI;aO++){var aN=aM[aO];if(aN.name=="tags"){aR.push("content_tags:"+encodeURI(aN.content))}}var aL=t("vjuids");aR.push("vjuids:"+aL);var e="";var aQ=j.indexOf("#");if(aQ!=-1){e=escape(j.substr(aQ+1));aR.push("hashtag:"+e)}return aR}function V(aK,D,aI,aH){if(aK==""){return""}aH=(aH=="")?"=":aH;D+=aH;var aJ=aK.indexOf(D);if(aJ<0){return""}aJ+=D.length;var i=aK.indexOf(aI,aJ);if(i<aJ){i=aK.length}return aK.substring(aJ,i)}function t(e){if(undefined==e||""==e){return""}return V(F.cookie,e,";","")}function at(aI,e,i,aH){if(e!=null){if((undefined==aH)||(null==aH)){aH="sina.com.cn"}if((undefined==i)||(null==i)||(""==i)){F.cookie=aI+"="+e+";domain="+aH+";path=/"}else{var D=new Date();var aJ=D.getTime();aJ=aJ+86400000*i;D.setTime(aJ);aJ=D.getTime();F.cookie=aI+"="+e+";domain="+aH+";expires="+D.toUTCString()+";path=/"}}}function f(D){try{var i=document.getElementById("sudaDataFrame").contentWindow.storage;return i.get(D)}catch(aH){return false}}function ar(D,aH){try{var i=document.getElementById("sudaDataFrame").contentWindow.storage;i.set(D,aH);return true}catch(aI){return false}}function L(){var aJ=15;var D=window.SUDA.etag;if(!B){return"-"}if(u==0){O();q()}if(D&&D!=undefined){w=true}ls_gid=f(aa);if(ls_gid===false||w==false){return false}else{am=true}if(ls_gid&&ls_gid.length>aJ){at(aa,ls_gid,3650);n=true;return ls_gid}else{if(D&&D.length>aJ){at(aa,D,3650);az=true}var i=0,aI=500;var aH=setInterval((function(){var e=t(aa);if(w){e=D}i+=1;if(i>3){clearInterval(aH)}if(e.length>aJ){clearInterval(aH);ar(aa,e)}}),aI);return w?D:t(aa)}}function U(e,aH,D){var i=e;if(i==null){return false}aH=aH||"click";if((typeof D).toLowerCase()!="function"){return}if(i.attachEvent){i.attachEvent("on"+aH,D)}else{if(i.addEventListener){i.addEventListener(aH,D,false)}else{i["on"+aH]=D}}return true}function af(){if(window.event!=null){return window.event}else{if(window.event){return window.event}var D=arguments.callee.caller;var i;var aH=0;while(D!=null&&aH<40){i=D.arguments[0];if(i&&(i.constructor==Event||i.constructor==MouseEvent||i.constructor==KeyboardEvent)){return i}aH++;D=D.caller}return i}}function g(i){i=i||af();if(!i.target){i.target=i.srcElement;i.pageX=i.x;i.pageY=i.y}if(typeof i.layerX=="undefined"){i.layerX=i.offsetX}if(typeof i.layerY=="undefined"){i.layerY=i.offsetY}return i}function aw(aH){if(typeof aH!=="string"){throw"trim need a string as parameter"}var e=aH.length;var D=0;var i=/(\u3000|\s|\t|\u00A0)/;while(D<e){if(!i.test(aH.charAt(D))){break}D+=1}while(e>D){if(!i.test(aH.charAt(e-1))){break}e-=1}return aH.slice(D,e)}function c(e){return Object.prototype.toString.call(e)==="[object Array]"}function J(aH,aL){var aN=aw(aH).split("&");var aM={};var D=function(i){if(aL){try{return decodeURIComponent(i)}catch(aP){return i}}else{return i}};for(var aJ=0,aK=aN.length;aJ<aK;aJ++){if(aN[aJ]){var aI=aN[aJ].split("=");var e=aI[0];var aO=aI[1];if(aI.length<2){aO=e;e="$nullName"}if(!aM[e]){aM[e]=D(aO)}else{if(c(aM[e])!=true){aM[e]=[aM[e]]}aM[e].push(D(aO))}}}return aM}function ac(D,aI){for(var aH=0,e=D.length;aH<e;aH++){aI(D[aH],aH)}}function ak(i){var e=new RegExp("^http(?:s)?://([^/]+)","im");if(i.match(e)){return i.match(e)[1].toString()}else{return""}}function aj(aO){try{var aL="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";var D="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=";var aQ=function(e){var aR="",aS=0;for(;aS<e.length;aS++){aR+="%"+aH(e[aS])}return decodeURIComponent(aR)};var aH=function(e){var i="0"+e.toString(16);return i.length<=2?i:i.substr(1)};var aP=function(aY,aV,aR){if(typeof(aY)=="string"){aY=aY.split("")}var aX=function(a7,a9){for(var a8=0;a8<a7.length;a8++){if(a7[a8]==a9){return a8}}return -1};var aS=[];var a6,a4,a1="";var a5,a3,a0,aZ="";if(aY.length%4!=0){}var e=/[^A-Za-z0-9\+\/\=]/g;var a2=aL.split("");if(aV=="urlsafe"){e=/[^A-Za-z0-9\-_\=]/g;a2=D.split("")}var aU=0;if(aV=="binnary"){a2=[];for(aU=0;aU<=64;aU++){a2[aU]=aU+128}}if(aV!="binnary"&&e.exec(aY.join(""))){return aR=="array"?[]:""}aU=0;do{a5=aX(a2,aY[aU++]);a3=aX(a2,aY[aU++]);a0=aX(a2,aY[aU++]);aZ=aX(a2,aY[aU++]);a6=(a5<<2)|(a3>>4);a4=((a3&15)<<4)|(a0>>2);a1=((a0&3)<<6)|aZ;aS.push(a6);if(a0!=64&&a0!=-1){aS.push(a4)}if(aZ!=64&&aZ!=-1){aS.push(a1)}a6=a4=a1="";a5=a3=a0=aZ=""}while(aU<aY.length);if(aR=="array"){return aS}var aW="",aT=0;for(;aT<aS.lenth;aT++){aW+=String.fromCharCode(aS[aT])}return aW};var aI=[];var aN=aO.substr(0,3);var aK=aO.substr(3);switch(aN){case"v01":for(var aJ=0;aJ<aK.length;aJ+=2){aI.push(parseInt(aK.substr(aJ,2),16))}return decodeURIComponent(aQ(aP(aI,"binnary","array")));break;case"v02":aI=aP(aK,"urlsafe","array");return aQ(aP(aI,"binnary","array"));break;default:return decodeURIComponent(aO)}}catch(aM){return""}}var ap={screenSize:function(){return(m&8388608==8388608)?ao.width+"x"+ao.height:""},colorDepth:function(){return(m&4194304==4194304)?ao.colorDepth:""},appCode:function(){return(m&2097152==2097152)?s.appCodeName:""},appName:function(){return(m&1048576==1048576)?((s.appName.indexOf("Microsoft Internet Explorer")>-1)?"MSIE":s.appName):""},cpu:function(){return(m&524288==524288)?(s.cpuClass||s.oscpu):""},platform:function(){return(m&262144==262144)?(s.platform):""},jsVer:function(){if(m&131072!=131072){return""}var aI,e,aK,D=1,aH=0,i=(s.appName.indexOf("Microsoft Internet Explorer")>-1)?"MSIE":s.appName,aJ=s.appVersion;if("MSIE"==i){e="MSIE";aI=aJ.indexOf(e);if(aI>=0){aK=window.parseInt(aJ.substring(aI+5));if(3<=aK){D=1.1;if(4<=aK){D=1.3}}}}else{if(("Netscape"==i)||("Opera"==i)||("Mozilla"==i)){D=1.3;e="Netscape6";aI=aJ.indexOf(e);if(aI>=0){D=1.5}}}return D},network:function(){if(m&65536!=65536){return""}var i="";i=(s.connection&&s.connection.type)?s.connection.type:i;try{F.body.addBehavior("#default#clientCaps");i=F.body.connectionType}catch(D){i="unkown"}return i},language:function(){return(m&32768==32768)?(s.systemLanguage||s.language):""},timezone:function(){return(m&16384==16384)?(new Date().getTimezoneOffset()/60):""},flashVer:function(){if(m&8192!=8192){return""}var aK=s.plugins,aH,aL,aN;if(aK&&aK.length){for(var aJ in aK){aL=aK[aJ];if(aL.description==null){continue}if(aH!=null){break}aN=aL.description.toLowerCase();if(aN.indexOf("flash")!=-1){aH=aL.version?parseInt(aL.version):aN.match(/\d+/);continue}}}else{if(window.ActiveXObject){for(var aI=10;aI>=2;aI--){try{var D=new ActiveXObject("ShockwaveFlash.ShockwaveFlash."+aI);if(D){aH=aI;break}}catch(aM){}}}else{if(W.indexOf("webtv/2.5")!=-1){aH=3}else{if(W.indexOf("webtv")!=-1){aH=2}}}}return aH},javaEnabled:function(){if(m&4096!=4096){return""}var D=s.plugins,i=s.javaEnabled(),aH,aI;if(i==true){return 1}if(D&&D.length){for(var e in D){aH=D[e];if(aH.description==null){continue}if(i!=null){break}aI=aH.description.toLowerCase();if(aI.indexOf("java plug-in")!=-1){i=parseInt(aH.version);continue}}}else{if(window.ActiveXObject){i=(new ActiveXObject("JavaWebStart.IsInstalled")!=null)}}return i?1:0}};var ad={pageId:function(i){var D=i||r,aK="-9999-0-0-1";if((undefined==D)||(""==D)){try{var aH=h("publishid");if(""!=aH){var aJ=aH.split(",");if(aJ.length>0){if(aJ.length>=3){aK="-9999-0-"+aJ[1]+"-"+aJ[2]}D=aJ[0]}}else{D="0"}}catch(aI){D="0"}D=D+aK}return D},sessionCount:function(){var e=t("_s_upa");if(e==""){e=0}return e},excuteCount:function(){return SUDA.sudaCount},referrer:function(){if(m&2048!=2048){return""}var e=/^[^\?&#]*.swf([\?#])?/;if((aA=="")||(aA.match(e))){var i=V(j,"ref","&","");if(i!=""){return escape(i)}}return escape(aA)},isHomepage:function(){if(m&1024!=1024){return""}var D="";try{F.body.addBehavior("#default#homePage");D=F.body.isHomePage(j)?"Y":"N"}catch(i){D="unkown"}return D},PGLS:function(){return(m&512==512)?h("stencil"):""},ZT:function(){if(m&256!=256){return""}var e=h("subjectid");e.replace(",",".");e.replace(";",",");return escape(e)},mediaType:function(){return(m&128==128)?h("mediaid"):""},domCount:function(){return(m&64==64)?F.getElementsByTagName("*").length:""},iframeCount:function(){return(m&32==32)?F.getElementsByTagName("iframe").length:""}};var av={visitorId:function(){var i=15;var e=t(aa);if(e.length>i&&u==0){return e}else{return}},fvisitorId:function(e){if(!e){var e=t(Y);return e}else{at(Y,e,3650)}},sessionId:function(){var e=t(H);if(""==e){var i=new Date();e=Math.random()*10000000000000+"."+i.getTime()}return e},flashCookie:function(e){if(e){}else{return p}},lastVisit:function(){var D=t(H);var aI=t(P);var aH=aI.split(":");var aJ="",i;if(aH.length>=6){if(D!=aH[4]){i=new Date();var e=new Date(window.parseInt(aH[0]));aH[1]=window.parseInt(aH[1])+1;if(i.getMonth()!=e.getMonth()){aH[2]=1}else{aH[2]=window.parseInt(aH[2])+1}if(((i.getTime()-e.getTime())/86400000)>=7){aH[3]=1}else{if(i.getDay()<e.getDay()){aH[3]=1}else{aH[3]=window.parseInt(aH[3])+1}}aJ=aH[0]+":"+aH[1]+":"+aH[2]+":"+aH[3];aH[5]=aH[0];aH[0]=i.getTime();at(P,aH[0]+":"+aH[1]+":"+aH[2]+":"+aH[3]+":"+D+":"+aH[5],360)}else{aJ=aH[5]+":"+aH[1]+":"+aH[2]+":"+aH[3]}}else{i=new Date();aJ=":1:1:1";at(P,i.getTime()+aJ+":"+D+":",360)}return aJ},userNick:function(){if(al!=""){return al}var D=unescape(t(l));if(D!=""){var i=V(D,"ag","&","");var e=V(D,"user","&","");var aH=V(D,"uid","&","");var aJ=V(D,"sex","&","");var aI=V(D,"dob","&","");al=i+":"+e+":"+aH+":"+aJ+":"+aI;return al}else{return""}},userOrigin:function(){if(m&4!=4){return""}var e=t(aE);var i=e.split(":");if(i.length>=2){return i[0]}else{return""}},advCount:function(){return(m&2==2)?t(E):""},setUOR:function(){var aL=t(aE),aP="",i="",aO="",aI="",aM=j.toLowerCase(),D=F.referrer.toLowerCase();var aQ=/[&|?]c=spr(_[A-Za-z0-9]{1,}){3,}/;var aK=new Date();if(aM.match(aQ)){aO=aM.match(aQ)[0]}else{if(D.match(aQ)){aO=D.match(aQ)[0]}}if(aO!=""){aO=aO.substr(3)+":"+aK.getTime()}if(aL==""){if(t(P)==""){aP=ak(D);i=ak(aM)}at(aE,aP+","+i+","+aO,365)}else{var aJ=0,aN=aL.split(",");if(aN.length>=1){aP=aN[0]}if(aN.length>=2){i=aN[1]}if(aN.length>=3){aI=aN[2]}if(aO!=""){aJ=1}else{var aH=aI.split(":");if(aH.length>=2){var e=new Date(window.parseInt(aH[1]));if(e.getTime()<(aK.getTime()-86400000*30)){aJ=1}}}if(aJ){at(aE,aP+","+i+","+aO,365)}}},setAEC:function(e){if(""==e){return}var i=t(E);if(i.indexOf(e+",")<0){i=i+e+","}at(E,i,7)},ssoInfo:function(){var D=unescape(aj(t("sso_info")));if(D!=""){if(D.indexOf("uid=")!=-1){var i=V(D,"uid","&","");return escape("uid:"+i)}else{var e=V(D,"u","&","");return escape("u:"+unescape(e))}}else{return""}},subp:function(){return t("SUBP")}};var ai={CI:function(){var e=["sz:"+ap.screenSize(),"dp:"+ap.colorDepth(),"ac:"+ap.appCode(),"an:"+ap.appName(),"cpu:"+ap.cpu(),"pf:"+ap.platform(),"jv:"+ap.jsVer(),"ct:"+ap.network(),"lg:"+ap.language(),"tz:"+ap.timezone(),"fv:"+ap.flashVer(),"ja:"+ap.javaEnabled()];return"CI="+e.join("|")},PI:function(e){var i=["pid:"+ad.pageId(e),"st:"+ad.sessionCount(),"et:"+ad.excuteCount(),"ref:"+ad.referrer(),"hp:"+ad.isHomepage(),"PGLS:"+ad.PGLS(),"ZT:"+ad.ZT(),"MT:"+ad.mediaType(),"keys:","dom:"+ad.domCount(),"ifr:"+ad.iframeCount()];return"PI="+i.join("|")},UI:function(){var e=["vid:"+av.visitorId(),"sid:"+av.sessionId(),"lv:"+av.lastVisit(),"un:"+av.userNick(),"uo:"+av.userOrigin(),"ae:"+av.advCount(),"lu:"+av.fvisitorId(),"si:"+av.ssoInfo(),"rs:"+(n?1:0),"dm:"+(B?1:0),"su:"+av.subp()];return"UI="+e.join("|")},EX:function(i,e){if(m&1!=1){return""}i=(null!=i)?i||"":b;e=(null!=e)?e||"":a;return"EX=ex1:"+i+"|ex2:"+e},MT:function(){return"MT="+aF().join("|")},V:function(){return an},R:function(){return"gUid_"+new Date().getTime()}};function ax(){var aK="-",aH=F.referrer.toLowerCase(),D=j.toLowerCase();if(""==t(X)){if(""!=aH){aK=ak(aH)}at(X,aK,"","weibo.com")}var aI=/weibo.com\/reg.php/;if(D.match(aI)){var aJ=V(unescape(D),"sharehost","&","");var i=V(unescape(D),"appkey","&","");if(""!=aJ){at(X,aJ,"","weibo.com")}at("appkey",i,"","weibo.com")}}function d(e,i){G(e,i)}function G(i,D){D=D||{};var e=new Image(),aH;if(D&&D.callback&&typeof D.callback=="function"){e.onload=function(){clearTimeout(aH);aH=null;D.callback(true)}}SUDA.img=e;e.src=i;aH=setTimeout(function(){if(D&&D.callback&&typeof D.callback=="function"){D.callback(false);e.onload=null}},D.timeout||2000)}function x(e,aH,D,aI){SUDA.sudaCount++;if(!av.visitorId()&&!L()){if(u<3){u++;setTimeout(x,500);return}}var i=N+[ai.V(),ai.CI(),ai.PI(e),ai.UI(),ai.MT(),ai.EX(aH,D),ai.R()].join("&");G(i,aI)}function y(e,D,i){if(aG||A){return}if(SUDA.sudaCount!=0){return}x(e,D,i)}function ab(e,aH){if((""==e)||(undefined==e)){return}av.setAEC(e);if(0==aH){return}var D="AcTrack||"+t(aa)+"||"+t(H)+"||"+av.userNick()+"||"+e+"||";var i=ag+D+"&gUid_"+new Date().getTime();d(i)}function aq(aI,e,i,aJ){aJ=aJ||{};if(!i){i=""}else{i=escape(i)}var aH="UATrack||"+t(aa)+"||"+t(H)+"||"+av.userNick()+"||"+aI+"||"+e+"||"+ad.referrer()+"||"+i+"||"+(aJ.realUrl||"")+"||"+(aJ.ext||"");var D=ag+aH+"&gUid_"+new Date().getTime();d(D,aJ)}function aC(aK){var i=g(aK);var aI=i.target;var aH="",aL="",D="";var aJ;if(aI!=null&&aI.getAttribute&&(!aI.getAttribute("suda-uatrack")&&!aI.getAttribute("suda-actrack")&&!aI.getAttribute("suda-data"))){while(aI!=null&&aI.getAttribute&&(!!aI.getAttribute("suda-uatrack")||!!aI.getAttribute("suda-actrack")||!!aI.getAttribute("suda-data"))==false){if(aI==F.body){return}aI=aI.parentNode}}if(aI==null||aI.getAttribute==null){return}aH=aI.getAttribute("suda-actrack")||"";aL=aI.getAttribute("suda-uatrack")||aI.getAttribute("suda-data")||"";sudaUrls=aI.getAttribute("suda-urls")||"";if(aL){aJ=J(aL);if(aI.tagName.toLowerCase()=="a"){D=aI.href}opts={};opts.ext=(aJ.ext||"");aJ.key&&SUDA.uaTrack&&SUDA.uaTrack(aJ.key,aJ.value||aJ.key,D,opts)}if(aH){aJ=J(aH);aJ.key&&SUDA.acTrack&&SUDA.acTrack(aJ.key,aJ.value||aJ.key)}}if(window.SUDA&&Object.prototype.toString.call(window.SUDA)==="[object Array]"){for(var Q=0,ae=SUDA.length;Q<ae;Q++){switch(SUDA[Q][0]){case"setGatherType":m=SUDA[Q][1];break;case"setGatherInfo":r=SUDA[Q][1]||r;b=SUDA[Q][2]||b;a=SUDA[Q][3]||a;break;case"setPerformance":Z=SUDA[Q][1];break;case"setPerformanceFilter":C=SUDA[Q][1];break;case"setPerformanceInterval":K=SUDA[Q][1]*1||0;K=isNaN(K)?0:K;break;case"setGatherMore":M.push(SUDA[Q].slice(1));break;case"acTrack":S.push(SUDA[Q].slice(1));break;case"uaTrack":I.push(SUDA[Q].slice(1));break}}}aG=(function(D,i){if(ah.top==ah){return false}else{try{if(F.body.clientHeight==0){return false}return((F.body.clientHeight>=D)&&(F.body.clientWidth>=i))?false:true}catch(aH){return true}}})(320,240);A=(function(){return false})();av.setUOR();var au=av.sessionId();window.SUDA=window.SUDA||[];SUDA.sudaCount=SUDA.sudaCount||0;SUDA.log=function(){x.apply(null,arguments)};SUDA.acTrack=function(){ab.apply(null,arguments)};SUDA.uaTrack=function(){aq.apply(null,arguments)};U(F.body,"click",aC);window.GB_SUDA=SUDA;GB_SUDA._S_pSt=function(){};GB_SUDA._S_acTrack=function(){ab.apply(null,arguments)};GB_SUDA._S_uaTrack=function(){aq.apply(null,arguments)};window._S_pSt=function(){};window._S_acTrack=function(){ab.apply(null,arguments)};window._S_uaTrack=function(){aq.apply(null,arguments)};window._S_PID_="";if(!window.SUDA.disableClickstream){y()}try{k()}catch(T){}})();
+//-->
+</script> 
+<noScript> 
+<div style='position:absolute;top:0;left:0;width:0;height:0;visibility:hidden'><img width=0 height=0 src='//beacon.sina.com.cn/a.gif?noScript' border='0' alt='' /></div> 
+</noScript> 
+<!-- SUDA_CODE_END -->
+
+<!-- SSO_GETCOOKIE_START -->
+<script type="text/javascript">var sinaSSOManager=sinaSSOManager||{};sinaSSOManager.getSinaCookie=function(){function dc(u){if(u==undefined){return""}var decoded=decodeURIComponent(u);return decoded=="null"?"":decoded}function ps(str){var arr=str.split("&");var arrtmp;var arrResult={};for(var i=0;i<arr.length;i++){arrtmp=arr[i].split("=");arrResult[arrtmp[0]]=dc(arrtmp[1])}return arrResult}function gC(name){var Res=eval("/"+name+"=([^;]+)/").exec(document.cookie);return Res==null?null:Res[1]}var sup=dc(gC("SUP"));if(!sup){sup=dc(gC("SUR"))}if(!sup){return null}return ps(sup)};</script>
+<!-- SSO_GETCOOKIE_END -->
+
+<script type="text/javascript">new function(r,s,t){this.a=function(n,t,e){if(window.addEventListener){n.addEventListener(t,e,false);}else if(window.attachEvent){n.attachEvent("on"+t,e);}};this.b=function(f){var t=this;return function(){return f.apply(t,arguments);};};this.c=function(){var f=document.getElementsByTagName("form");for(var i=0;i<f.length;i++){var o=f[i].action;if(this.r.test(o)){f[i].action=o.replace(this.r,this.s);}}};this.r=r;this.s=s;this.d=setInterval(this.b(this.c),t);this.a(window,"load",this.b(function(){this.c();clearInterval(this.d);}));}(/http:\/\/www\.google\.c(om|n)\/search/, "http://keyword.sina.com.cn/searchword.php", 250);</script>
+<!-- body code end -->
+
+<!-- 内容区域 start -->
+<!-- 首屏css start -->
+<link rel="stylesheet" href="//n0.sinaimg.cn/finance/page2017/css/style.css?v=20180823">
+<!-- 首屏css end -->
+<!-- suda -->
+<script type="text/javascript" src="//i1.sinaimg.cn/unipro/pub/suda_m_v634.js"></script>
+<script type="text/javascript">suds_init(3465,100.0000,1015,2);</script>
+<!-- 登录 css -->
+<link rel="stylesheet" type="text/css" href="//n3.sinaimg.cn/finance/finhttps/top_account_v2.css">
+<!-- 延伸阅读 css -->
+
+<link rel="stylesheet" type="text/css" href="//finance.sina.com.cn/other/src/sinapagewidgets/SinaPageExread2018.css">
+
+<!--页面顶导 begin-->
+<script charset="utf-8" type="text/javascript" src="//n.sinaimg.cn/common/channelnav/js/nav.js?v=1.2"></script>
+	
+<!-- 左侧app推广导航 20210106临时下线 -->
+<!-- <script type="text/javascript" src="//finance.sina.com.cn/other/src/sfc_app_sidebar.js"></script> -->
+
+	
+<!-- 全局参数begin -->
+
+
+<script type="text/javascript">
+//设定为提前一屏触发
+//console.log(SinaPage.config.triggerDistance)
+//SinaPage.config.triggerDistance = window.screen.height;
+SinaPage.config.triggerDistance = 500;
+
+var SINA_TEXT_PAGE_INFO = {
+        entry: 'account',
+        channel: 'cj',
+        newsid: 'comos-nihyyvy4515788',
+
+        // 是否隐藏评论入口
+        hideComment: false,
+        // 是否隐藏评论列表(0,1)
+        hideCommentList: 0,
+
+        // 微博分享后面的@用户uid
+        uid: '1638782947', //财经
+
+        // 文章docid，用来检测是否已收藏
+        docID: 'http://doc.sina.cn/?id=comos:nihyyvy4515788',
+
+        pagepubtime: '2026-07-16',
+        difDay: 180,
+        ADIDs: ["PublicRelation1"],
+
+        // 底部微博推荐，如果没有，不填即可
+        weiboGroupID: 35,
+		//是否加锁
+		smallsreenlock:false,
+		bigsreenlock:false,
+		is_limit5 :false
+    };
+</script>
+<!-- 全局参数end -->
+
+<!-- 商讯正文页特殊处理样式 -->
+
+	
+	
+<!--主导航-->
+<style>
+	.sina15-ico-client {background-image:url(//n.sinaimg.cn/finance/page2017/images/client2018.png);}
+    /*2018 add 众测*/
+    .sina15-ico-zhongce{background-position:0 -450px;position: absolute;
+    left: 19px;
+    top: 10px;
+    width: 25px;
+    height: 25px;}
+</style>
+<div class="sina-header" id="sina-header">
+    <div class="sina-header-inner">
+        <div class="sina-nav">
+            <ul class="nav-list">
+                <li class="first" data-sudaclick="topnav_www"><a href="http://www.sina.com.cn/" data-sudaclick="nav_home_p">新浪首页</a></li>
+                <li data-sudaclick="nav_news_p"><a href="http://news.sina.com.cn/">新闻</a></li>
+                <li data-sudaclick="nav_sports_p"><a href="http://sports.sina.com.cn/">体育</a></li>
+                <li data-sudaclick="nav_finance_p"><a href="http://finance.sina.com.cn/">财经</a></li>
+                <li data-sudaclick="nav_ent_p"><a href="http://ent.sina.com.cn/">娱乐</a></li>
+                <li data-sudaclick="nav_tech_p"><a href="http://tech.sina.com.cn/">科技</a></li>
+                <li data-sudaclick="nav_blog_p"><a href="http://blog.sina.com.cn/">博客</a></li>
+                <li data-sudaclick="nav_photo_p"><a href="http://photo.sina.com.cn/">图片</a></li>
+                <li data-sudaclick="nav_zhuanlan_p"><a href="http://zhuanlan.sina.com.cn/">专栏</a></li>
+                <li class="last" data-sudaclick="topnav_more"><a href="#" class="more" data-action="dropdown"
+                                                                 data-target="more">更多<i
+                        class="icon icon-arrow"></i></a></li>
+                <!--鼠标滑过更多<a>标签添加class="sina15-on"-->
+            </ul>
+            <ul id="more" class="nav-others">
+                <li><a href="http://auto.sina.com.cn/" data-sudaclick="nav_auto_p">汽车</a>
+					<a href="http://edu.sina.com.cn/" data-sudaclick="nav_edu_p">教育</a>
+					<a href="http://fashion.sina.com.cn/" data-sudaclick="nav_fashion_p">时尚</a>
+					<a href="http://eladies.sina.com.cn/" data-sudaclick="nav_eladies_p">女性</a>
+					<a href="http://astro.sina.com.cn/" data-sudaclick="nav_astro_p">星座</a>
+					<a href="http://health.sina.com.cn/" data-sudaclick="nav_health_p">健康</a>
+				</li>
+                <li><a href="http://www.leju.com/#source=pc_sina_dbdh1&source_ext=pc_sina" data-sudaclick="nav_leju_p">房产</a><a
+                        href="http://history.sina.com.cn/" data-sudaclick="nav_history_p">历史</a><a href="http://video.sina.com.cn/" data-sudaclick="nav_video_p">视频</a><a
+                        href="http://collection.sina.com.cn/" data-sudaclick="nav_collection_p">收藏</a><a href="http://baby.sina.com.cn/" data-sudaclick="nav_baby_p">育儿</a><a
+                        href="http://book.sina.com.cn/" data-sudaclick="nav_book_p">读书</a></li>
+                <li class="nav-others-last"><a href="http://fo.sina.com.cn/" data-sudaclick="nav_fo_p">佛学</a><a href="http://games.sina.com.cn/" data-sudaclick="nav_games_p">游戏</a><a
+                        href="http://travel.sina.com.cn/" data-sudaclick="nav_travel_p">旅游</a><a href="http://mail.sina.com.cn/" data-sudaclick="nav_mail_p">邮箱</a><a
+                        href="http://news.sina.com.cn/guide/" data-sudaclick="nav_guide_p">导航</a></li>
+            </ul>
+        </div>
+        <!--通行证组件start-->
+        <div class="sina-client">
+            <div class="sina-client-tl">
+                <a class="more" href="#" data-action="dropdown" data-target="mobileclient">移动客户端<i
+                        class="icon icon-arrow"></i></a>
+            </div>
+            <ul id="mobileclient" class="dropdown">
+                <li><a href="http://m.sina.com.cn/m/weibo.shtml" target="_blank" data-sudaclick="nav_app_weibo_p"><i class="ico-client ico-weibo"></i>新浪微博</a>
+                </li>
+                <li><a href="http://news.sina.com.cn/m/sinanews.html" target="_blank" data-sudaclick="nav_app_news_p"><i class="ico-client ico-news"></i>新浪新闻</a>
+				</li>
+				<li><a href="https://finance.sina.com.cn/mobile/comfinanceweb.shtml?source=daohang01" target="_blank" data-sudaclick="nav_app_finance_p" suda-uatrack="key=finapp_pc&value=nav"><i class="ico-client ico-finance"></i>新浪财经</a>
+				</li>
+                <li><a href="http://m.sina.com.cn/m/sinasports.shtml" target="_blank" data-sudaclick="nav_app_sports_p"><i class="ico-client ico-sports"></i>新浪体育</a>
+				</li>
+				<li><a data-sudaclick="nav_app_zhongce_p" href="http://zhongce.sina.com.cn/about/app" target="_blank"><i class="sina15-ico-client sina15-ico-zhongce"></i>新浪众测</a>
+				</li>
+                <li><a href="http://blog.sina.com.cn/lm/z/app/" target="_blank" data-sudaclick="nav_app_blog_p"><i class="ico-client ico-blog"></i>新浪博客</a>
+                </li>
+                <li><a href="http://video.sina.com.cn/app" target="_blank"><i class="ico-client ico-video" data-sudaclick="nav_app_video_p"></i>新浪视频</a>
+                </li>
+                <li><a href="http://games.sina.com.cn/o/kb/12392.shtml" target="_blank"  data-sudaclick="nav_app_game_p"><i class="ico-client ico-games"></i>新浪游戏</a></li>
+                <li><a href="http://m.sina.com.cn/m/weather.shtml" target="_blank" data-sudaclick="nav_app_weather_p"><i class="ico-client ico-weather" ></i>天气通</a></li>
+            </ul>
+        </div>
+        <!-- 我的收藏start -->
+        <div class="my-favor" id="my_favor" style="display:none;">
+            <a href="http://my.sina.com.cn/#location=fav" target="_blank" data-sudaclick="nav_myfav_p"><i></i>我的收藏</a>   
+        </div>
+        
+        <!-- 我的收藏end -->
+        <div id="SI_User" class="TAP14">
+            <div class="ac-rgst"><a href="https://login.sina.com.cn/signup/signup?entry=news" class="msg-link" target="_blank">注册</a></div>
+            <div class="ac-login">
+                <div class="ac-login-cnt "><a href="#" class=""><span class="thumb"><img
+src="//i.sso.sina.com.cn/images/login/thumb_default.png"></span><span class="log-links">登录</span></a></div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            window.__SinaTopBar__.user.init(document.getElementById('SI_User'),{
+                // entry 默认为 account，各频道不一样，可向通行证@龚翼 申请
+                entry:'finance',
+                login_success:function(){
+                    SINA_TEXT_PAGE_INFO.uid = SINA_OUTLOGIN_LAYER.getSinaCookie().uid;
+                    // 登录成功
+                    //window.__SinaFeedCard__.onLoginSuccess(SINA_OUTLOGIN_LAYER.getSinaCookie().uid, 30004);
+                    //登陆成功插入我的收藏
+                    window._MYSTOCK && _MYSTOCK.stock && _MYSTOCK.stock.init();
+                    $('#my_favor').show();
+                },
+                logout_success:function(){
+                    // 退出成功
+                    //隐藏我的收藏
+					window._MYSTOCK && _MYSTOCK.stock && _MYSTOCK.stock.init();
+                    $('#my_favor').hide();
+                }
+            });
+        </script>
+        <!--/通行证组件end-->
+
+    </div>
+</div>
+<!--/主导航-->
+<!--页面顶导 end-->
+	
+<!-- main content start -->
+<div class="main-content w1240">
+	<!-- 顶通 begin -->
+	<div class="top-banner clearfix">
+        <!-- top ad start -->
+        <!-- 顶通  begin -->
+<div class="tb-left" style="">
+    <!--顶部1000*90通栏    2017/12   wenjing8 begin-->
+	<ins class="sinaads" data-ad-pdps="PDPS000000056985"></ins>
+	<script>(sinaads = window.sinaads || []).push({})</script>
+	<!--顶部1000*90通栏    end-->
+</div>
+<!-- 顶通 end -->
+        <!-- top ad end -->
+	<div class="tb-right clearfix">
+	<div class="cj-r-qr">
+		<a href="https://finance.sina.com.cn/mobile/comfinanceweb.shtml?source=cjzhengwen08" target="_blank"><img src="//n.sinaimg.cn/finance/c30320b4/20190809/cj_sinafinance_app2x.png" style="width: 220px; height: 90px;"></a>
+	</div>
+	</div>
+<!--         <div class="tb-right clearfix">
+            <span class="app-logo"><img src="//n.sinaimg.cn/finance/page/ent/images/sina_logo.png"></span>
+            <span class="app-code"><img src="//n.sinaimg.cn/finance/page/ent/images/qrcode01.png"></span>
+        </div> -->
+</div>
+	<!-- 顶通 end -->
+	
+    <!-- 面包削 search start -->
+	<div class="path-search">
+        <div class="path">
+            <a class="channel-logo" href="http://finance.sina.com.cn/" data-sudaclick="cnav_logo_finance_p"></a>
+            <div class="channel-path" data-sudaclick="cnav_breadcrumbs_p">
+				自媒体热点				<span class="spliter">></span>
+				<span>正文</span>            </div>
+        </div>
+        <div class="search fin-search"data-sudaclick="cnav_search_p">
+            <form class="clearfix" action="//biz.finance.sina.com.cn/suggest/lookup_n.php" onsubmit="return checkFormSuggest_0(this);" target="_blank" id="topSearch" style="position:relative">
+                <select onchange="" name="country" class="countrySelect" id="search_type">
+                    <option value="" selected="selected">行情</option>
+                    <option value="stock">股吧</option>
+                    <option value="usstock">新闻</option>
+                    <option value="forex">外汇</option>
+                    <option value="">新三板</option>
+                </select>
+                <div class="search_div">
+                    <div class="search_inputWrap" style="position:relative">
+                        <input type="text" onfocus="if(this.value=='简称/代码/拼音'){this.value='';}" onblur="if(this.value==''){this.value='简称/代码/拼音';}" value="简称/代码/拼音" id="search_input" name="q"/>
+                    </div>
+                </div>
+                <input type="submit" value="" id="search_submit"/>
+                <input type="hidden" name="name">
+                <input type="hidden" name="t" value="keyword">
+                <input type="hidden" name="c" value="all">
+                <input type="hidden" name="k">
+                <input type="hidden" name="range" value="all">
+                <input type="hidden" name="col" value="1_7">
+                <input type="hidden" name="from" value="channel">
+                <input type="hidden" name="ie" value="utf-8">
+            </form>
+        </div>
+    </div>
+
+    <!-- 面包削 search end -->
+	
+    <h1 class="main-title">AI投研新范式：2026年AAAI与ICLR前沿论文综述 | 国联民生金工</h1>
+    <!-- page-tools start -->
+    <!-- 微博关键字js start -->
+    <script type="text/javascript" src="//news.sina.com.cn/js/87/20110714/205/sinalib.js" charset="utf-8"></script>
+    <script type="text/javascript" src="//n.sinaimg.cn/ent/mainpage/js/pl/weiboCard.js" charset="utf-8"></script>
+    <!-- 微博关键字js end -->
+    <div class="top-bar-wrap" id="top_bar_wrap">
+        <div class="top-bar ani" id="top_bar">
+            <div class="top-bar-inner clearfix">
+                
+<div class="second-title">AI投研新范式：2026年AAAI与ICLR前沿论文综述 | 国联民生金工</div>
+<div class="date-source" data-sudaclick="content_media_p">
+    <span class="date">2026年07月16日 19:00</span>
+    <a href="https://mp.weixin.qq.com/s/IOEzOFY_IEBeZrts9IJStA" target="_blank" class="source ent-source" data-sudaclick="content_media_p" rel="nofollow">市场资讯</a></div>
+
+<div class="page-tools" data-sudaclick="blk_share">
+    <span class="tool-icon tool-audio first"><a class="fapp" ani-click='scaleDes' ani-hover='bounceFromTop' node-type='audio-pop' data-sudaclick="sf_cjapp_yybbicon_p" href="https://finance.sina.com.cn/mobile/comfinanceweb.shtml?source=cjzhengwen04" target="_blank" title="语音播报">新浪财经APP</a></span>
+    <span class="tool-icon tool-des-fs"><a ani-click='scaleDes' ani-hover='bounceFromTop' node-type='decrease-fs' href="javascript:;" title="缩小字体" data-sudaclick="content_smallerfont_i">缩小字体</a></span>
+    <span class="tool-icon tool-ins-fs"><a ani-click="scaleIns" ani-hover="bounceFromTop" node-type="increase-fs" href="javascript:;" title="放大字体" data-sudaclick="content_biggerfont_i">放大字体</a></span>
+    <span class="tool-icon tool-fav"><a ani-hover='bounceFromTop' node-type='add-fav' href="javascript:;" title="收藏本页" data-sudaclick="content_fav_p">收藏</a></span>
+    <span class="tool-icon tool-wb"><a ani-hover='bounceFromTop' node-type='share-wb' href="javascript:;" data-share='weibo' title="分享到微博" data-sudaclick="content_weiboshare_i">微博</a></span>
+     <span class="tool-icon tool-share"><a ani-hover='bounceFromTop' node-type='share-more' data-action="dropdown" data-target='share_more' href="javascript:;" title="更多分享" data-sudaclick="content_moreshare_i">分享</a></span>
+	<span class="tool-icon tool-md"><a ani-hover='bounceFromTop' node-type='get-md' href="https://finance.sina.com.cn/wm/2026-07-16/doc-inihyyvy4515788.shtml.md" target="_blank" title="复制MD">MD</a></span>
+    <span class="tool-icon tool-cmt"><a ani-hover='bounceFromTop' node-type='comment' href="javascript:;"><span class="num" node-type="comment-num" data-sudaclick="content_commentbutton_i"></span></a></span>
+	<div class='share-more-list' style='display:none;' id='share_more'>
+		<span  class='tool-icon tool-share-wx'><a href="javascript:;" data-share='weixin' title="分享到微信" data-sudaclick="share_qq">微信</a></span>
+		<span  class='tool-icon tool-share-qq'><a href="javascript:;" data-share='qq' title="分享到QQ" data-sudaclick="share_qq">腾讯QQ</a></span>
+		<span  class='tool-icon tool-share-qqzone'><a href="javascript:;" data-share='qzone' title="分享到QQ空间" data-sudaclick="share_qzone">QQ空间</a></span>
+	</div>
+</div>
+            </div>
+        </div>
+    </div>
+    <!-- page-tools end -->
+    <div class="article-content clearfix" id='article_content'>
+        <div class="article-content-left">
+            <!-- 正文广告top start -->
+            <div class="ad top-ad">
+			<!--标题下方640*90通栏    2017/12   wenjing8 begin-->
+			<ins class="sinaads" data-ad-pdps="PDPS000000060745"></ins>
+			<script>(sinaads = window.sinaads || []).push({})</script>
+			<!--标题下方640*90通栏    end-->
+
+			</div>
+            <!-- 正文广告top end -->
+			
+			<!-- 引文 start -->
+			
+            <!-- 引文 end -->
+            <!-- 正文 start -->
+				<!-- 原始正文begin -->
+				<div class="article" id="artibody">
+					<!-- 相关专题top start-->
+					
+					<!-- 相关专题top end-->
+								<!-- 期货推广begin -->
+			
+			<!-- 期货推广end -->
+
+			<!-- 秒拍begin -->
+			
+			<!-- 秒拍end -->
+	
+			<!-- 视频播放器start -->
+			
+			<!-- 视频播放器end -->
+	
+			<!-- 行情图begin -->
+			
+			<!-- 行情图end -->
+
+            
+
+    <p>（来源：叶尔乐
+                尔乐量化）</p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/494/w907h387/20260716/8040-2aa4e66d8947c0187f821fb88bd098c4.png" cms-width="578" cms-height="246.625" id="0"/><span class="img_descr"></span></div><p cms-style="font-L"></p><p cms-style="font-L"></p><p cms-style="font-L "></p><p cms-style="font-L strong-Bold color0">- 报告摘要 -</p><p cms-style="font-L">SUMMARY</p><p cms-style="font-L "></p><p cms-style="font-L"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">➤ </font><font cms-style="font-L strong-Bold color240">AI在量化投研中的研究重心正在从“调用通用模型”转向“围绕金融约束重构模型”</font><font cms-style="font-L strong-Bold color240">。</font><font cms-style="font-L strong-Bold color240"></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L">从AAAI2026、ICLR2026主会及金融AI Workshop代表论文看，前沿研究已不再满足于把大语言模型、强化学习或Transformer直接套用到交易任务，而是更强调延迟、回测有效性、非平稳性、交易成本、风险约束和可解释性等金融场景硬约束</font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L">。</font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">➤ </font></font></font><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">LLM更适合承担离线研发、因子生成、语义校验和投研辅助，而非直接承担低延迟交易执行</font><font cms-style="font-L strong-Bold color240">。</font></font></font></font></font></font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L">TiMi、AlphaAgentEvo、AlphaBench等研究显示，模型能力的关键不只在参数规模，更在搜索机制、反馈设计和标准化评估体系</font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L">。</font></font></p><p cms-style="font-L"><font cms-style="font-L color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">➤ </font></font></font></font><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">深度学习方法正在补齐量化金融对非结构化、多模态和关系型信号的建模短板</font><font cms-style="font-L strong-Bold color240">。</font></font></font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L">Text to Alpha、Relational Probing、GAP-TGN、FinZero、Diffusion Copulas和WaveLSFormer分别从企业披露语义漂移、股票关系图适配、政治信息渠道识别、图像化时序预测、多资产尾部依赖和频域交易模型切入，说明量化信号正在从传统价量因子扩展到文本、关系网络、多模态时序、联合分布和频率结构等更复杂的数据形态</font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L">。</font></font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"></font></font></font></p><p cms-style="font-L"><font cms-style="font-L color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">➤ </font></font></font></font><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">量化策略研究从单一预测精度转向稳健性与可部署性</font><font cms-style="font-L strong-Bold color240">。</font></font></font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L">MetaTrader、ArchetypeTrader、MARS等论文围绕分布迁移、市场状态切换和风险自适应展开，反映强化学习量化正在从静态回测走向压力场景下的稳健决策</font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L">。</font></font></font></p><p cms-style="font-L"><font cms-style="font-L color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">➤ </font></font></font></font><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">金融基础模型和仿真系统开始形成专用表示</font><font cms-style="font-L strong-Bold color240">。</font></font></font></font></font></p><p cms-style="font-L"><font cms-style="font-L"><font cms-style="font-L">Kronos、DigMA、CTBench等工作分别从K线tokenizer、情景化市场仿真和生成数据评测切入，说明金融数据不能简单视为普通时间序列，模型设计需要嵌入市场结构</font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L">。</font></font></p><p cms-style="font-L"><font cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240">➤ </font></font></font><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">金融大模型评测结果仍偏谨慎</font><font cms-style="font-L strong-Bold color240">。</font></font></font></font></font></p><p cms-style="font-L"><font cms-style="font-L"><font cms-style="font-L">EDINET-Bench、FinSearchComp、FinMMDocR等研究表明，通用大模型在复杂财报理解、跨文档检索和多步金融推理中仍有明显短板，短期更适合作为投研辅助工具，而非替代分析师判断</font></font><font cms-style="font-L"><font cms-style="font-L">。</font></font></p><p cms-style="font-L"></p><p cms-style="font-L strong-Bold align-Center color210">01</p><p cms-style="font-L strong-Bold color210">引言</p><p cms-style="font-L"><font cms-style="font-L">CHAPTE</font><font cms-style="font-L"><font cms-style="font-L">R</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">截至2026年7月，AI与量化金融研究呈现出由“直接迁移通用模型”转向“围绕金融约束重构模型”的明显趋势</font><font cms-style="font-L">。大语言模型、强化学习和Transformer不再被简单嵌入交易任务，而是根据金融场景对延迟、回测有效性、非平稳性、交易成本和可解释性的要求，重新设计其在策略研发、信号建模、组合决策和风险控制中的功能。只有将这些约束纳入模型设计和部署流程，通用模型能力才可能转化为可复现、可评估和可落地的投研工具。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">本文聚焦AAAI2026与ICLR2026主会及相关金融AI Workshop论文，对</font>上述两个会议的<font cms-style="font-L strong-Bold">量化金融前沿研究进行阶段性梳理</font><font cms-style="font-L">。AAAI、ICLR、ICML与IJCAI是人工智能与机器学习领域的重要顶级会议。目前，基于已取得的AAAI2026、ICLR2026及ICML2026相关公开论文，本报告仅对AAAI与ICLR展开分析，重点覆盖以下八个方向：</font></font></p><ul cms-style="ul"><li cms-style="li"><p cms-style="font-L strong-Bold">LLM交易智能体与技术面推理</p></li><li cms-style="li"><p cms-style="font-L strong-Bold">Alpha因子挖掘与评估</p></li><li cms-style="li"><p cms-style="font-L strong-Bold">深度学习</p></li><li cms-style="li"><p cms-style="font-L strong-Bold">强化学习的泛化与市场情境自适应</p></li><li cms-style="li"><p cms-style="font-L strong-Bold">金融基础模型与市场仿真</p></li><li cms-style="li"><p cms-style="font-L strong-Bold">端到端决策与模型约束</p></li><li cms-style="li"><p cms-style="font-L strong-Bold">模型可靠性与安全评估</p></li><li cms-style="li"><p cms-style="font-L strong-Bold">金融大模型评测与投研流程自动化</p></li></ul><font cms-style="font-L"><p cms-style="font-L strong-Bold align-Center color210">02</p><p cms-style="font-L strong-Bold color210">前沿方向梳理</p><p cms-style="font-L">CHAPTER</p><p cms-style="font-L"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">2.1 </font><font cms-style="font-L strong-Bold color240">LLM交易智能体与技术面推理</font></font></p><p cms-style="font-L">从所梳理论文看，LLM在量化交易中的价值更多体现为对策略研发、代码生成、语义校验和可解释推理等环节的辅助，而非直接承担交易下单功能。</p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.1.1 </font><font cms-style="font-L strong-Bold">Trade in Minutes! (TiMi，ICLR2026)</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：TiMi讨论的是LLM交易智能体如何真正进入量化执行场景。</font><font cms-style="font-L">既有研究常把大模型包装成“分析师”或“交易员”，依赖新闻、观点和角色扮演来给出买卖建议，但这会带来情绪化表达、外围信息滞后以及在线推理延迟等问题。该研究希望把大模型的语义理解、代码生成和数学反思能力用于策略研发，而把分钟级交易执行交还给稳定、可复现、低延迟的程序化模块。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：TiMi将系统拆成离线策略研发和在线分钟级执行两个阶段。</font><font cms-style="font-L">离线阶段由多个专长不同的LLM智能体协作完成宏观模式识别、微观交易规则定制、代码实现和参数约束设定，并通过回测结果触发反思，不断修正策略逻辑、风控阈值和执行细节；在策略稳定后，系统把策略蒸馏为可直接运行的交易程序，使在线阶段不再持续调用大模型。在线阶段只执行已固化的代码，根据最新行情快速完成信号计算、仓位调整和风险控制，回测与模拟部署反馈再回流到离线环节，形成“生成-验证-修正-部署”的闭环。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：实验覆盖股票和加密货币市场的200多个交易对，结果显示TiMi在盈利稳定性、动作效率和风险控制上均优于单纯依赖在线LLM推理的交易智能体。</font><font cms-style="font-L">它的启示在于，金融场景不应简单追求“让大模型直接下单”，而应让大模型承担策略发现和工程化迭代，把真实交易中最敏感的延迟、复现和风控问题交给确定性程序处理。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/55/w1080h575/20260716/4c7d-8410cc4689982cd73e596a6485baa33c.png" cms-width="1080" cms-height="575" id="1"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.1.2 </font><font cms-style="font-L strong-Bold">Reasoning on Time-Series for Financial Technical Analysis（ICLR2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：VTA关注的是LLM能否参与技术分析，而不是只处理财报、新闻和研报等文本材料。</font><font cms-style="font-L">金融价格序列本身包含趋势、动量、超买超卖等可解释信号，但原始数值序列很难直接被LLM稳定理解。该研究希望在“数值预测”和“自然语言推理”之间搭桥，使模型既能输出更准确的时间序列预测，也能给出贴近分析师习惯的技术解释。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：VTA（Verbal Technical Analysis，语言化技术分析）是论文提出的核心框架，思路是让LLM先用自然语言完成一段技术分析、再用这段分析去驱动价格预测</font><font cms-style="font-L">。具体而言，VTA先把OHLCV价格序列转化为MACD、RSI等技术指标及其自然语言注释，让LLM围绕趋势强弱、动量变化和关键价量关系生成可读的技术分析轨迹；随后，框架通过联合条件训练，从推理模型生成的时间序列结果中提取最大值、最小值和均值等，并将其与时序骨干模型的预测结果结合，生成条件化的价格预测。训练阶段以逆均方误差构造奖励，使预测误差越小的推理轨迹获得越高奖励；实验还邀请具有金融市场分析经验的行业专家，对模型生成的推理与预测进行盲评，以检验其在清晰度、分析深度、准确性、连贯性和相关性等方面的表现。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：在美国、中国和欧洲股票数据上的实验表明，VTA能在保持可解释技术分析的同时提升预测准确率</font><font cms-style="font-L">。它补充了TiMi这类执行型智能体的另一侧：大模型未必适合承担低延迟下单模块，但可以作为信号诊断、技术面归因和投研沟通工具，帮助研究员理解模型为何看多、看空或保持谨慎。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/69/w1080h589/20260716/476a-a1d12e4738e8ea17653612982527a945.png" cms-width="1080" cms-height="589" id="2"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">2.2 </font></font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">Alpha因子挖掘与评估体系</font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L">Alpha因子挖掘是LLM较易嵌入量化流程的场景，其核心价值主要体现在公式生成、搜索引导和语义评估三个环节</font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L">。</font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.2.1 </font><font cms-style="font-L strong-Bold">Navigating the Alpha Jungle（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：该研究面向公式化Alpha因子挖掘中的两项长期难题</font><font cms-style="font-L">：一是候选公式空间组合爆炸，传统遗传规划或强化学习搜索效率不高；二是自动生成的因子常常像“黑箱公式”，虽然可能短期有效，却难以解释、复用和纳入投研库。论文希望利用LLM的语义理解与推理能力，提高符号因子搜索的方向感，同时保留回测指标对因子质量的硬约束。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：框架把因子挖掘组织成LLM与蒙特卡洛树搜索协同的迭代流程</font><font cms-style="font-L">。每个节点对应一条候选因子公式，LLM根据当前公式、可用字段、算子库和历史高质量因子提出修改方向；MCTS则依据回测反馈选择更值得深入探索的分支。候选因子被放入统一回测器中计算预测能力、稳定性、换手率，与已有因子的相关性以及过拟合风险等指标，客观分数再反向指导树搜索。论文还设计了频繁子树规避机制，避免搜索反复生成结构相近的公式，从而提高因子库的多样性。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：在真实股票市场数据上的实验显示，该框架能够挖掘出预测能力和交易表现更好的公式化因子，并且相比纯自动搜索方法更容易被研究员理解</font><font cms-style="font-L">。它的价值不只是“多找几个高分因子”，而是把因子生成、回测反馈、相似度控制和人工可解释性放进同一条流水线，更接近实际量化团队维护AlphaZoo的工作方式。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/178/w1080h698/20260716/e27f-2bbf8fd948e035bee1799e264f9c9496.png" cms-width="1080" cms-height="698" id="3"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.2.2 </font><font cms-style="font-L strong-Bold">AlphaAgentEvo（ICLR2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：AlphaAgentEvo将Alpha挖掘从一次性搜索推进到持续进化</font><font cms-style="font-L">。传统方法往往遵循“生成-回测-失败后重来”的循环，模型很难从失败经验中沉淀规律，也难以形成长周期规划能力。该研究希望让智能体在多轮因子演化中积累经验，学会如何修正公式、何时保留结构、何时探索新方向，从而提高因子搜索的连续性和样本效率。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：论文提出自进化的Agentic Reinforcement Learning框架，以层级奖励引导智能体逐步学习</font><font cms-style="font-L">。低层奖励先保证工具调用、公式合法性和基础回测流程正确；更高层奖励再关注因子表现的持续改善、跨市场可迁移性和多样性。智能体在每一轮根据历史尝试、回测指标和失败原因进行反思，形成新的修改计划，再调用算子库与数据接口生成下一批候选因子。这样的过程使搜索不再是独立试错，而是沿着可解释的演化轨迹逐步优化。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：实验表明，AlphaAgentEvo能比多种进化搜索和LLM驱动方法更高效地产生多样、可迁移的Alpha</font><font cms-style="font-L">。值得注意的是，论文报告一个参数规模较小的开源模型经过该框架训练后，也能超过部分调用闭源强推理模型的方案，说明Alpha挖掘的关键不只在基础模型规模，更在于是否把回测反馈、长期规划和反思机制设计成稳定的学习过程。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/42/w1080h562/20260716/f019-3bdcb2b4ccb8eb9d00aa8f52745987d1.png" cms-width="1080" cms-height="562" id="4"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.2.3 </font><font cms-style="font-L strong-Bold">AlphaSAGE（ICLR2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：AlphaSAGE针对的是强化学习式因子挖掘容易“塌缩”的问题</font><font cms-style="font-L">。量化实务中通常需要一组预测能力强、彼此低相关、经济含义不重复的因子，而普通RL往往会把策略推向少数高奖励公式，导致搜索结果同质化。论文希望在公式结构表示、探索目标和奖励设计上同时改造，使模型能在高质量区域保持多峰探索。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：AlphaSAGE通过语法树表示、GFlowNet采样和多目标奖励，在多个高质量公式模式之间保持结构化探索</font><font cms-style="font-L">。具体而言，框架首先把每条公式表示为语法树，并用关系图卷积网络编码算子、变量和层级关系，使模型理解公式的结构语义，而不是将公式当作线性Token串处理。其次，框架引入GFlowNet，使公式被采样的概率与其综合奖励成比例，从而在多个高价值模式之间分配概率质量。奖励函数不仅考虑预测能力，还纳入结构对齐、新颖性和与已有因子的差异度，以缓解稀疏奖励和单一最优模式带来的探索不稳定。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：实验结果显示，AlphaSAGE在预测性、多样性和新颖性上均优于传统强化学习和遗传搜索基线</font><font cms-style="font-L">。它的重要性在于把Alpha挖掘从“追求最高分公式”转为“构造可组合的因子集合”，更符合多因子组合、风险分散和长期因子维护的实际需求。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/53/w1080h573/20260716/dad8-a77aede285c3ee59640cf3ee791dce70.png" cms-width="1080" cms-height="573" id="5"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.2.4 </font><font cms-style="font-L strong-Bold">AlphaBench（ICLR2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：AlphaBench不提出新的因子生成算法，而是为LLM参与公式化Alpha挖掘建立可比较的评测体系</font><font cms-style="font-L">。现有研究在数据范围、提示模板、回测设定和搜索流程上差异很大，导致不同方法的结果难以横向判断。该研究希望把研究员日常工作中的因子生成、因子评价和因子搜索拆解成标准任务，明确LLM在各环节的优缺点。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：AlphaBench将公式化Alpha挖掘拆成三类核心任务：因子生成、因子评价和因子搜索</font><font cms-style="font-L">。因子生成考察模型能否按照字段与算子约束写出有效公式；因子评价考察模型能否判断因子的经济含义、稳定性和潜在风险；因子搜索则考察模型能否在多轮反馈中持续改进。论文在统一数据、提示和回测口径下评估不同开源与闭源LLM，并比较思维链、思维树、经验链和进化式搜索等提示与推理策略的差异。这样可以把模型能力、提示范式和搜索机制分开观察，避免把流程差异误判为模型差异。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：LLM在自动化因子挖掘中确有潜力，但在稳健性、搜索效率和实际可部署性上仍存在短板</font><font cms-style="font-L">。AlphaBench的贡献在于给这一方向提供了“量尺”：未来新算法不应只展示少数回测结果，而应说明其在生成、评估、搜索三个环节分别改进了什么，以及这些改进能否在统一口径下稳定复现。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/57/w1080h577/20260716/6a93-b32b31a00428f101853bfb5e069a3d9f.png" cms-width="1080" cms-height="577" id="6"/><span class="img_descr"></span></div></font><p cms-style="font-L"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">2.3 </font><font cms-style="font-L strong-Bold color240">深度学习表征、多模态预测与量化信号建模</font><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"></font></font></font></font></font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.3.1 </font><font cms-style="font-L strong-Bold">Text to Alpha（ICLR2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：论文考察LLM能否比命名实体识别或关键词匹配更准确地识别企业披露中管理层关注重点的跨期变化</font><font cms-style="font-L">。传统方法常用命名实体识别或关键词匹配从企业披露文本中提取业绩指标，既无法保留上下文，也难以识别表述不同但语义等价的指标，导致对管理层强调重点变化的刻画失真。已有研究表明，管理层跨期转移强调指标对未来收益具有预测力；本文探讨LLM能否更准确地捕捉这种“移动目标”式的语义漂移。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：该研究采用“LLM提取、嵌入度量”的两阶段框架</font><font cms-style="font-L">。先以大模型作为提取器，对历年盈利电话会议记录做结构化抽取，输出保留上下文限定的业绩指标集合；再用文本嵌入模型将各指标映射到共享向量空间，通过当期与上年同期指标集的最大余弦相似度匹配计算跨期“持续率”，并以其补数定义移动目标得分——数值越高，代表管理层越大幅偏离历史强调重点。最后据该得分构建五分位多空组合，以Fama-French因子模型检验其超额收益，并与命名实体识别基准对照。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：在论文样本和设定下，基于LLM提取构建的移动目标组合在多因子调整后仍具有显著超额收益</font><font cms-style="font-L">，明显优于统计上并不显著的命名实体识别基准，表明大模型能捕捉后者遗漏的语义等价与上下文信息。对投研而言，该框架提供了一种从公开财报文本前置识别管理层战略重心漂移的文本因子，可用作基本面选股或风险预警的补充信号。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/110/w1080h630/20260716/4c02-1f9cc7e9b372bd5bb0acfc002b49a090.png" cms-width="1080" cms-height="630" id="7"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.3.2 </font><font cms-style="font-L strong-Bold">Relational Probing（ICLR2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：Relational Probing旨在通过可端到端训练的轻量适配机制，直接从语言模型内部表示中构建股票关系图，并使其与下游预测目标对齐</font><font cms-style="font-L">。现有基于LLM的金融关系图构建，多依赖自回归解码生成结构化文本、再解析为图，推理延迟高、格式易错，且图构建与下游预测目标相互脱节；提示工程在多重约束下的稳定性也不足。Relational Probing探讨能否用一种可端到端训练的轻量适配机制，直接从语言模型的内部表示中诱导出股票关系图，并与预测目标对齐。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：Relational Probing框架以带股票代码标注的金融新闻为输入，先由语言模型主干编码得到逐token的隐层表示；再由一个轻量Relation Head以可学习的股票嵌入为查询、隐层表示为键值，通过注意力与双线性打分得到股票两两关联强度，跨当日新闻聚合并阈值化后形成当日有向加权关系图</font><font cms-style="font-L">。该动态图与历史价量特征一并输入图注意力网络，输出个股涨跌趋势分类。训练时，下游预测损失的梯度端到端回传至Relation Head乃至语言模型，使关系归纳与预测目标显式对齐，省去人工解析环节。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：在股票趋势分类任务上，该框架诱导的关系图在多项抗类别失衡指标上均优于词共现基线，且增益随主要模型规模扩大而提升</font><font cms-style="font-L">。对投研流程而言，它把文本理解、关系归纳与趋势预测整合为一个可微目标，消除了提示解析环节，并可在单卡上完成全量微调，为新闻驱动的动态关系图构建提供了稳健且低成本的落地路径。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/51/w1080h571/20260716/e066-dc964fc73fe611da2147c839073a3520.png" cms-width="1080" cms-height="571" id="8"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.3.3 </font><font cms-style="font-L strong-Bold">GAP-TGN（ICLR2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：GAP-TGN旨在把议员与企业之间的关系网络纳入国会交易预测，以识别可能带来超额收益的结构性信息渠道</font><font cms-style="font-L">。国会议员因监管权限与委员会任职形成的信息优势，长期引发市场公平性争议。既有研究多以孤立的时序信号分析其交易，忽视游说、竞选捐款与地理关联等结构性背景；金融场景下较长的收益结算窗口，也使标准时序图模型在预测期内依赖过时的节点表征。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：GAP-TGN将多模态时序图、门控融合和异步传播结合起来，统一建模政治关系、市场特征与滞后收益标签</font><font cms-style="font-L">。作者将议员交易、游说关系、竞选捐款与企业基本面编码为随时间演化的议员-企业二部图，各边按公开披露时间戳对齐，以防止前视偏差。模型先分别编码每笔交易的成交属性与市场技术特征，再经图注意力聚合历史邻居信息，得到节点的结构嵌入；随后由门控多模态融合层动态权衡结构信号与市场动量的贡献，判断该笔交易能否跑赢大盘。为应对收益结算滞后，框架对尚未结算的交易赋予潜在标签，并持续更新节点记忆，避免因丢弃未标注交互而截断信息。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：在较长的评估窗口下，该模型在正样本识别的稳定性上明显优于树模型基线，验证了关系位置特征可作为“政治Alpha”的领先指标</font><font cms-style="font-L">。对投研流程而言，它提供了一种将议员-企业结构性关联前置为决策约束的信号挖掘思路，可用于监测政治信息渠道与辅助异常交易预警。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/263/w1080h783/20260716/ccc4-145276cce0379fe0df54ecdf21aa84bc.png" cms-width="1080" cms-height="783" id="9"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.3.4 </font><font cms-style="font-L strong-Bold">FinZero（AAAI2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：FinZero旨在同时解决金融时序预测中的信息损耗、跨资产泛化受限和置信度缺失问题</font><font cms-style="font-L">。现有金融时序预测多依赖数值标准化编码，会损失原始序列的局部形态信息，固定的窗口长度与变量维度也限制了跨资产泛化；同时模型输出普遍缺乏可解释的不确定性度量，难以直接支撑带风险约束的决策。FinZero针对信息损耗、泛化受限与置信度缺失这三重痛点，尝试以多模态推理模型重构时序预测。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：FinZero采用“时序图像化+不确定性调整强化学习”的两阶段框架，同时学习涨跌方向和预测置信度</font><font cms-style="font-L">。该研究先把价格、成交量与技术指标构成的金融时序转化为标准化图像，并配以文本描述与预测问题，构建跨资产、跨频率的多模态图文数据集；再以多模态大模型为主干，通过不确定性调整强化学习算法进行微调。该算法在分组相对策略优化的基础上引入组内与跨组两层相对优势估计，并以模型自评的置信度对优势加权，使高置信输出获得更强激励；奖励函数同时考虑预测准确性、推理文本质量与输出格式。最终，模型逐条给出涨跌方向及可量化的置信度，供下游按阈值筛选高质量信号。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：FinZero以较小的参数量在价格与波动率方向预测上超过了更大的通用多模态模型，且其置信度评分与实际准确率显著正相关，高置信子集的准确率明显更高</font><font cms-style="font-L">。对投研流程而言，它把预测的不确定性前置为决策约束——通过置信度阈值过滤低质量信号，可在不额外依赖估值模型的情况下有助于获得更稳健的方向性交易信号。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/730/w1080h450/20260716/19ba-b759c7caa20a1ead3dacbb921c22a36b.png" cms-width="1080" cms-height="450" id="10"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.3.5 </font><font cms-style="font-L strong-Bold">Diffusion Copulas（ICLR2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：多资产联合预测中，端到端扩散模型普遍存在“正态性偏差”</font><font cms-style="font-L">：以共享评分函数联合训练时，边际分布的校准质量被牺牲，尾部风险被系统性低估，市场同步下跌这类极端联合事件常被误判为几乎不可能发生。对风险计量而言，这意味着VaR、ES等指标在市场大幅波动和风险传导阶段的有效性可能下降。该研究把边际分布与依赖结构分开建模，使预测分布同时保留重尾边际与非高斯联合依赖。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：Diffusion Copulas先独立建模各资产的重尾边际，再在Copula尺度上学习资产间的非高斯依赖</font><font cms-style="font-L">。框架分两阶段。先对各资产边际独立建模：以历史窗口拼接波动率、趋势强度等条件特征，用混合密度网络输出Normal、Laplace、Student-t的动态混合参数，保证边际具备重尾覆盖能力；再将各资产边际CDF值经概率积分变换映射到单位超立方体，在Copula尺度上引入分类-扩散模型——前向扩散逐步破坏样本间的依赖结构，训练分类器区分“依赖态”与“独立噪声”，其密度比即为Copula密度的近似。采样时以Langevin动力学抽取联合样本，再经各资产逆CDF还原为收益率，得到重尾边际与非高斯依赖兼备的多变量预测分布。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：在加密货币高频数据上，该框架在边际校准与联合极端事件预测两个维度均优于端到端扩散基线，能把市场同步崩跌识别为“可预期的下跌”而非“黑天鹅”</font><font cms-style="font-L">。对投研流程而言，它把系统性扩散风险显式写入预测分布，为尾部敏感的组合构建、多资产ES估计和压力测试情景生成提供了更可靠的分布基础。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/160/w1080h680/20260716/8449-4e98751d5b81784779dd29a7a169be24.png" cms-width="1080" cms-height="680" id="11"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.3.6 </font><font cms-style="font-L strong-Bold">WaveLSFormer（ICLR2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：WaveLSFormer旨在将可学习的频率分解与交易决策纳入统一框架，并直接以风险调整后收益为优化目标</font><font cms-style="font-L">。金融时序建模长期存在两处脱节：一是模型多以均方误差等点预测损失为目标，与策略实际盈亏路径错位，预测得准不等于交易得好；二是主流小波-神经网络方案把固定小波变换当作预处理，频带划分无法随下游交易目标调整，高频噪声还容易干扰稳定的低频趋势表征。WaveLSFormer希望把频率分解与交易决策放进同一个可学习框架，直接以风险调整后收益为优化目标。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：WaveLSFormer通过可训练频率分解、跨频门控融合和收益导向损失，将多资产时序表征直接映射为多空仓位</font><font cms-style="font-L">。模型以行业内多资产的小时级收益率为输入，先经DTW相似度与非参数Granger因果检验，筛选与目标资产存在显著预测关系的辅助序列；随后由两组可训练的FIR卷积核分别充当低通和高通滤波器，并在频域施加频带分离、能量守恒等谱正则，将序列拆分为低频趋势与高频残差两条支路。跨频融合采用“低频引导、高频注入”的设计：注意力权重仅由低频表征计算，高频信息经门控残差按可学习比例注入，避免噪声主导趋势判断。融合表征经Transformer编码后直接输出多空仓位，训练目标由软标签交叉熵、ROI过拟合惩罚与Sharpe正则共同构成，使模型优化目标与部署指标保持一致。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：在美股多行业五年的小时级数据上，WaveLSFormer相比原始Transformer将平均ROI与Sharpe比率大幅提升</font><font cms-style="font-L">，并在论文覆盖的行业组与主干网络组合下一致优于带固定小波前端的MLP、LSTM与Transformer基线，最大回撤同步收窄。对投研流程而言，它展示了把频率分解、信号生成与风险约束统一进端到端训练的可行路径；但其评估尚未计入交易成本与市场冲击，实盘迁移仍需谨慎验证。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/35/w1080h555/20260716/ee5e-e205c7558c20a7f6d3e44e46b0976db9.png" cms-width="1080" cms-height="555" id="12"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">2.4 </font></font></font></font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">强化学习的泛化与市场情境自适应</font></font></font></font></font></font></font></p><p cms-style="font-L">泛化仍是强化学习在量化交易中的核心难题。</p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.4.1 </font><font cms-style="font-L strong-Bold">MetaTrader（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：MetaTrader关注强化学习交易策略的泛化问题</font><font cms-style="font-L">。许多离线RL策略在历史数据上表现很好，但本质上是在记忆训练区间中的最优买卖路径，一旦市场结构、趋势方向或波动状态变化，就会产生价值高估和动作失真。该研究希望把组合优化重新定义为部分离线强化学习问题，让策略在训练阶段就面对分布外市场情境。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：论文设计双层学习框架</font><font cms-style="font-L">：内层在原始历史数据上优化组合收益，外层则通过多种市场变换构造训练集外场景，例如反转强势资产价格、反向整体市场趋势以及对时间序列降采样等，使智能体必须在被扰动的环境中保持有效。针对离线数据有限时常见的价值过估计问题，MetaTrader进一步提出保守的TD估计方法，从一组变换后的TD目标中近似最坏情况目标，用更谨慎的价值更新约束策略学习。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：在两个公开股票数据集上的结果表明，MetaTrader相比传统RL交易模型和“预测后买入”的固定规则有更好的样本外表现</font><font cms-style="font-L">。它强调的不是在一段历史回测中榨取最高收益，而是在训练时主动暴露策略弱点，使模型学到更能穿越市场状态变化的决策规律。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/774/w1080h494/20260716/30e7-c2527e0acf101087328513d9b93b2103.png" cms-width="1080" cms-height="494" id="13"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.4.2 </font><font cms-style="font-L strong-Bold">ArchetypeTrader（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：ArchetypeTrader试图解决市场状态切换下策略选择粗糙的问题</font><font cms-style="font-L">。过去常用趋势、波动率等人工标签划分市场，再训练不同子策略，但这些标签很难覆盖真实行情中的复杂交易情境。论文希望从专家轨迹中学习更细致的“策略原型”，让强化学习智能体在面对新行情时先识别可借鉴的交易模式，再进行局部修正。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：ArchetypeTrader依次完成策略原型提取、市场情境匹配和局部修正，在复用专家经验的同时保留对当前行情的适应能力</font><font cms-style="font-L">。系统先从历史专家交易轨迹中抽取若干离散的战略原型，每个原型对应一类可复用的交易方法，而不是简单的牛市、熊市或高波动标签。运行时，系统根据当前市场特征选择最匹配的原型，再由RL智能体在原型动作的基础上调整仓位、交易方向和执行强度。该设计既保留了专家轨迹中的策略经验，也允许模型根据当前行情偏离原型，避免机械复制历史动作。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：ArchetypeTrader提供了一种更可解释的策略迁移路径</font><font cms-style="font-L">：模型表现不再只由一个黑箱策略网络决定，而可以追溯到“当前选择了哪类原型、又做了怎样的修正”。对实务而言，这有助于研究员理解同一策略在不同市场阶段为何失效或恢复，也有助于把策略切换从人工规则推进到可学习的原型选择。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/52/w1080h572/20260716/76b9-7b496c7b6cd13c9b0f93324dbdbb7c06.png" cms-width="1080" cms-height="572" id="14"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.4.3 </font><font cms-style="font-L strong-Bold">MARS（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：MARS把强化学习组合管理中的两个问题放在一起处理</font><font cms-style="font-L">：一是金融市场非平稳，单一策略在环境切换时容易失效；二是风险管理常被写成事后惩罚，无法在决策当下主动约束尾部风险。论文希望构建一个由多类风险偏好智能体组成的系统，让组合能在不同市场状态中动态调配激进与保守策略。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：MARS以异构风险偏好智能体和元自适应控制器构成双层架构，在不同市场状态下动态平衡进攻与防守</font><font cms-style="font-L">。底层由具有不同风险画像的智能体组成，覆盖资本保护型到增长进攻型等不同策略。每个智能体配有Safety-Critic网络，用于评估自身动作可能带来的风险，并在风险超过阈值时对策略梯度施加约束。上层的Meta-Adaptive Controller根据实时市场状态、收益风险表现和各智能体的适配程度动态分配权重，使组合在牛市中更多调用进攻策略，在回撤或高波动阶段转向保守策略。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：在多个主要国际指数上的实验显示，MARS能显著降低最大回撤和波动，同时保持有竞争力的收益</font><font cms-style="font-L">。与MetaTrader强调训练阶段泛化、ArchetypeTrader强调原型选择不同，MARS的重点在于在线组合多类风险偏好，使风险管理从单一奖励项变成系统结构的一部分。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/718/w1080h438/20260716/b0bb-dbb1e414fa80b15bd90cd3bbb2a60db7.png" cms-width="1080" cms-height="438" id="15"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.4.4 </font><font cms-style="font-L strong-Bold">Multiagent RL for Liquidity Games（AAAI2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究目的：该研究旨在解释分散、自利且无法通信的债券交易参与者，能否通过局部激励共同提升市场流动性</font><font cms-style="font-L">。场外债券市场的流动性依赖大量异质参与者的分散报价，但现有模型往往只刻画微观结构约束，或依赖集中协调，难以解释个体利益与市场整体成交目标如何兼容。论文由此聚焦个体激励与市场整体成交最大化之间的关系，考察局部学习信号能否支持系统级流动性目标。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究方法：该研究以差分奖励衡量单个智能体对全局成交量的边际贡献，从而把系统级流动性目标分解为可独立学习的局部激励</font><font cms-style="font-L">。研究将双边债券交易建模为Markov团队博弈：每位智能体在随机配对后私下报出成交量，由清算规则决定实际成交，并以全市场累计成交量作为系统级目标。各智能体以自身持仓为状态、报价量为动作，仅凭差分奖励采用表格式Q-learning更新，全程不进行跨智能体通信。论文分别在精确匹配和允许部分成交两种清算规则下，与本地奖励、全局奖励及非学习基准进行对照。</font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold">研究结论：采用差分奖励的智能体在允许部分成交的环境下实现了最高的总流动性与单体吞吐，明显优于本地奖励、全局奖励及非学习基准，并在严格匹配下更快收敛到较高的成交命中率</font><font cms-style="font-L">。对投研而言，该框架提供了一种激励相容的流动性建模范式，可用于量化个体参与者对市场整体流动性的边际贡献，为市场机制设计与压力情景分析提供参考。</font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/688/w964h1324/20260716/8185-bb6fb083d9885568b628301343e05916.png" cms-width="566" cms-height="777" id="16"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold">整体来看，强化学习相关的量化研究正在从静态回测转向动态适应</font><font cms-style="font-L">。模型不应只在一段历史数据上最大化收益，更应在扰动、市场状态切换和分布迁移下保持稳健。对实际投研流程而言，训练阶段需要引入压力场景，评估阶段也要关注跨阶段稳定性，而不只是单期夏普比。</font></p><p cms-style="font-L"><font cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">2.5 </font></font></font></font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">金融基础模型与市场仿真</font></font></font></font></font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.5.1 </font><font cms-style="font-L strong-Bold">Kronos（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：Kronos尝试为金融K线建立类似“金融市场语言模型”的基础模型</font><font cms-style="font-L">。通用时间序列基础模型在金融行情上往往不如专用模型，原因在于价格、成交量、波动和订单活动共同构成市场语言，不能简单视作普通传感器序列。论文希望通过专用tokenizer和大规模预训练，让模型掌握跨资产、跨市场的K线表示。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：Kronos通过专用离散化Tokenizer和大规模自回归预训练，构建可跨资产、跨市场迁移的K线基础表示</font><font cms-style="font-L">。模型首先将连续的价格动态和交易活跃度压缩为Token序列，相当于为行情数据构建一套金融“词表”；随后在来自45个全球交易所、超过120亿条K线记录的大规模数据上进行自回归预训练，学习价格形态、成交量变化和跨资产共性。预训练后的模型可通过零样本或少量适配方式，迁移至价格预测、收益预测、波动率预测、K线生成和投资模拟等任务。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：论文在Rank IC、波动率预测误差和合成K线保真度等指标上均优于多类基线，显示大规模预训练在金融时序任务中开始具备通用底座价值</font><font cms-style="font-L">。其意义在于，金融基础模型不只是把文本大模型迁移到投研文档，还可以直接从行情数据中学习“市场语言”，为预测、生成和策略仿真提供统一表征。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/55/w1080h575/20260716/aaa0-a04855a0ee0957957ff1d080d43236e6.png" cms-width="1080" cms-height="575" id="17"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.5.2 </font><font cms-style="font-L strong-Bold">Controllable Financial Market Generation with Diffusion Guided Meta Agent（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：DigMA旨在生成既符合市场微观结构、又可按指定情景调节的订单流</font><font cms-style="font-L">。金融市场的核心问题是如何生成既逼真又能按指定情景调节的订单流。传统基于规则的市场仿真依赖手工假设，难以贴近真实市场微观结构；纯学习式生成又常缺乏控制能力。该研究希望构建一个能够指定高波动、低流动性等市场状态的生成环境，用于高频策略训练、压力测试和市场机制研究。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：DigMA将市场生成拆成“状态分布生成”和“订单流生成”两个环节</font><font cms-style="font-L">。首先，条件扩散模型刻画中间价收益率、订单到达率等市场状态参数随时间演化的分布，并根据目标情景生成对应的市场状态路径；随后，一个带金融经济先验的元代理从这些状态分布中采样并生成逐笔订单，使订单流既服从生成模型给出的统计状态，又遵循买卖报价、成交和订单到达等市场微观规则。生成出的订单流可被回放成完整市场环境，用于下游高频交易任务测试。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：实验显示，DigMA在生成保真度和情景可控性上优于已有市场仿真方法，并能作为高频交易任务的生成式训练环境</font><font cms-style="font-L">。它说明金融生成模型的实用价值不只在“造数据”，还在于可按目标风险情景重放市场，从而帮助策略在真实极端行情到来前完成压力检验。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/799/w1080h519/20260716/1d95-e6cc04db058d199d7108e549d0e9f948.png" cms-width="1080" cms-height="519" id="18"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.5.3 </font><font cms-style="font-L strong-Bold">CTBench（ICLR2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：CTBench旨在同时评估加密时间序列生成的统计保真度和交易可用性</font><font cms-style="font-L">。加密市场24小时交易、波动剧烈、环境切换快，通用时间序列生成评测往往只看统计相似度，不能说明生成数据是否真的可用于预测、套利或风险评估。论文希望把生成质量与交易可用性一起纳入考察，避免模型生成“看起来像”的序列却无法服务策略开发。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：CTBench构建了覆盖452个加密代币的开源数据集，并从5个维度设计13项指标，涵盖预测准确性、排序保真度、交易表现、风险评估和计算效率</font><font cms-style="font-L">。评测框架包括两类下游任务：Predictive Utility用于检验合成数据是否保留时间依赖和横截面关系，Statistical Arbitrage用于检验重构序列是否支持均值回复型交易信号。论文比较了5个方法家族中的8类代表模型，并在4种市场状态下分析模型表现差异。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：统计拟合好并不必然带来可交易性，不同生成模型在保真度、风险刻画和下游收益之间存在明显取舍</font><font cms-style="font-L">。CTBench的价值在于把金融时序生成从单纯分布匹配推进到“生成数据能否支撑策略”的层面，也提醒研究者在评估金融生成模型时必须纳入市场环境和交易目标。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/792/w1080h512/20260716/7280-b8f98a7305faccd14addf5cc8bb53128.png" cms-width="1080" cms-height="512" id="19"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">2.6 </font></font></font></font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">端到端决策与模型约束</font></font></font></font></font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">本节两篇论文的共同思路，是将金融动力学、参数稳定性、预测不确定性和投资约束显式纳入模型，使输出更容易接入定价与组合配置流程</font><font cms-style="font-L">。传统量化流程通常将预测与决策分开：先预测收益，再进行组合优化；但预测误差最小，并不意味着组合收益或风险调整后收益最优。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.6.1 </font><font cms-style="font-L strong-Bold">Physics-Informed Koopman Neural Estimation of the Heston Model（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：该研究关注Heston随机波动率模型在高频观测下的参数估计</font><font cms-style="font-L">。Heston模型能刻画资产价格与随机波动率的联合演化，但真实数据中波动率是潜变量，价格与方差过程又存在非线性耦合，导致传统估计方法容易受噪声、初值和计算成本影响。论文希望把金融工程中的连续时间结构作为先验写入神经估计框架，提高参数恢复的稳定性。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：Koopman-PINN将潜在波动率估计、Koopman线性化和Heston方程约束结合起来，在数据驱动学习中保留金融模型结构</font><font cms-style="font-L">。框架先利用非参数ART-filter从高频价格路径中估计潜在波动率，并通过矩估计法给出初始参数；随后使用神经Koopman算子，将Heston非线性动力系统映射到高维线性表示空间，以学习其连续时间演化。模型还引入基于随机微分方程无穷小生成元的损失，约束网络输出符合Heston方程的结构。由此，估计过程能够同时利用数据驱动表示和金融模型先验，减少纯黑箱拟合带来的不可解释偏差。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：在多组市场条件和参数组合上的实验表明，Koopman-PINN能稳健恢复Heston模型五个核心参数，并优于多类既有估计方法</font><font cms-style="font-L">。该工作代表了金融AI中“模型约束学习”的路线：不是用神经网络替代金融模型，而是用神经网络帮助传统模型在复杂高频数据中更稳定地校准。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/781/w1080h501/20260716/5c44-47cda22d5050fc3577298f5ad4c34e28.png" cms-width="1080" cms-height="501" id="20"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.6.2 </font><font cms-style="font-L strong-Bold">STABLE（ICLR2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：STABLE面向市场环境切换下的组合配置问题</font><font cms-style="font-L">。许多深度学习组合模型先预测未来收益，再把点预测送入优化器，这会在预测不确定性上升时把误差直接放大成仓位风险。论文希望把宏观环境、个股动态和预测不确定性一并传导到资产配置环节，使组合在不同市场状态下保持更稳健的风险收益权衡。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：STABLE将条件扩散生成的收益分布转化为Black-Litterman投资观点及其置信度，再求解风险分散后的组合权重</font><font cms-style="font-L">。模型以宏观经济环境和个股历史信号作为输入，利用条件扩散模型为每只股票生成多条未来收益路径，从而得到适应当前环境的预测收益分布和协方差结构。模型不直接输出仓位，而是将预测均值视为投资观点、将协方差视为观点置信度，并通过Black-Litterman框架与历史先验进行贝叶斯融合。当某只股票的预测不确定性较高时，其投资观点对最终配置的影响相应降低。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：</font>在基于历史数据的回测中，<font cms-style="font-L strong-Bold">论文在美国、中国、欧洲和韩国等市场上报告了更高的夏普比、更低的组合波动和回撤，同时在时间序列估计误差上也优于生成式基线</font><font cms-style="font-L">。STABLE的启示是，金融AI的落点不应停在预测精度，而要把不确定性、协方差和投资约束一并纳入决策，有助于更贴近真实组合管理。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/147/w1080h667/20260716/ad82-b2278d033be503909b5bae3671504502.png" cms-width="1080" cms-height="667" id="21"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">2.7 </font></font></font></font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">金融文本模型的鲁棒性与安全评估</font></font></font></font></font></font></p><p cms-style="font-L">金融文本模型的风险不只来自预测误差，也来自输入端的攻击与扰动。</p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.7.1 </font><font cms-style="font-L strong-Bold">Semantics-Preserving Adversarial Attacks on Event-Driven Stock Prediction Models（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：Chameleon Attack检验事件驱动股票预测模型在金融文本输入端的对抗鲁棒性</font><font cms-style="font-L">。金融新闻、公告和社交文本往往会被模型直接用于情绪分析或股价预测，一旦攻击者能在不改变语义的情况下操纵措辞，就可能诱导模型输出错误信号。该研究说明金融LLM与事件驱动预测模型面临的安全风险不只是预测误差，还包括不改变原意且难以察觉的文本攻击。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：Chameleon Attack通过潜在空间扰动搜索与语义回译两阶段流程，生成能够误导模型且保持原意自然的金融文本</font><font cms-style="font-L">。论文先从理论上分析离散Token对抗优化与连续空间松弛之间的关系，说明连续优化可为离散攻击提供有效下界。第一阶段在向量空间中通过Adaptive Latent-Space Optimization搜索最能误导模型的扰动方向；第二阶段利用Semantic-Translation Module将连续扰动转换回自然语言，使生成样本在语法、流畅度和语义上尽量接近原文。攻击对象包括FinBERT等金融模型，并在FinancialPhraseBank等金融文本基准上进行评估。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：Chameleon Attack可达到较高攻击成功率，同时保持文本自然性和语义一致性</font><font cms-style="font-L">。对金融应用而言，这意味着只做常规准确率评测远远不够，新闻驱动预测、情绪因子和自动研报系统都需要纳入对抗样本、输入校验和鲁棒训练，否则模型可能在看似正常的措辞变化下发生方向性误判。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/147/w1080h667/20260716/1224-a1e2e8a2a232e698a296f40bd162b05e.png" cms-width="1080" cms-height="667" id="22"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.7.2 </font><font cms-style="font-L strong-Bold">CAIA（AAAI2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：CAIA利用加密货币市场的对抗性和可核验性，评估大模型智能体在高风险、不可逆决策场景中的稳健性</font><font cms-style="font-L">。现有AI基准多在可信、合作的封闭环境中衡量任务完成率，难以反映真实部署中的对抗性错误信息、不可逆损失与信息碎片化的挑战。加密货币市场兼具主动欺骗、即时财务后果与链上可核查真相三重属性，构成极端的对抗性测试场域。CAIA以此为背景，检验前沿大模型智能体在高风险、不可逆决策场景下的稳健性。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：CAIA通过可核验的高风险金融任务和工具调用实验，系统评估大模型在对抗环境中的准确性、成本与失效模式</font><font cms-style="font-L">。基准从大量社区提交的真实分析查询出发，经过自动化过滤、领域专家复评、格式标准化与可复现真相校验，形成涵盖链上分析、项目调研和代币经济学等类别的高质量任务。每道题均绑定可通过工具核验的答案，并锚定到区块高度或时间戳，以降低训练数据污染的影响。评测分别设置“有工具”和“无工具”两种条件，让多款主流大模型在标准化推理-行动框架下多次运行，并以多数投票准确率为主指标，同时记录一次通过率、多次通过率、单题成本及工具调用失效模式。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：无工具时各模型准确率仅一两成，配备专业工具后最强模型也仍明显低于初级分析师水平</font><font cms-style="font-L">；更关键的是，模型半数以上的工具调用优先选择通用网络搜索而非权威链上接口，暴露出“工具选择”上的系统性缺陷——短板不在知识储备，而在对信息源可靠性的辨别能力。对投研而言，试错式的多次通过指标在不可逆决策中并无意义，应把对抗稳健性作为智能体可部署性的前置门槛。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/626/w1080h346/20260716/b304-f8e6c450698a569375734468c208b3df.png" cms-width="1080" cms-height="346" id="23"/><span class="img_descr"></span></div><p cms-style="font-L">Chameleon Attack和CAIA分别从输入扰动和对抗信息环境两个层面揭示了金融AI的可靠性风险。前者提醒文本信号模型需要关注语义一致的对抗样本，后者则说明智能体在高风险场景中还需要具备稳定的工具选择和证据甄别能力。</p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L">综合来看，</font><font cms-style="font-L strong-Bold">金融AI的可靠性正在从单点鲁棒性测试走向系统化风控</font><font cms-style="font-L">：既要检查文本攻击和行情扰动，也要评估智能体在对抗信息环境中的工具选择、证据链和决策稳定性。后续若将新闻、公告、社媒信号或自动交易智能体接入量化流程，应把鲁棒性、可追溯证据和反事实解释纳入上线前检查。</font></font></p><p cms-style="font-L"><font cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">2.8 </font></font></font></font></font><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240"><font cms-style="font-L strong-Bold color240">金融大模型评测与投研流程自动化</font></font></font></font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">金融大模型评测与投研流程自动化是2026年上半年金融AI研究的另一条主线，相关论文普遍表明，跨文档整合、专业推理和多步计算仍是通用大模型的主要短板</font><font cms-style="font-L">。相较于前几节对交易、组合和定价等具体环节的讨论，本节更关注模型能力如何被客观评估，以及这些能力能否稳定嵌入真实投研流程。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.8.1 </font><font cms-style="font-L strong-Bold">EDINET-Bench（ICLR2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：EDINET-Bench评测大模型能否处理真实财务报表中的复杂判断，而不是只回答短文本问答</font><font cms-style="font-L">。日本上市公司年报同时包含长文本、表格和会计披露，造假识别、盈利预测与行业分类都需要跨章节整合证据。该研究希望用更接近专业分析师工作的任务，衡量LLM在长上下文财务推理中的真实能力。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：基准基于日本EDINET系统十年上市公司年报构建，任务包括会计造假检测、盈利变化预测和行业分类</font><font cms-style="font-L">。评测时，模型需要阅读完整年报或关键报表材料，将表格中的数值变化、文本中的经营解释和行业信息综合起来输出判断；论文同时设置逻辑回归等传统基线，比较大模型在端到端长文档输入下是否真正学到了专家级推理能力。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：即便是先进LLM，在造假检测和盈利预测等二分类任务上也只比逻辑回归略有优势，说明“把完整年报直接塞给模型”并不能自动产生可靠财务判断</font><font cms-style="font-L">。EDINET-Bench的意义在于提醒金融评测要贴近真实工作流：模型需要配套检索、信息结构化、专用推理流程和任务支持，而不是只依赖长上下文窗口。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/721/w1080h441/20260716/5198-373b0994492551a88dc175d718e4d786.png" cms-width="1080" cms-height="441" id="24"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.8.2 </font><font cms-style="font-L strong-Bold">FinSearchComp（ICLR2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：FinSearchComp关注金融智能体的搜索与推理能力</font><font cms-style="font-L">。分析师时常需要在网页、数据库和公司披露中查找信息，再综合多源证据形成判断；而现有金融问答基准多是静态题库，难以评估端到端检索、工具调用和知识落地能力。该研究希望构建一个更接近真实投研工作的开放域金融搜索评测。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：基准由70名专业金融人员参与标注和质检，包含635个覆盖全球市场与中国市场的问题，并拆分为三类任务</font><font cms-style="font-L">：时间敏感数据获取、简单历史查找和复杂历史调查。每道任务都要求模型或智能体通过网络搜索、金融插件或其他工具获取证据，再完成推理与回答。论文评测了21个模型或产品，并区分是否使用网页搜索、金融插件等条件，以观察工具能力、地区市场覆盖和模型本身推理能力之间的差异。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：配备网页搜索和金融工具后，金融智能体表现显著提升，但不同模型在全球市场与中国市场上的优势并不一致</font><font cms-style="font-L">。FinSearchComp的价值在于把金融评测从“模型是否记得答案”转向“模型能否像分析师一样查证、筛选并综合证据”，这对投研流程自动化尤其关键。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/238/w1080h758/20260716/e081-d6e01aa5e7c13d0eab87a8f80898b9be.png" cms-width="1080" cms-height="758" id="25"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.8.3 </font><font cms-style="font-L strong-Bold">FinMMDocR（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：FinMMDocR旨在评估模型处理真实长篇金融文档、跨页证据和多步数值计算的能力</font><font cms-style="font-L">。FinMMDocR把金融多模态推理的难度推进到真实研报和产业材料场景。现有多模态基准常停留在较短文本或单图问答，而真实投研材料往往长达数十页，图表、表格、正文和市场情景交织在一起。该研究希望考察模型能否同时完成场景识别、长文档理解和多步数值计算。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：基准包含837份中英文金融文档，覆盖公司研究、行业报告等9类材料，平均长度超过50页；题目由专家标注，共1200道，其中大量问题嵌入了投资组合管理、商品贸易、宏观冲击等隐含金融情景</font><font cms-style="font-L">。模型需要先理解问题对应的业务假设，再跨页定位图表或表格中的数值，并执行平均11步左右的抽取与计算。论文还比较不同RAG方法在该任务中的表现，考察检索质量对多模态推理结果的影响。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：在该论文的评测范围内，表现最佳的多模态大模型准确率仍只有约58%，且RAG方法之间差异明显，说明金融多模态推理的瓶颈不只是视觉识别，而在于跨页证据组织、隐含场景建模和长链条计算</font><font cms-style="font-L">。对投研自动化而言，FinMMDocR说明模型需要被嵌入可追溯的检索和计算流程，而不能只依赖端到端生成答案。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/740/w1060h1280/20260716/e971-0a0e7e6ead900773661329f0568ec703.png" cms-width="1060" cms-height="1280" id="26"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.8.4 </font><font cms-style="font-L strong-Bold">FinMathBench（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：FinMathBench专门评估大模型在金融数学推理中的能力，并处理传统人工题库容易被训练数据污染的问题</font><font cms-style="font-L">。金融分析、风险评估和投资决策中大量任务都要把业务场景映射为公式，再完成多步计算；模型若只会套常见题型，无法说明其具备可靠的金融推理能力。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：论文以自建金融公式库为核心，采用公式驱动的问题生成方式</font><font cms-style="font-L">。单公式题通过Mask-for-Solve机制生成可自动求解的标准答案，多公式题则借助层级树状DAG合成，使不同公式之间形成依赖关系并控制难度。最终基准包含946道题、4个复杂度层级，并在40个LLM上评测。评测不只看最终数值，还分析模型是选错公式、列式错误、计算错误，还是对极端但有效的金融数值进行了错误“纠正”。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：模型在单公式题上表现尚可，但随着公式链条变长准确率快速下降，例如部分强模型在四公式任务中的表现远低于单公式任务</font><font cms-style="font-L">。FinMathBench说明金融数学推理的瓶颈不只是算术，而是业务语义、公式选择和多步依赖关系的稳定结合，这也是自动化财务分析必须重点解决的环节。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/679/w1080h399/20260716/beb0-a6845bc09f7d505507df1e699380b875.png" cms-width="1080" cms-height="399" id="27"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">这些结果指向一个更务实的结论：模型可以辅助阅读、检索和初步整理，但高价值金融判断仍需要可追溯的数据来源、明确的推理链和人工复核</font><font cms-style="font-L">。值得注意的是，部分专门金融大模型在复杂任务上并不稳定，说明继续在金融语料上预训练不能自动转化为分析师能力。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.8.5 </font><font cms-style="font-L strong-Bold">FinRpt（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：FinRpt将“自动生成股票研究报告”正式定义为一个数据、模型和评测一体化任务</font><font cms-style="font-L">。过去金融大模型多聚焦问答、情绪分析或短摘要，而完整研报需要同时完成信息筛选、财务分析、风险提示、趋势判断和文字组织。论文希望为研报生成建立可复现的数据集、评价指标和多智能体生成框架。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：FinRpt以自动化数据管线、11项评价指标和多智能体生成框架，构成完整的自动研报研究体系</font><font cms-style="font-L">。数据层面，FinRpt整合7类金融数据，生成可用于训练与评估的权益研究报告数据集；评价层面，从数字准确性、逻辑一致性、风险覆盖、结构完整性和表达质量等角度衡量报告；生成层面，FinRpt-Gen由不同智能体分别承担数据收集、财务分析、预测判断、风险归纳和报告撰写，并通过监督微调和强化学习进一步提升生成质量。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：FinRpt构建的数据集与评价指标能够较系统地衡量研报质量，FinRpt-Gen也展示了多智能体流水线在自动研报生成中的潜力</font><font cms-style="font-L">。它的意义在于把投研流程从单轮问答推进到可评测的报告生产，但也说明自动生成内容必须配套指标体系与人工复核，否则容易把格式完整误认为分析可靠。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/458/w1054h1004/20260716/d92f-42be2cec18cf909704dc2dbd960dbf22.png" cms-width="1054" cms-height="1004" id="28"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.8.6 </font><font cms-style="font-L strong-Bold">TermGPT（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：TermGPT解决金融与法律文本中专业术语辨析不充分的问题</font><font cms-style="font-L">。通用LLM的嵌入空间常存在各向同性现象，导致专业词在向量空间中过度接近；在贷款、监管、风控等场景中，一两个术语的细微差异就可能改变结论。论文希望通过术语适配，让模型更准确地区分金融监管文件中的概念边界。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：TermGPT通过句子图建模和句子、Token双层对比微调，强化专业术语的细粒度区分能力</font><font cms-style="font-L">。作者先构建句子图表示语义关系和结构关系，并基于上下文与拓扑线索生成正负样本，使表述相近但含义不同的术语被显式区分。句子层面对比学习用于对齐整体语义与上下文，Token层面对比学习则专门拉开易混淆术语的表示距离。论文还构建了来源于官方监管文件的金融术语数据集，用于检验模型在专业概念辨析和下游金融风险理解任务中的表现。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：TermGPT在金融和法律术语区分任务上优于既有基线</font><font cms-style="font-L">。对金融大模型应用而言，提高模型能力不只靠扩大语料或增强推理，术语粒度的表示质量同样关键；若模型对于“监管主体”、“担保责任”、“信用风险缓释”等细微概念辨析不足，后续推理链再长也可能建立在错误语义上。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/49/w1080h569/20260716/58d6-f287febfdfbd78bc2acc044256652f8d.png" cms-width="1080" cms-height="569" id="29"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.8.7 </font><font cms-style="font-L strong-Bold">CLER（AAAI2026）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：CLER面向多模态金融推理中的错误修正问题</font><font cms-style="font-L">。金融图表和文本混合输入常涉及术语理解、逻辑一致性和数值计算，即便强多模态模型也容易在这些环节出错；而直接调用更大的闭源模型成本较高。该研究希望让模型通过“学习其他模型犯过的错”来提升推理质量，以较低成本改善金融多模态问答与计算任务。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：CLER以跨模型错误案例库和细粒度检索器驱动测试时反思，使目标模型在作答前先定位并修正常见错误</font><font cms-style="font-L">。论文构建FinErrorSet，收集8000多组来自不同开源多模态模型的错误与修正样本，覆盖图表理解、金融术语、计算链条和逻辑判断等常见错误类型。测试时，检索器根据当前问题匹配结构相近的历史错误案例，引导目标模型先识别可能出错的环节，再对照修正样例检查自身的推理和计算。该方法主要增加测试阶段的反思成本，不要求全面重训闭源大模型。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：在三个金融多模态基准上的实验显示，CLER能稳定优于常规自我反思和其他基线，说明“跨模型错误经验”本身可以成为有效监督信号</font><font cms-style="font-L">。对金融AI落地而言，它提供了一种实用思路：与其只追求模型一次性答对，不如系统化沉淀错误案例库，让模型在高风险场景中先查错、再作答。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/159/w1080h679/20260716/5daa-18c87d7129a493a21ba758dc0ee3b541.png" cms-width="1080" cms-height="679" id="30"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.8.8 </font><font cms-style="font-L strong-Bold">PMADS（AAAI2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：PMADS考察结构化多智能体辩论能否提升非财务信用分析的严谨性、可解释性和可审计性</font><font cms-style="font-L">。企业信用评估中的非财务因素分析高度依赖客户经理的主观判断，过程难以标准化、认知负担重。现有LLM研究多把非财务信息当作分类输入，缺乏对信用评估的因果推理链，报告解释性不足、难以嵌入合规审查。本文探讨以结构化多智能体辩论替代单智能体顺序推理，能否提升论证的严谨度与实务可用性。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：PMADS以结构化多智能体辩论组织非财务信用分析，使正反论证、证据引用和最终结论均可追溯</font><font cms-style="font-L">。系统先由数据采集智能体从数据库与实时检索中汇集目标公司的非财务信息，形成结构化知识库；随后按照Karl Popper辩论协议，调度正反两方共六个智能体展开多轮论证。正方论证还款能力改善，反方论证还款能力恶化或存在潜在风险，双方依次完成立论、交叉质询与反驳，每一步均需援引评估准则中的可证伪依据，并通过检索补充时效信息。最后，聚合智能体将全过程整理为结构化分析报告，保留正反论证脉络与证据引用，以支持事后审计。系统产出定位为分析师的决策参考，而非直接替代人工判断。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：该系统生成的报告在解释充分性、实务适用性与系统可用性上均显著优于单智能体基线</font><font cms-style="font-L">，其推理精化程度也明显更高，说明结构化辩论能促使模型就同一因素形成多层次、可追溯的论证。对投研流程而言，它提供了一种把非财务定性分析显式写入审查约束的自动化路径，有助于提升信贷报告的稳健性与可审计性，但计算时延可能达到单智能体方案的数倍。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/686/w966h1320/20260716/c3d0-68770f4df413b35d5862ddd59cc33f0c.png" cms-width="966" cms-height="1320" id="31"/><span class="img_descr"></span></div><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">2.8.9 </font><font cms-style="font-L strong-Bold">VeritasFi（AAAI2026 Workshop）</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究目的：现有金融RAG系统在处理SEC申报文件时面临两重制约</font><font cms-style="font-L">：其一，文件天然混合文本、表格与图表等异构内容，多数管道将其线性化为纯文本，语义接地不完整；其二，通用检索器缺乏对特定公司实体的专项适配，跨公司部署时性能明显衰减。这两点共同制约了金融问答系统在合规与投研场景中的实用化。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究方法：VeritasFi由知识构建、混合检索与自适应重排三个环节组成</font><font cms-style="font-L">。构建阶段先将多模态文件切块，用视觉语言模型把表格改写为趋势性描述、图表转为结构化说明，再经语义去重、共指消解与元数据生成形成语义自足的语料，并对高频定量查询预建记忆库。检索阶段将查询规范化后并行走三条路径：稀疏、密集与元数据三路语义检索、记忆库快速查表，以及实时获取行情等动态数据的工具调用。三路证据汇聚后，由一个两阶段重排模块精排——先在实体匿名化的通用金融数据上以对比学习训练可迁移的基础重排器，再以目标公司检索结果为信号做轻量微调、快速适配到具体实体，最后将排序结果与对话历史交由大模型生成答案。</font></font></p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold">研究结论：在多个金融问答数据集上的端到端评测中，VeritasFi的综合表现优于图RAG、轻量RAG等基线，在部分数据集上的提升尤为明显</font><font cms-style="font-L">；消融实验表明知识构建、三路混合检索与两阶段重排三个模块互补、缺一不可。对投研流程而言，该框架为机构将通用大模型适配为面向特定公司的文件问答系统，提供了兼顾稳健性与低成本快速专化的可部署架构。</font></font></p><div class="img_wrapper"><img src="//n.sinaimg.cn/spider20260716/137/w1080h657/20260716/55aa-a4e78965f20fe1834722d7485ab3eb65.png" cms-width="1080" cms-height="657" id="32"/><span class="img_descr"></span></div><p cms-style="font-L">综合前文可以看到，金融AI在2026年呈现三条主线：一是把交易、组合和定价中的硬约束嵌入模型，二是通过深度表征学习、动态图建模、多模态时序预测、联合分布建模和频域分解拓展量化信号来源，三是用更贴近真实投研的基准暴露大模型短板并改进投研辅助流程。第一条主线关系到模型能否进入投资流程，后两条主线分别关系到模型能否发现更复杂的信号，以及能否稳定承担研究辅助和风险识别角色。</p><p cms-style="font-L strong-Bold align-Center color210">03</p><p cms-style="font-L strong-Bold color210">结语</p><p cms-style="font-L">CHAPTER</p><p cms-style="font-L">从AAAI2026、ICLR2026主会及金融AI Workshop代表论文看，金融量化AI正在从“借用通用模型”转向“围绕金融约束重构模型”。LLM更适合承担离线研发、语义校验、技术面解释和投研辅助；因子挖掘从公式生成走向搜索策略和标准化评估；深度学习方法开始在文本语义漂移、动态关系图、多模态时序预测、多资产尾部依赖和频域交易模型中拓展信号来源；RL研究更加重视分布迁移、市场状态和微观流动性；金融基础模型开始围绕K线、订单流和情景仿真建立专用表示；组合与定价模型也开始把金融动力学、风险目标和估计不确定性直接写入训练过程。</p><p cms-style="font-L"></p><p cms-style="font-L"></p><p cms-style="font-L"></p><p cms-style="font-L strong-Bold align-Center color210">04</p><!--article_adlist[<p cms-style="font-L strong-Bold color210">风险提示</p><p cms-style="font-L">CHAPTER</p>
+]article_adlist--><p cms-style="font-L">      1）本文为AAAI2026与ICLR2026主会及相关金融AI Workshop代表论文的阶段性综述，主要基于公开论文及论文作者披露信息整理，不代表任何投资建议。文中对论文方法、结论和应用前景的归纳仅供研究参考，不构成对相关模型、策略、资产或行业的投资判断。2）文献覆盖可能存在不完整风险。本文仅纳入当前已取得公开信息、且可对应至AAAI2026、ICLR2026主会或相关金融AI Workshop的代表性论文，未覆盖全部金融AI相关研究。Workshop论文与主会论文在审稿口径、论文成熟度和后续版本稳定性上可能存在差异，后续论文集、OpenReview条目或作者版本更新可能影响综述结论。3）论文结论存在外推风险。学术论文中的实验多基于特定数据集、市场区间、回测假设和评估指标，结果未必能直接迁移至真实交易环境。实际应用中仍需考虑交易成本、冲击成本、容量约束、滑点、风控限制和合规要求。4）AI模型和量化策略存在模型风险。大语言模型、强化学习、生成模型等方法可能存在幻觉、过拟合、数据泄露、样本外失效、鲁棒性不足和解释不稳定等问题，相关研究成果不代表模型已具备稳定可部署能力。5）市场环境变化风险。金融市场具有非平稳性，宏观环境、监管政策、流动性结构和投资者行为变化均可能导致论文中观察到的规律、因子或策略效果失效。6）综述解读可能存在偏差。本文对英文论文进行了归纳、翻译和研究判断，可能存在理解偏差、表述简化或遗漏细节等风险，具体方法、实验设定和结论应以原论文为准。</p><p cms-style="font-L"></p><p cms-style="font-L"></p><p cms-style="font-L"></p><p cms-style="font-L">报告信息：</p><p cms-style="font-L"><font cms-style="font-L">叶尔乐  </font><font cms-style="font-L"><font cms-style="font-L">S0590525110059</font></font><font cms-style="font-L">  yeerle@</font><font cms-style="font-L"><font cms-style="font-L">glms.com.cn</font></font></p><p cms-style="font-L"><font cms-style="font-L">吴正宇</font><font cms-style="font-L"><font cms-style="font-L">S0590526030002 </font></font><font cms-style="font-L">wuzhengyu@glms.com.cn</font></p><p cms-style="font-L"><font cms-style="font-L">本文来自</font><font cms-style="font-L"><font cms-style="font-L"><span id=stock_sh601456><a href=https://finance.sina.com.cn/realstock/company/sh601456/nc.shtml class="keyword" target=_blank data-sudaclick="content_marketkeywords_p">国联民生</a></span><span id=quote_sh601456></span>证券研究所</font></font><font cms-style="font-L">于2026年7月16日发布的报告《AI投研新范式：2026年AAAI与ICLR前沿论文综述</font><font cms-style="font-L">》，详细内容请阅读报告原文。</font></p><p cms-style="font-L"></p><!--article_adlist[<p cms-style="font-L"><img src="//n.sinaimg.cn/spider20260716/796/w1080h516/20260716/3c2e-fb098d1527893200ce6be8df1b93fed7.png" cms-width="1080" cms-height="516"/></p>
+]article_adlist--><p cms-style="font-L"></p><p cms-style="font-L"></p><p cms-style="font-L align-Center"><font cms-style="font-L strong-Bold align-Center color0">重要提示</font></p><p cms-style="font-L">《证券期货投资者适当性管理办法》于2017年7月1日起正式实施，通过本微信订阅号/本账号发布的观点和信息仅供民生证券的专业投资者参考，完整的投资观点应以国联民生证券股份有限公司（下称“国联民生证券”）发布的完整报告为准。若您并非国联民生证券客户中的专业投资者，为控制投资风险，请取消订阅、接收或使用本订阅号/本账号中的任何信息。本订阅号/本账号难以设置访问权限，若给您造成不便，敬请谅解。国联民生证券不会因为关注、收到或阅读本订阅号/本账号推送内容而视相关人员为客户；市场有风险，投资需谨慎。</p><p cms-style="font-L"></p><p cms-style="font-L align-Center"><font cms-style="font-L strong-Bold align-Center color0">免责声明</font></p><p cms-style="font-L">国联民生证券股份有限公司（下称“国联民生证券”）已获中国证监会许可的证券投资咨询业务资格，本平台推送观点和信息仅供国联民生证券研究服务客户参考，完整的投资观点应以国联民生证券研究所发布的完整报告为准。若您非国联民生证券研究服务客户，为控制投资风险，请勿订阅、接受、转载或使用本平台中的任何信息，若给您造成不便，敬请谅解。国联民生证券不会因订阅本平台的行为或者收到、阅读本平台推送内容而视相关人员为客户。任何未经国联民生证券同意或授权而对本平台内容进行复制、转发或其他类似不当行为均被严格禁止。对于使用本平台包含信息所引起的后果，国联民生证券概不承担任何责任。</p><p cms-style="font-L"><font cms-style="font-L strong-Bold"><font cms-style="font-L strong-Bold"><font cms-style="font-L">本平台及国联民生证券研究报告所载资料的来源及观点的出处皆被国联民生证券认为可靠，但国联民生证券不对其可靠性、准确性、时效性或完整性做出任何保证。本平台推送内容仅反映国联民生证券研究人员于发出完整报告当日的判断，本平台所载的资料、意见及推测有可能因发布日后的各种因素变化而不再准确或失效，国联民生证券不承担更新不准确或过时的资料、意见及推测的义务，在对相关信息进行更新时亦不会另行通知。在任何情况下，本平台所载信息、意见不构成对任何人的投资建议，所述证券或金融工具买卖的出价或征价，评级、目标价、估值、盈利预测等分析判断亦不构成对具体证券或金融工具在具体价位、具体时点、具体市场表现的投资建议。本平台所包含的观点及建议并未考虑获取本平台包含信息的机构及个人的具体投资目的、财务状况、特殊状况、目标或需要，客户应当充分考虑自身特定状况，进行独立评估，并应同时考量自身的投资目的、财务状况和特定需求，必要时就法律、商业、财务、税收等方面咨询专家的意见，不应单纯依靠本报告所载的内容而取代自身的独立判断。在法律允许的情况下，国联民生证券及其关联方可能持有本平台推送内容中提及的公司所发行证券的头寸并进行交易，也可能为这些公司提供或正在争取提供投资银行、财务顾问、咨询服务等相关服务。客户应充分考虑可能存在的利益冲突，勿将本平台推送内容作为投资决策的唯一参考依据。对任何直接或间接使用本平台所载信息和内容或者据此进行投资所造成的任何一切后果或损失，国联民生证券及/或其关联人员均不承担任何形式的法律责任。</font></font><font cms-style="font-L strong-Bold"></font></font></p><p cms-style="font-L align-Center"></p><p cms-style="font-L align-Center"><font cms-style="font-L strong-Bold align-Center color0">法律声明</font></p><p cms-style="font-L">本微信号及其推送内容的版权归国联民生证券所有，国联民生证券对本微信号及其推送内容保留一切法律权利。未经国联民生证券事先书面许可，任何机构或个人不得以任何形式转载、翻版、复制、刊登、发表、修改、仿制或引用本订阅号中的内容。任何订阅人如引用或转载本平台所载内容，务必注明出处为国联民生证券研究所，且转载应保持完整性，不得对内容进行有悖原意的引用和删改。转载者需严格依据法律法规使用该文章，转载者单方非法违规行为与我司无关，由此给我司造成的损失，我司保留法律追究权利。</p><p cms-style="font-L"></p><!-- news_keyword_pub,stock,sh601456 -->
+
+
+
+
+
+
+			
+			<!-- 正文下iframe -->
+			
+
+			<!-- 正文下iframe -->
+
+			<!-- 总声明-->
+			
+
+
+
+
+
+
+
+
+
+
+			<!-- 总声明-->
+			
+			<!-- 文末二维码 start -->
+			
+
+            <!-- 文末二维码 start -->
+            <style>
+            .appendQr_wrap{border:1px solid #E6E6E6;padding:8px;}
+            .appendQr_normal{float:left;}
+            .appendQr_normal img{width:100px;}
+            .appendQr_normal_txt{float:left;font-size:20px;line-height:100px;padding-left:20px;color:#333;}
+            </style>
+            <div class="clearfix appendQr_wrap">
+                <div class="appendQr_normal"><img src="//n.sinaimg.cn/finance/cece9e13/20240627/655959900_20240627.png" /></div>
+                <div class="appendQr_normal_txt">海量资讯、精准解读，尽在新浪财经APP</div>
+            </div>
+            <!-- 文末二维码 start -->
+
+            <!-- 文末二维码 start -->
+
+			<!-- 编辑姓名及工作代码 -->
+			
+
+			<!-- 编辑姓名及工作代码-->
+
+				</div>
+				<!-- 原始正文end -->
+
+				<!-- 正文下部begin -->
+				
+		
+		<div class="article-bottom clearfix" id='article-bottom'>
+			<!--通发页正文下方文字链广告 2022/12/29 王鑫 start-->
+			<div style="margin: 20px auto 15px; font-size:14px;">
+				<ins class="sinaads" data-ad-pdps="PDPS000000067953" data-ad-width="880" data-ad-height="30" data-ad-type="embed"></ins>
+				<script>
+					(sinaads = window.sinaads || []).push({});
+				</script>
+			</div>
+			<!-- 关键词begin -->
+			
+			<!-- 关键词end -->
+
+			<!--<div class="btns">
+				<a href="http://news.sina.com.cn/feedback/post.html"  target="_blank" class="btn-icon btn-feedback" data-sudaclick="content_feedback_p">我要反馈</a>
+		   </div>-->
+		</div>
+
+
+		
+	
+
+
+			<!-- 轮播图推广begin -->
+				<div class="article-bottom-tg" data-sudaclick="ad_content_bottom">
+                <div class="article-botton-slide" id="article-botton-slide">
+                    					 <a href="http://tousu.sina.com.cn/" target="_blank" class="slider-item"  >
+						<img src="//n.sinaimg.cn/finance/transform/260/w880h180/20180326/zi4T-fysqfnf9377213.png" />
+					 </a>
+                </div>
+                <div class="slider-dot clearfix" id="artice_bottom_slider_dot" style="display:none;"></div>
+</div>           
+
+			<!-- 轮播图推广end -->
+			<!--通发页评论上方640*90通栏 2018/03/13 xiaofei start-->
+         <ins class="sinaads" data-ad-pdps="PDPS000000065807" style="margin: -15px auto -20px;"></ins>
+         <script>
+                   (sinaads = window.sinaads || []).push({});
+         </script>
+<!--通发页评论上方640*90通栏 end -->
+
+
+			<!--评论组件样式 0112 edit by zyc -->
+            <link rel="stylesheet" type="text/css" href="//finance.sina.com.cn/other/src/article-comment-2017.css">
+            <!-- 评论 start -->
+            <div class="blk-comment" id="bottom_sina_comment"></div>
+            <!-- 评论 end -->
+
+			<!--通发页评论下方文字链广告 2022/12/29 王鑫 start-->
+			<div style="margin: 20px auto -20px; font-size:14px;">
+				<ins class="sinaads" data-ad-pdps="PDPS000000067954" data-ad-width="880" data-ad-height="30" data-ad-type="embed"></ins>
+				<script>
+					(sinaads = window.sinaads || []).push({});
+				</script>
+			</div>
+            <!-- vip课程推荐 start -->
+            <style>
+                .vip-class{margin-top: 40px;}
+                .vip-class-cont{display: flex; align-items: flex-start; justify-content: space-between;}
+                .vip-class-item{width: 264px;}
+                .vip-class-pic{display: block; width: 100%;}
+                .vip-class-text{padding-top: 8px; line-height: 22px; font-size: 16px; max-height: 44px; overflow: hidden; word-break: break-all; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;}
+                .vip-class-text a, .vip-class-text a:visited{color: #000;}
+                .vip-class-text a:hover{color: #3753a2;}
+                @media screen and (max-width:1440px) {
+                    .vip-class-item {width: 200px;}
+                }
+            </style>
+            <div class="vip-class">
+                <div class="cj-l-title">
+                    <h2>VIP课程推荐</h2>
+                </div>
+                <div class="vip-class-cont" id="vip-class-cont">
+                    加载中...
+                </div>
+            </div>
+            <script src="https://n.sinaimg.cn/finance/c30320b4/20221122/article-vip-class.js" charset="utf-8"></script>
+            <!-- vip课程推荐 end -->
+
+
+    
+			<!-- 新浪财经直播&微信公众号 推广轮播 start -->
+			
+			<!-- 新浪财经直播 推广轮播 end -->
+
+
+<!-- 20200724 app 专享直播 add by zyc start -->
+<div class="app-viplive">
+	<div class="cj-l-title">
+		<h2>APP专享直播</h2>
+	</div>
+	<div class="slide-viplive" >
+	<div id="app_viplive"></div>
+		<a class="viplive-prev viplive-arrow" href="javascript:;">上一页</a><a class="viplive-next viplive-arrow" href="javascript:;">下一页</a>
+	</div>
+	<div class="slide-viplive-num">
+		<span id="slide_viplive_num" class="slide-viplive-cur">1</span>/<span id="slide_viplive_total">10</span>
+	</div>
+</div>
+<script src="//finance.sina.com.cn/other/src/sinapagewidgets/SFA_APPLive.js"></script>
+<!-- 20200724 app 专享直播 end -->
+
+
+            <!-- 热门推荐 start -->
+            <div class="most-read" id="most_read" >
+                <div class="cj-l-title" data-sudaclick="recommend_tab_i">
+                    <h2>热门推荐</h2>
+					<span id="hot-recommend-cont-title"></span>
+                    <span class="more">
+                        <i event-toggle="hot-recommend-cont" is="hot-recommend-cont-title">收起</i>
+                    </span>
+                </div>
+                <div id="hot-recommend-cont" data-sudaclick="recommend_feed_p"></div>
+            </div>
+
+			 <!-- 公众号二维码 start -->
+            <div class='blk-wxfollow clearfix'>
+                <div class='wx-qr'>
+                    <img src="//n.sinaimg.cn/finance/72219a70/20180103/_thumb_23666.png" title="新浪财经公众号" alt="新浪财经公众号" />
+                </div>
+                <div class='wx-info'>
+                    <span>新浪财经公众号</span>
+                    <p>24小时滚动播报最新的财经资讯和视频，更多粉丝福利扫描二维码关注（sinafinance）</p>
+                </div>
+            </div>
+            <!-- 公众号二维码 end -->
+            <script src="//finance.sina.com.cn/other/src/SinaPageMostRead.js" charset="utf-8"></script>
+            <!-- 热门推荐 end -->
+            
+            <!-- 相关新闻/相关微博 start -->
+            <div class='blk-related clearfix' id='tab_related'>
+                <div class='tab-related-wrap'>
+                    <div class='tab-related' id='tab_related_btn'>
+                        <a href="javascript:;" id='tab01_btn01' class='cur' data-sudaclick="relativenews_tab_i">相关新闻</a>
+                    </div>
+                </div>
+                <div class='tab-cont-related' data-sudaclick="relativenews_feed_p">
+                    <div id='tab01_cont01'>
+                            <!-- 天乙feed 容器 start -->
+                            <div id="tycard_list">
+                                <!-- <div class="cardlist-a__tip" node-type="tip" style="display:none;"></div> -->
+                                <div class="cardlist-a__list" node-type="list">
+
+                                </div>
+                                <!-- <div class="cardlist-a__loading" node-type="loading">加载中<s class="icon-loading"></s></div> -->
+                                <!-- <div class="cardlist-a__more" node-type="more" style="display:none;">点击加载更多</div> -->
+                                <!-- <div class="cardlist-a__pager" node-type="pager" style="display:none;"></div> -->
+                            </div>
+                            <!-- 天乙feed 容器 end -->
+                        </div>
+                        <!-- <div id='tab01_cont02' style='display:none;'>
+                            <iframe id='related_wb' frameborder="0" height="500" width="640" marginheight="0" marginwidth="0" scrolling="no" src=""></iframe>
+                        </div> -->
+                </div>
+            </div>
+            <!-- 相关新闻/相关微博 end -->
+				<!-- 正文下部end -->
+            <!-- 正文 end -->
+        </div>
+        <!-- 首屏以下css -->
+        <link rel="stylesheet" type="text/css" href="//finance.sina.com.cn/other/src/sinafinance.article.min.css">
+        <!-- 天乙feed样式 start-->
+		<link rel="stylesheet" href="//news.sina.com.cn/css/pctianyi/tianyi.css">
+        <link rel="stylesheet" href="//n3.sinaimg.cn/finance/pctianyi_wdg/apps/ent-feed/css/feed-app.css">
+        <!-- 天乙feed样式 end -->
+		<!--最近访问自选股-->
+		
+        <div class="article-content-right">
+			
+		<a href="https://finance.sina.com.cn/cj/authorlist.shtml?fr=pc_finarticle" style="display:none;" id="cjauthorlist">财经头条作者库</a>
+			
+			
+            <!-- 股市直播 start-->
+            <div class="cj-r-block" data-sudaclick="right_live_p">
+                <h2 class="tit1">
+                    <a href="http://live.finance.sina.com.cn" target="_blank" class="more"></a>
+                    <a href="http://live.finance.sina.com.cn" target="_blank">股市直播</a>
+                </h2>
+                <div class="cj-live-list">
+                    <div class="tabs-menu">
+                        <ul class="clearfix">
+                            <li id="tab14_btn01" class="tabs-cur">图文直播间</li>
+                            <li id="tab14_btn02">视频直播间</li>
+                        </ul>
+                    </div>
+                    <div class="tabs-contsWrap">
+                        <div class="tabs-cont" id="tab14_cont01"></div>
+                        <div class="tabs-cont" id="tab14_cont02" style="display:none;">
+
+                        </div>
+                    </div>
+                </div>
+                <script id="TPL_Live_List"  type="text/x-dot-template">
+                    <ul>
+                        @@~it:value:index$$
+                        <li>
+                            <a href="@@=value.program.teacher_url$$" target="_blank">
+                                <span class="avatar"><img alt="@@=value.user.name$$" src="@@=value.user.portrait_big.toHttps()$$"></span>
+                                <div class="tw-text">
+                                    <h3>@@=value.user.name$$<span class="time">@@=value.publish_time$$</span></h3>
+                                    <div class="content" title="@@=value.content$$">
+                                        @@?value.islive$$
+                                        @@=value.content$$
+                                        @@??$$
+                                        <p><em>网友提问：</em>@@=value.question$$</p><p><em>老师回答：</em>@@=value.answer$$</p>
+                                        @@?$$
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        @@~$$
+                    </ul>
+                    <a href="http://live.finance.sina.com.cn" class="showMore" target="_blank">更多&gt;</a>
+                </script>
+                <script id="TPL_Live_List2"  type="text/x-dot-template">
+                    <ul class="video2-list">
+                        @@~it:value:index$$
+                        <li>
+                            <a href="http://live.finance.sina.com.cn/bozhu/@@=value.uid$$/@@=value.id$$" target="_blank">
+                                <div class="v-img">
+                                    <img alt="@@=value.teacher && value.teacher.name$$" src="@@=value.pic1.toHttps()$$"><i class="status-@@=value.extraInfo && value.extraInfo.live_status$$"></i>
+                                </div>
+                                <div class="v-text">
+                                    <h3><img alt="@@=value.teacher && value.teacher.name$$" src="@@=value.teacher && value.teacher.portrait_big.toHttps()$$">@@=value.teacher && value.teacher.name$$</h3>
+                                    <p>@@=value.title$$</p>
+                                    <div class="time">@@=value.publish_time$$</div>
+                                </div>
+                            </a>
+                        </li>
+                        @@~$$
+                    </ul>
+                    <a href="http://live.finance.sina.com.cn" class="showMore" target="_blank">更多&gt;</a>
+                </script>
+            </div>
+            <!-- 股市直播 end -->
+			
+			
+            <div class="cj-r-block" style="margin-top:0px;">
+				<iframe src="https://finance.sina.com.cn/iframe/rili20.shtml" scrolling="no" frameborder="0" width="100%" height="680"></iframe>
+             <div class="space"></div>
+            <div class="cj-r-block" style="margin-top:25px;">
+                <div class="cj-mystock">
+                    <div class="tabs">
+                        <div class="tabs-menu">
+                            <ul>
+                                <li ds-tabs="visited|list" ds-tabs-action="mouseenter"><a href="http://finance.sina.com.cn/realstock/company/sh000001/nc.shtml" target="_blank">最近访问</a></li>
+                                <li ds-tabs="stock|list" ds-tabs-action="mouseenter"><a href="http://watchlist.finance.sina.com.cn/portfolio/view/main.php" target="_blank">我的自选</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+			
+            <script type="text/javascript" src="//finance.sina.com.cn/realstock/company/hotstock_daily_a.js"></script>
+            <script type="text/javascript" src="//finance.sina.com.cn/other/src/mystock.js"></script>
+			
+			<!--右侧顶通广告 start--->
+			
+<div class="right-side-ad">
+				<!--300*500画中画00   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000042135"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--300*500画中画00   end-->
+			</div>
+			<!--右侧顶通广告 end---->
+			
+			<!-- 排行榜 start -->
+			<iframe src="//finance.sina.com.cn/iframe/rank.shtml" scrolling="no" frameborder="0" width="100%" height="470"></iframe>
+            <!-- 排行榜 end -->
+			
+			<!-- 排行榜seo -->
+			
+<!--seo -->
+<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+<li class="hot"><span class="num">01</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-16/doc-inihxxkq1174504.shtml">字少事大，很不简单</a></li><li class="hot"><span class="num">02</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-16/doc-inihxxkq1207427.shtml">“股神”巴菲特再谈股市赌场论！感叹谷歌“买晚了”</a></li><li class="hot"><span class="num">03</span>/<a target="_blank" href="https://finance.sina.com.cn/jjxw/2026-07-16/doc-inihxxkk7697505.shtml">央行：继续实施好适度宽松的货币政策 加大逆周期和跨周期调节力度</a></li><li><span class="num">04</span>/<a target="_blank" href="https://finance.sina.com.cn/world/2026-07-16/doc-inihxxkk7689959.shtml">SpaceX股价首次跌破135美元IPO发行价</a></li><li><span class="num">05</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-16/doc-inihyiyk1210364.shtml">美媒：美国防部正研究对古巴军事行动方案</a></li><li><span class="num">06</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-16/doc-inihxxkn4499433.shtml">全球人工智能 进入“上海时间”</a></li><li><span class="num">07</span>/<a target="_blank" href="https://finance.sina.com.cn/jjxw/2026-07-16/doc-inihyuqf8045671.shtml">巴新政府关闭“驻巴新台北经济办事处”，外交部：高度赞赏</a></li><li><span class="num">08</span>/<a target="_blank" href="https://finance.sina.com.cn/china/2026-07-16/doc-inihyuqf8011234.shtml">商务部回应推动解决安世半导体问题进展</a></li><li><span class="num">09</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-16/doc-inihyqhe4417449.shtml">李小加：一个20%GDP的国家，占了全球70%股市市值，却集中在两只手数得过来的公司</a></li><li><span class="num">10</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-16/doc-inihycsp7866188.shtml">SpaceX破发！散户压力山大，超大IPO前景敲响警钟</a></li></div>
+<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+<li class="hot"><span class="num">01</span>/<a target="_blank" href="https://finance.sina.com.cn/wm/2026-07-16/doc-inihxxkr7988780.shtml">长鑫科技今日申购，中签率超高，中一签或赚2万元</a></li><li class="hot"><span class="num">02</span>/<a target="_blank" href="https://finance.sina.com.cn/stock/cpbd/2026-07-16/doc-inihxxkk7746664.shtml">操盘必读：影响股市利好或利空消息_2026年7月16日_财经新闻</a></li><li class="hot"><span class="num">03</span>/<a target="_blank" href="https://finance.sina.com.cn/stock/y/2026-07-16/doc-inihxxkk7750228.shtml">财经早报：科创板史上最大IPO！长鑫科技今日申购，我国将重构土地储备的底层逻辑丨2026年7月16日</a></li><li><span class="num">04</span>/<a target="_blank" href="https://finance.sina.com.cn/stock/usstock/c/2026-07-16/doc-inihxhnu4684712.shtml">巴菲特点评当前市场：“全民热衷投机博弈，价值标的难觅踪迹”</a></li><li><span class="num">05</span>/<a target="_blank" href="https://finance.sina.com.cn/stock/usstock/c/2026-07-16/doc-inihxtas1128289.shtml">7月16日收盘：美股收高道指涨150点 谷歌等大型科技股推动股指上扬</a></li><li><span class="num">06</span>/<a target="_blank" href="https://finance.sina.com.cn/stock/marketresearch/2026-07-16/doc-inihyuqf8094116.shtml">A股跳水！原因找到了</a></li><li><span class="num">07</span>/<a target="_blank" href="https://finance.sina.com.cn/stock/s/2026-07-16/doc-inihxxkk7738229.shtml">股海导航_2026年7月16日_沪深股市公告与交易提示</a></li><li><span class="num">08</span>/<a target="_blank" href="https://finance.sina.com.cn/stock/t/2026-07-16/doc-inihxxkq1174600.shtml">比亚迪副总裁：不靠美国市场，比亚迪也能取代丰田成为全球销冠</a></li><li><span class="num">09</span>/<a target="_blank" href="https://finance.sina.com.cn/wm/2026-07-16/doc-inihyqhh1227087.shtml">站在猴里？300亿“猴茅”巨头炸板，5天飙涨近40%</a></li><li><span class="num">10</span>/<a target="_blank" href="https://finance.sina.com.cn/wm/2026-07-16/doc-inihyqha7732210.shtml">24万股民踩雷，A股存储一哥再封跌停</a></li></div>
+
+<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+<li class="hot"><span class="num">01</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-16/doc-inihxxkk7732763.shtml">银行股平均股息率4.68% 存银行不如买银行？</a></li><li class="hot"><span class="num">02</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-15/doc-inihwvww7967218.shtml">五家理财子中签长鑫科技，普通投资者可1元起购“曲线吃肉”！</a></li><li class="hot"><span class="num">03</span>/<a target="_blank" href="https://finance.sina.com.cn/jjxw/2026-07-16/doc-inihyiyk1196896.shtml">5家银行接连因“以贷转存”被罚，虚增存款是饮鸩止渴</a></li><li><span class="num">04</span>/<a target="_blank" href="https://finance.sina.com.cn/jjxw/2026-07-16/doc-inihyiyh4516146.shtml">女子银行卡莫名转进千万又分批转出 想查明来源遭银行推诿</a></li><li><span class="num">05</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-16/doc-inihxxkk7732983.shtml">“固收+期权”理财半年考：黄金降温，大类资产指数领跑</a></li><li><span class="num">06</span>/<a target="_blank" href="https://finance.sina.com.cn/jjxw/2026-07-16/doc-inihxxkn4494075.shtml">银行跨界卖房 购房者捡漏需擦亮双眼</a></li><li><span class="num">07</span>/<a target="_blank" href="https://finance.sina.com.cn/roll/2026-07-16/doc-inihyupy7645695.shtml">利率3％+却有人换汇离场！美元存款收益与汇兑损失如何权衡</a></li><li><span class="num">08</span>/<a target="_blank" href="https://finance.sina.com.cn/money/bank/bank_hydt/2026-07-15/doc-inihxaew4639329.shtml">银行理财“信披明牌”不止指数基准！有机构尝试展现理财产品最大回撤</a></li><li><span class="num">09</span>/<a target="_blank" href="https://finance.sina.com.cn/jjxw/2026-07-15/doc-inihwvxc7916428.shtml">“年利率5%”骗局盛行，社交平台不能只追流量不把关</a></li><li><span class="num">10</span>/<a target="_blank" href="https://finance.sina.com.cn/jjxw/2026-07-16/doc-inihxxkn4494123.shtml">银行理财换锚：业绩基准更真实 投资者还得“跨一步”</a></li></div>
+		<!--seo -->
+			<!-- 排行榜seo -->
+            
+			<div class="right-side-ad">
+				<!--300*250画中画01   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000028572" style="margin-bottom: 20px;"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--300*250画中画01   end-->
+
+				<!--画中画01下300*250按钮   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000046929" style="margin-bottom: 20px;"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--画中画01下300*250按钮   end-->
+			</div>
+           
+            <!-- 7X24小时 start -->
+			<div class="cj-r-block" id="cj_7x24_list" style="margin-top:36px;" data-sudaclick="right_24hnews_p">
+                <h2 class="tit2">
+                    <a href="http://live.sina.com.cn/zt/f/v/finance/globalnews1" target="_blank" class="more"></a>
+                    <a href="http://live.sina.com.cn/zt/f/v/finance/globalnews1" target="_blank">7X24小时</a>
+                </h2>
+                <div class="cj-7x24-list cj-l-newslist">
+                    <div id="cj_7x24_cont"></div>
+                </div>
+                <script id="TPL_7x24_List" type="text/x-dot-template">
+                    <ul>@@~it:value:index$$
+                        <a title="@@=value.content$$" href="http://live.sina.com.cn/zt/f/v/finance/globalnews1" target=_blank >
+						<li>@@=value.format_created_time$$<em>|</em>
+                            <span>@@=value.content$$</span>
+                        </li>
+						</a>
+                        @@~$$
+                    </ul>
+                </script>
+</div>
+            <!-- 7x24小时 end -->
+			
+			
+            <div class="right-side-ad high-ad">
+                <!--右侧两轮播300*250按钮   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000058358"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--右侧两轮播300*250按钮   end-->
+				
+				<!--智投热点两轮播300*250按钮   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000058599" style="margin-top: 20px;"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--智投热点两轮播300*250按钮   end--> 
+            </div>
+			
+            <!-- 名博 start-->
+			<iframe src="//finance.sina.com.cn/iframe/famousblog.shtml" scrolling="no" frameborder="0" width="100%" height="320"></iframe>
+            <!-- 名博 end-->
+			<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+			<a href="http://blog.sina.com.cn/u/1300871220" target="_blank" class="photo">徐小明</a>			<a href="http://blog.sina.com.cn/u/1284139322" target="_blank" class="photo">凯恩斯</a>			<a href="http://blog.sina.com.cn/u/1298535315" target="_blank" class="photo">占豪</a>			<a href="http://blog.sina.com.cn/u/1282871591" target="_blank" class="photo">花荣</a>			<a href="http://blog.sina.com.cn/s/articlelist_1394379401_0_1.html" target="_blank" class="photo">金鼎</a>			<a href="http://blog.sina.com.cn/u/1216826604" target="_blank" class="photo">wu2198</a>			<a href="http://blog.sina.com.cn/s/articlelist_1307309734_0_1.html" target="_blank" class="photo">丁大卫</a>			<a href="http://blog.sina.com.cn/u/2377371197" target="_blank" class="photo">易宪容</a>			<a href="http://blog.sina.com.cn/u/1364334665" target="_blank" class="photo">叶荣添</a>			<a href="http://blog.sina.com.cn/u/1279884602" target="_blank" class="photo">沙黾农</a>			<a href="http://blog.sina.com.cn/u/1504965870" target="_blank" class="photo">冯矿伟</a>			<a href="http://blog.sina.com.cn/s/articlelist_1638714710_0_1.html" target="_blank" class="photo">趋势之友</a>			<a href="http://blog.sina.com.cn/u/1236135807" target="_blank" class="photo">空空道人</a>			<a href="http://blog.sina.com.cn/u/1285707277" target="_blank" class="photo">股市风云</a>			<a href="http://blog.sina.com.cn/u/2949913420" target="_blank" class="photo">股海光头</a></div>
+			
+            <div class="right-side-ad">
+                <!--300*250矩形广告   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000043766"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--300*250矩形广告   end-->
+
+				<!--智选精选两轮播300*250按钮   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000058365" style="margin-top: 20px;"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--智选精选两轮播300*250按钮   end-->
+
+            </div>
+            <!-- 意见领袖 start-->
+            <iframe src="//finance.sina.com.cn/iframe/leader.shtml" scrolling="no" frameborder="0" width="100%" height="355" style="margin-top:11px;"></iframe>
+            <!-- 意见领袖 end -->
+			<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+			 <a href="https://finance.sina.com.cn/zl/author.d.html?uid=5120240476" target="_blank" class="pic">
+			<img src="https://n.sinaimg.cn/zhuanlan/transform/170/w85h85/20221230/f01f-b20f33f6583ea1f69aefeedf1b86f051.jpg" width="80" height="80" alt="杨伟民">
+			<span>杨伟民</span>
+		 </a>			<li>
+				<a href="" target="_blank">辛艺</a>：
+				<a href="http://finance.sina.com.cn/zl/bank/2026-07-16/zl-inihyyvw7724713.shtml" target="_blank">王振营交易经济学</a>
+			</li>			<li>
+				<a href="http://zhuanlan.sina.com.cn/author/huangliming/index.shtml" target="_blank">黄利明</a>：
+				<a href="http://finance.sina.com.cn/zl/china/2026-07-16/zl-inihyqhi8030610.shtml" target="_blank">5年10万亿增量的消费新格局</a>
+			</li>			<li>
+				<a href="" target="_blank">何大勇</a>：
+				<a href="http://finance.sina.com.cn/zl/bank/2026-07-16/zl-inihyiyh4461390.shtml" target="_blank">银行Agent的下一道门槛</a>
+			</li>			<li>
+				<a href="" target="_blank">邢磊</a>：
+				<a href="http://finance.sina.com.cn/zl/bond/2026-07-15/zl-inihwvww7986020.shtml" target="_blank">大公国际：四层架构推动香港离岸金融生态改革——解读潘功胜行长在香港固定收益及货币峰会暨债券通论坛上的讲话</a>
+			</li>			<li>
+				<a href="" target="_blank">罗志恒</a>：
+				<a href="http://finance.sina.com.cn/zl/china/2026-07-15/zl-inihvytp7914715.shtml" target="_blank">中国出口持续高增的动力</a>
+			</li></div>
+			
+            <div class="right-side-ad">
+               <!--300*250按钮01   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000058857"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--300*250按钮01   end-->
+
+				<!--300*250按钮02   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000058858" style="margin-top: 20px;"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--300*250按钮02   end-->
+
+            </div>
+			
+            <!-- 投资助手 start-->
+           <iframe src="//finance.sina.com.cn/iframe/assistant.shtml" scrolling="no" frameborder="0" width="100%" height="305"></iframe>
+            <!-- 投资助手 end-->
+			<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+<a href="http://finance.sina.com.cn/stock/jyts/" target="_blank">交易提示</a>
+<a href="http://finance.sina.com.cn/stock/cpbd/" target="_blank">操盘必读</a>
+<a href="http://finance.sina.com.cn/focus/zqbjh/" target="_blank">证券报</a>
+<a href="http://vip.stock.finance.sina.com.cn/corp/view/vCB_BulletinGather.php?stock_str=&amp;gg_date=&amp;ftype=0" target="_blank">最新公告</a>
+<a href="http://vip.stock.finance.sina.com.cn/q/go.php/vInvestConsult/kind/xsjj/index.phtml" target="_blank">限售解禁</a>
+<a href="http://finance.sina.com.cn/data/" class="linkRed" target="_blank">数据中心</a>
+<a href="https://touzi.sina.com.cn/public/choose" target="_blank" suda-uatrack="key=ad_pc_finance_index&amp;value=ad_pc_finance_index_12">条件选股</a>
+<a href="http://stock.finance.sina.com.cn/stock/go.php/vIR_RatingNewest/index.phtml" target="_blank">券商评级</a>
+<a href="http://stock.finance.sina.com.cn/stock/go.php/vIR_SumPrice/index.phtml" target="_blank" class="linkRed">股价预测</a>
+<a href="http://finance.sina.com.cn/stock/sl/" target="_blank">板块行情</a>
+<a href="http://vip.stock.finance.sina.com.cn/q/go.php/vInvestConsult/kind/qgqp/index.phtml?t=sh_a" target="_blank">千股千评</a>
+<a href="http://vip.stock.finance.sina.com.cn/q/go.php/vDYData/kind/znzd/index.phtml" target="_blank">个股诊断</a>
+<a href="http://vip.stock.finance.sina.com.cn/q/go.php/vInvestConsult/kind/dzjy/index.phtml" target="_blank">大宗交易</a>
+<a href="http://finance.sina.com.cn/realstock/income_statement/2017-03-31/issued_pdate_de_1.html" target="_blank">财报查询</a>
+<a href="http://vip.stock.finance.sina.com.cn/q/go.php/vFinanceAnalyze/kind/performance/index.phtml" target="_blank" class="linkRed">业绩预告</a>
+<a href="http://stock.finance.sina.com.cn/option/quotes.html" target="_blank" class="linkRed">ETF期权</a>
+<a href="http://finance.sina.com.cn/fund/box/" target="_blank">类余额宝</a>
+<a href="http://vip.stock.finance.sina.com.cn/fund_center/index.html#jzkfall" target="_blank">基金净值</a>
+<a href="http://finance.sina.com.cn/money/fund/compare/" target="_blank">基金对比</a>
+<a href="http://vip.stock.finance.sina.com.cn/fund_center/index.html#hbphall" target="_blank">基金排名</a><a href="http://finance.sina.com.cn/money/future/hangqing.shtml" target="_blank">商品行情</a>
+<a href="http://finance.sina.com.cn/money/future/hf.html" target="_blank">外盘期货</a>
+<a href="http://vip.stock.finance.sina.com.cn/q/view/vFutures_Positions_cjcc.php" target="_blank">商品持仓</a>
+<a href="http://finance.sina.com.cn/futuremarket/spotprice.shtml#titlePos_4" target="_blank">现货报价</a>
+<a href="http://finance.sina.com.cn/futures/quotes/CFCTGC.shtml" target="_blank">CFTC持仓</a>
+<a href="http://vip.stock.finance.sina.com.cn/mkt/#qz_qh" target="_blank">期指行情</a> 
+<a href="http://vip.stock.finance.sina.comcn/q/view/vCffex_Positions_cjcc.php" target="_blank">期指持仓</a>
+<a href="http://roll.finance.sina.com.cn/finance/gzqh/fxyj/index.shtml" target="_blank">期指研究</a>
+<a href="http://finance.sina.com.cn/qizhi/hs300.html#gxzs" target="_blank">行业指数</a>
+<a href="http://finance.sina.com.cn/qizhi/hs300.html#qz" target="_blank">权重股票</a>
+<a href="http://finance.sina.com.cn/tblog/2011-06-20/166.html" target="_blank">期货名人</a>
+<a href="http://biz.finance.sina.com.cn/futures/ask/" target="_blank">专家坐堂</a>
+<a href="http://slide.finance.sina.com.cn/i_list_9_38679.html" target="_blank">高清解盘</a> 
+<a href="http://finance.sina.com.cn/futuremarket/help/1.html" target="_blank">期货入门</a>
+<a href="http://finance.sina.com.cn/forex/bonds.shtml" target="_blank">各国国债</a>
+<a href="http://roll.finance.sina.com.cn/finance/qh/qsyw/index.shtml" target="_blank">期市要闻</a>
+<a href="http://roll.finance.sina.com.cn/finance/qh/pzyj/index.shtml" target="_blank">期货研究</a> 
+<a href="http://finance.sina.com.cn/futuremarket/comm_all.html" target="_blank">机构评论</a> 
+<a href="http://finance.sina.com.cn/futuremarket/help/15.html" target="_blank">品种大全</a><a href="http://finance.sina.com.cn/forex/jsq.html" target="_blank">外汇计算器</a>
+<a href="http://finance.sina.com.cn/forex/paijia.html#0" target="_blank">人民币牌价</a>
+<a href="http://biz.finance.sina.com.cn/forex/forex.php" target="_blank">中间价</a>
+<a href="http://finance.sina.com.cn/money/forex/hq/DINIW.shtml" target="_blank">美元指数</a>
+<a href="http://vip.stock.finance.sina.com.cn/mkt/#jbhl_forex" target="_blank">直盘行情</a>
+<a href="http://vip.stock.finance.sina.com.cn/mkt/?f=caishou#all_forex" target="_blank"><font color="red">所有行情</font></a> 		
+<a href="http://vip.stock.finance.sina.com.cn/mkt/?f=caishou#usd_forex" target="_blank"><font color="red">美元相关</font></a> 	
+<a href="http://vip.stock.finance.sina.com.cn/mkt/?f=caishou#cny_forex" target="_blank"><font color="red">人民币相关</font></a>
+<a href="http://vip.stock.finance.sina.com.cn/mkt/#jchl_forex" target="_blank"><font color="red">交叉盘</font></a>
+<a href="http://finance.sina.com.cn/money/globalindex/ibor.shtml" target="_blank">拆借利率</a>
+<a href="http://roll.finance.sina.com.cn/finance/wh/hbfx/index.shtml" target="_blank">货币分析</a>
+<a href="http://roll.finance.sina.com.cn/finance/wh/fxyc/index.shtml" target="_blank">机构观点</a>
+<a href="http://money.finance.sina.com.cn/forex/view/vDailyFX_Detail.php?country=%C3%C0%B9%FA&amp;event=ISM%D6%C6%D4%EC%D2%B5%D6%B8%CA%FD" target="_blank">经济数据</a>
+<a href="http://biz.finance.sina.com.cn/forex/ask/index.php" target="_blank">专家坐堂</a>
+<a href="http://finance.sina.com.cn/focus/fxanalyst/" target="_blank">分析师圈</a>
+<a href="http://finance.sina.com.cn/forex/bonds.shtml" target="_blank">国债收益率</a>
+<a href="http://roll.finance.sina.com.cn/finance/wh/index.shtml" target="_blank">全球滚动</a>
+<a href="http://finance.sina.com.cn/money/forex/hq/CFTCDINIW.shtml" target="_blank">CFTC持仓</a>
+<a href="http://finance.sina.com.cn/money/forex/hq/BTCbtcchina.shtml" target="_blank">比特币</a><a href="http://finance.sina.com.cn/forex/jsq.html" target="_blank">外汇计算器</a>
+		<a href="http://roll.finance.sina.com.cn/finance/gjs/hjzx/index.shtml" target="_blank">黄金资讯</a>
+
+
+		<a href="http://roll.finance.sina.com.cn/finance/gjs/byfx/index.shtml" target="_blank">白银分析</a>
+		<a href="http://vip.stock.finance.sina.com.cn/q/view/vGold_Matter_History.php" target="_blank">实物金价</a>
+
+
+		<a href="http://stock.finance.sina.com.cn/futures/view/vGoldEtf.php" target="_blank">ETF持仓</a>
+	<a href="http://finance.sina.com.cn/money/gold/AUTD/quote.shtml" target="_blank">黄金TD</a>
+		<a href="http://finance.sina.com.cn/money/gold/AGTD/quote.shtml" target="_blank">白银TD</a>
+		<a href="http://roll.finance.sina.com.cn/finance/gjs/jyb/index.shtml" target="_blank">金银币</a>
+
+		<a href="http://biz.finance.sina.com.cn/zjzt/gold_2014.php" target="_blank">专家坐堂</a>
+		<a href="http://roll.finance.sina.com.cn/finance/gjs/tzzs/index.shtml" target="_blank">基础知识</a>
+	<a href="http://finance.sina.com.cn/futures/quotes/XAU.shtml" target="_blank">现货黄金</a>
+		<a href="http://finance.sina.com.cn/futures/quotes/XAG.shtml" target="_blank">现货白银</a>
+		<a href="http://finance.sina.com.cn/futures/quotes/XPT.shtml" target="_blank">现货铂金</a>
+		<a href="http://finance.sina.com.cn/futures/quotes/XPD.shtml" target="_blank">现货钯金</a>
+		<a href="http://slide.finance.sina.com.cn/i_list_9_34353.html">高清解盘</a>
+
+		<a href="http://guba.sina.com.cn/?s=bar&amp;bid=9111" target="_blank">黄金吧</a>  <a href="http://guba.sina.com.cn/?s=bar&amp;name=ag0" target="_blank">白银吧</a>
+		<a href="http://roll.finance.sina.com.cn/finance/gjs/hjfx/index.shtml" target="_blank">黄金分析</a>
+		<a href="http://finance.sina.com.cn/futures/quotes/CFCTGC.shtml" target="_blank">CFTC持仓</a></div>
+			
+            <div class="right-side-ad">
+                <!--300*250按钮03   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000060867"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--300*250按钮03   end-->
+
+				<!--300*250按钮04   2017/12   wenjing8 begin-->
+				<ins class="sinaads" data-ad-pdps="PDPS000000060868" style="margin-top: 20px;"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+				<!--300*250按钮04   end-->
+
+            </div>
+			
+            <!-- 博客看市 start-->
+			<iframe src="//finance.sina.com.cn/iframe/bkks.shtml" scrolling="no" frameborder="0" width="100%" height="560"></iframe>
+            <!-- 博客看市 end-->
+			<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+							<a href="http://blog.sina.com.cn/s/articlelist_1233227211_0_1.html " target="_blank" class="photo">
+								叶檀
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1284139322_0_1.html " target="_blank" class="photo">
+								凯恩斯
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1095876111_0_1.html " target="_blank" class="photo">
+								曹中铭
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1278226564_0_1.html " target="_blank" class="photo">
+								股民大张
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1068385283_0_1.html " target="_blank" class="photo">
+								宇辉战舰
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1285707277_0_1.html " target="_blank" class="photo">
+								股市风云
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1283087143_0_1.html " target="_blank" class="photo">
+								余岳桐
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_6174896504_0_1.html " target="_blank" class="photo">
+								股海战神
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_2620383855_0_1.html " target="_blank" class="photo">
+								郭一鸣
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1778926481_0_1.html " target="_blank" class="photo">
+								赵力行
+							</a></div>
+			
+            <!-- 天下财经 start-->
+			 <iframe src="//finance.sina.com.cn/iframe/txcj.shtml" scrolling="no" frameborder="0" width="100%" height="385" ></iframe>
+            <!-- 天下财经 end-->
+			<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+							<a href="http://blog.sina.com.cn/s/articlelist_1233227211_0_1.html " target="_blank" class="photo">
+								叶檀
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1284139322_0_1.html " target="_blank" class="photo">
+								凯恩斯
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1095876111_0_1.html " target="_blank" class="photo">
+								曹中铭
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1278226564_0_1.html " target="_blank" class="photo">
+								股民大张
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1068385283_0_1.html " target="_blank" class="photo">
+								宇辉战舰
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1285707277_0_1.html " target="_blank" class="photo">
+								股市风云
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1283087143_0_1.html " target="_blank" class="photo">
+								余岳桐
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_6174896504_0_1.html " target="_blank" class="photo">
+								股海战神
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_2620383855_0_1.html " target="_blank" class="photo">
+								郭一鸣
+							</a>							<a href="http://blog.sina.com.cn/s/articlelist_1778926481_0_1.html " target="_blank" class="photo">
+								赵力行
+							</a></div>
+			
+            <!-- 推荐视频 start -->
+			<iframe src="//finance.sina.com.cn/iframe/videolist.shtml" scrolling="no" frameborder="0" width="100%" height="410" ></iframe>
+            <!-- 推荐视频 end -->
+			<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+				<div class="item">
+                            <a class="cover" href="https://finance.sina.com.cn/onehour/2020-10-20/doc-iivhvpwz1605853.shtml" target="_blank">
+                                <img class="imgS" src="//n.sinaimg.cn/finance/transform/525/w300h225/20201030/ecb0-kcaeqzy3436531.jpg" alt="董明珠还能为格力奋战多久？|《至少一个小时》">
+                                <em class="video-icon"></em>
+                            </a>
+                            <a class="title" href="https://finance.sina.com.cn/onehour/2020-10-20/doc-iivhvpwz1605853.shtml" target="_blank">董明珠还能为格力奋战多久？|《至少一个小时》</a>
+                </div>				<div class="item">
+                            <a class="cover" href="https://finance.sina.com.cn/onehour/2020-06-18/doc-iircuyvi6164573.shtml" target="_blank">
+                                <img class="imgS" src="//n.sinaimg.cn/finance/transform/525/w300h225/20201030/75b9-kcaeqzy3438114.jpg" alt="梁建章：中国人口衰竭的速度前所未有">
+                                <em class="video-icon"></em>
+                            </a>
+                            <a class="title" href="https://finance.sina.com.cn/onehour/2020-06-18/doc-iircuyvi6164573.shtml" target="_blank">梁建章：中国人口衰竭的速度前所未有</a>
+                </div>				<div class="item">
+                            <a class="cover" href="https://finance.sina.com.cn/onehour/2020-05-15/doc-iirczymk1670659.shtml" target="_blank">
+                                <img class="imgS" src="//n.sinaimg.cn/finance/transform/525/w300h225/20201030/c485-kcaeqzy3442305.jpg" alt="冷友斌回应网友质疑：说价格高 对飞鹤不公平！">
+                                <em class="video-icon"></em>
+                            </a>
+                            <a class="title" href="https://finance.sina.com.cn/onehour/2020-05-15/doc-iirczymk1670659.shtml" target="_blank">冷友斌回应网友质疑：说价格高 对飞鹤不公平！</a>
+                </div>				<div class="item">
+                            <a class="cover" href="https://finance.sina.com.cn/onehour/2020-04-09/doc-iimxyqwa5514143.shtml" target="_blank">
+                                <img class="imgS" src="//n.sinaimg.cn/finance/transform/525/w300h225/20201030/a563-kcaeqzy3444360.jpg" alt="王中军：我喜欢比较“江湖”一点的人">
+                                <em class="video-icon"></em>
+                            </a>
+                            <a class="title" href="https://finance.sina.com.cn/onehour/2020-04-09/doc-iimxyqwa5514143.shtml" target="_blank">王中军：我喜欢比较“江湖”一点的人</a>
+                </div></div>
+			
+            <!-- 股吧精华 start-->
+			<iframe src="//finance.sina.com.cn/iframe/guba.shtml" scrolling="no" frameborder="0" width="100%" height="310"></iframe>
+            <!-- 股吧精华 end-->
+			<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+			<li><a href="http://guba.sina.com.cn/u/3031084391" target="_blank">7x24快讯</a>：<a href="https://guba.sina.com.cn/?s=thread&tid=3456892&bid=9279&dpc=1" target="_blank">9月19日沪深两市涨停分析</a></li>			<li><a href="http://guba.sina.com.cn/u/7242761149" target="_blank">非凡哥哥samm</a>：<a href="https://guba.sina.com.cn/?s=thread&tid=3456767&bid=9279&dpc=1" target="_blank">不想做任何操作</a></li>			<li><a href="http://guba.sina.com.cn/u/6478109017" target="_blank">飞我eight</a>：<a href="https://guba.sina.com.cn/?s=thread&tid=3456757&bid=9279&dpc=1" target="_blank">今天才这点成交量</a></li>			<li><a href="http://guba.sina.com.cn/u/7505349124" target="_blank">和你天天向上</a>：<a href="https://guba.sina.com.cn/?s=thread&tid=3456698&bid=9279&dpc=1" target="_blank">全部清除了  一分不剩</a></li>			<li><a href="http://guba.sina.com.cn/u/7048726012" target="_blank">用户7048726012</a>：<a href="https://guba.sina.com.cn/?s=thread&tid=3456640&bid=9279&dpc=1" target="_blank">想红但是又有点怕羞</a></li>			<li><a href="http://guba.sina.com.cn/u/5554913071" target="_blank">江东子弟93949</a>：<a href="https://guba.sina.com.cn/?s=thread&tid=3456639&bid=9279&dpc=1" target="_blank">还对中芯抱有幻想的人</a></li>			<li><a href="http://guba.sina.com.cn/u/7505349124" target="_blank">和你天天向上</a>：<a href="https://guba.sina.com.cn/?s=thread&tid=3456602&bid=9279&dpc=1" target="_blank">拉升一下吧  给我清仓的机会</a></li>			<li><a href="http://guba.sina.com.cn/u/7763476192" target="_blank">用户7763476192</a>：<a href="https://guba.sina.com.cn/?s=thread&tid=3456728&bid=9279&dpc=1" target="_blank">再玩下去6000亿都守不住了，没人玩了</a></li></div>
+			
+            
+            <!-- 新股申购日历 -->
+			<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+			 <li><span class="s1">07-24</span>
+				<span class="s2">嘉立创</span>
+				<span class="s3">001232</span>
+				<span class="s4">--</span></li>			 <li><span class="s1">07-24</span>
+				<span class="s2">津富士达</span>
+				<span class="s3">603468</span>
+				<span class="s4">--</span></li>			 <li><span class="s1">07-20</span>
+				<span class="s2">欣兴工具</span>
+				<span class="s3">301677</span>
+				<span class="s4">--</span></li>			 <li><span class="s1">07-16</span>
+				<span class="s2">长鑫科技</span>
+				<span class="s3">688825</span>
+				<span class="s4">8.66</span></li>			 <li><span class="s1">07-15</span>
+				<span class="s2">长鹰硬科</span>
+				<span class="s3">920238</span>
+				<span class="s4">18.89</span></li></div>
+			<div style="display:none!important;height:0!important;overflow:hidden!important;" class="seo_data_list">
+</div>
+		
+
+				
+
+				
+				
+			
+			<!-- 股票关键词js -->
+					    <link href="//n3.sinaimg.cn/tech/66ceb6d9/20180608/stock.css" rel="stylesheet" type="text/css" />
+		<script language="JavaScript" id="hq_data_id" src="//hq.sinajs.cn/list=sh601456" charset="gbk"></script>
+		<script language="JavaScript" src="//finance.sina.com.cn/other/src/stock_v4.js" charset="utf-8"></script>
+		
+		<script language="JavaScript">
+		var strCode = "sh601456";
+		show_quote(strCode,"stock");
+		</script>
+			<!-- 股票关键词js -->
+			
+            <!-- 底部导航 start -->
+			<div class="footer-wrap clearfix" data-sudaclick="right_footer_p">
+                <div class="footer-cont">
+                    <p class="msg icon"><a href="http://news.sina.com.cn/feedback/post.html" target="_blank">新浪财经意见反馈留言板</a></p>
+                    <p class="text">
+                        <a href="http://ir.sina.com.cn/index.shtml" target="_blank">新浪简介</a><span class="line">|</span><a href="http://emarketing.sina.com.cn/" target="_blank">广告服务</a><span class="line">|</span><a href="http://corp.sina.com.cn/eng/" target="_blank">About Sina</a>
+                        <br>
+                        <a href="http://www.sina.com.cn/contactus.html" target="_blank">联系我们</a><span class="line">|</span><a href="http://corp.sina.com.cn/chn/sina_job.html" target="_blank">招聘信息</a><span class="line">|</span><a href="https://login.sina.com.cn/signup/signup.php" target="_blank">通行证注册</a>
+                        <br>
+                        <a href="http://help.sina.com.cn/" target="_blank">产品答疑</a><span class="line">|</span><a href="http://www.sina.com.cn/intro/lawfirm.shtml" target="_blank">网站律师</a><span class="line">|</span><a href="http://english.sina.com" target="_blank">SINA English</a>
+                    </p>
+                    <p class="copyright">Copyright © 1996-2026 SINA Corporation</p>
+                    <p>All Rights Reserved 新浪公司 <a href="http://www.sina.com.cn/intro/copyright.shtml" target="_blank">版权所有</a></p>
+                </div>
+ </div>
+            <!-- 底部导航 end -->
+			
+            <!-- 改版调查 end -->
+			 <div class="right-side-ad" id="last_ad_wrap" style="width:300px;">
+              <!--300*250悬停画中画02   2017/12   wenjing8 begin-->
+				<ins class="sinaads" id="last_side_ad" data-ad-pdps="PDPS000000005425"></ins>
+				<script>(sinaads = window.sinaads || []).push({})</script>
+			  <!--300*250悬停画中画02   end-->
+
+            </div>
+			
+        </div>
+    </div>
+    <!-- 正文 end -->
+</div>
+<!-- main content end -->
+	
+<!-- 正文页浮层 start -->
+<div class="page-right-bar">
+    <a href="http://www.sina.com.cn" target="_blank" class='right-bar-btn btn-home' data-sudaclick="float_home_p"><i class="ani pulse infinite"></i>新浪首页</a>
+    <a href="javascript:;" node-type="audio-pop" node-pop="right" class='right-bar-btn btn-audio' data-sudaclick="content_voicebroadcast_i">语音播报</a>
+    <a href="javascript:;" node-type="toRelated" class='right-bar-btn btn-related' data-sudaclick="float_relativenews_i">相关新闻</a>
+    <a href="javascript:;" node-type="toTop" class='right-bar-btn btn-toTop fadeOut' data-sudaclick="float_top_i">返回顶部</a>
+</div>
+	        
+ <script src="//finance.sina.com.cn/other/src/sinafinance.article.min.js" charset="utf-8"></script>
+	        <!-- 内容区域 end -->
+	
+	
+<!-- 浮层广告    wenjing8  begin -->
+<ins class="sinaads" data-ad-pdps="PDPS000000055657" data-pop-position = "right bottom"></ins>
+<script>(sinaads = window.sinaads || []).push({
+    params:{
+        sinaads_ad_delay: 5,
+       sinaads_pop_position:"right bottom"
+    }
+});</script>
+<!-- 浮层广告 end -->
+	
+<!-- 正文页左下按钮广告  17/12  wenjing  begin -->
+
+<script language="javascript" type="text/javascript" src="//d2.sina.com.cn/d1images/button/rotator.js"></script>
+
+<script type="text/javascript">
+  (function(){
+    var adScript = document.createElement('script');
+    adScript.src = '//d1.sina.com.cn/litong/zhitou/sinaads/demo/changwy/link/cj_left_hzh_20160122.js';
+    document.getElementsByTagName('head')[0].appendChild(adScript);
+  })();
+</script>
+
+<!-- 正文页左下按钮广告 end -->
+<script>
+	(function(){
+		var el = document.createElement("script");
+		el.src = "https://lf1-cdn-tos.bytegoofy.com/goofy/ttzz/push.js?901e511a60b45d0f59ed0be4c0b557785e22ee94d19d2c824953ee854ebf6777b3e414cba65c376eba389ba56d9ee0846cad2206506a6529fe6ee21a7373effb434c445cf6444b10ea9756ea44e128a6";
+		el.id = "ttzz";
+		var s = document.getElementsByTagName("script")[0];
+		s.parentNode.insertBefore(el, s);
+	})(window)
+</script>
+
+<script src="https://pluto.sina.cn/gk/match?id=1"></script><script src="https://n.sinaimg.cn/default/7bd4e141/20251210/log.js"></script><!-- body code begin -->
+
+<!-- SSO_UPDATECOOKIE_START -->
+<script type="text/javascript">var sinaSSOManager=sinaSSOManager||{};sinaSSOManager.q=function(b){if(typeof b!="object"){return""}var a=new Array();for(key in b){a.push(key+"="+encodeURIComponent(b[key]))}return a.join("&")};sinaSSOManager.es=function(f,d,e){var c=document.getElementsByTagName("head")[0];var a=document.getElementById(f);if(a){c.removeChild(a)}var b=document.createElement("script");if(e){b.charset=e}else{b.charset="gb2312"}b.id=f;b.type="text/javascript";d+=(/\?/.test(d)?"&":"?")+"_="+(new Date()).getTime();b.src=d;c.appendChild(b)};sinaSSOManager.doCrossDomainCallBack=function(a){sinaSSOManager.crossDomainCounter++;document.getElementsByTagName("head")[0].removeChild(document.getElementById(a.scriptId))};sinaSSOManager.crossDomainCallBack=function(a){if(!a||a.retcode!=0){return false}var d=a.arrURL;var b,f;var e={callback:"sinaSSOManager.doCrossDomainCallBack"};sinaSSOManager.crossDomainCounter=0;if(d.length==0){return true}for(var c=0;c<d.length;c++){b=d[c];f="ssoscript"+c;e.scriptId=f;b=b+(/\?/.test(b)?"&":"?")+sinaSSOManager.q(e);sinaSSOManager.es(f,b)}};sinaSSOManager.updateCookieCallBack=function(c){var d="ssoCrossDomainScriptId";var a="http://login.sina.com.cn/sso/crossdomain.php";if(c.retcode==0){var e={scriptId:d,callback:"sinaSSOManager.crossDomainCallBack",action:"login",domain:"sina.com.cn"};var b=a+"?"+sinaSSOManager.q(e);sinaSSOManager.es(d,b)}else{}};sinaSSOManager.updateCookie=function(){var g=1800;var p=7200;var b="ssoLoginScript";var h=3600*24;var i="sina.com.cn";var m=1800;var l="http://login.sina.com.cn/sso/updatetgt.php";var n=null;var f=function(e){var r=null;var q=null;switch(e){case"sina.com.cn":q=sinaSSOManager.getSinaCookie();if(q){r=q.et}break;case"sina.cn":q=sinaSSOManager.getSinaCookie();if(q){r=q.et}break;case"51uc.com":q=sinaSSOManager.getSinaCookie();if(q){r=q.et}break}return r};var j=function(){try{return f(i)}catch(e){return null}};try{if(g>5){if(n!=null){clearTimeout(n)}n=setTimeout("sinaSSOManager.updateCookie()",g*1000)}var d=j();var c=(new Date()).getTime()/1000;var o={};if(d==null){o={retcode:6102}}else{if(d<c){o={retcode:6203}}else{if(d-h+m>c){o={retcode:6110}}else{if(d-c>p){o={retcode:6111}}}}}if(o.retcode!==undefined){return false}var a=l+"?callback=sinaSSOManager.updateCookieCallBack";sinaSSOManager.es(b,a)}catch(k){}return true};sinaSSOManager.updateCookie();</script>
+<!-- SSO_UPDATECOOKIE_END -->
+
+<!-- body code end -->
+
+</body>
+</html>

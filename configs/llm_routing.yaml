@@ -1,0 +1,47 @@
+# =====================================================================
+# LLM ROUTING — model mapping (cheap vs. expensive) + cost control.
+# (review.md §3.2 / §4.3: TriAgent layered routing + AgenticAITA trigger)
+#
+# The project runs on the DeepSeek API (OpenAI-compatible) with the
+# `deepseek-v4-flash` model. Every role below defaults to it; the model
+# names are DESIGN INTENT — swap in gpt-4o / claude / qwen when a
+# corresponding credential exists and the role needs it.
+# =====================================================================
+
+routing:
+  api:
+    base_url: ${DEEPSEEK_BASE_URL}      # OpenAI-compatible endpoint
+    api_key: ${DEEPSEEK_API_KEY}
+    default_model: ${DEEPSEEK_MODEL}    # deepseek-v4-flash
+    timeout_seconds: 60
+  generator:
+    model: "deepseek-v4-flash"          # cheap — schema / hypothesis generation
+    role: "schema_generation"
+    cost_tier: "cheap"
+  code:
+    model: "deepseek-v4-flash"          # accurate — schema -> formula translation
+    role: "code_translation"
+    cost_tier: "cheap"
+    temperature: 0.0                    # deterministic code generation
+  critic:
+    model: "deepseek-v4-flash"          # for EvoQuant performance diagnosis
+    role: "evoquant_diagnosis"
+    cost_tier: "cheap"
+  sentiment:
+    model: "deepseek-v4-flash"          # sentence-level sentiment (TriAgent tier)
+    role: "sentence_sentiment"
+    cost_tier: "cheap"
+  fallback: "deepseek-v4-flash"
+
+trigger:
+  # AgenticAITA Adaptive Z-Score Trigger Engine — only invoke the heavy
+  # LLM when a statistical anomaly is detected, otherwise stay cheap.
+  adaptive_zscore:
+    enabled: true
+    window: 20                    # rolling window over recent market metrics
+    trigger_z: 2.0                # |z| beyond this triggers LLM inference
+    min_invocation_interval: 60   # seconds between LLM calls (audit + cost)
+
+budget:
+  monthly_llm_cost_usd: 500       # blueprint verification checklist: <$500/mo
+  code_agent_cache: true          # cache generated code to avoid repeat calls

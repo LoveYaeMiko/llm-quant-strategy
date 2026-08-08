@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automating Trading Rules from Research Reports Using LLMs</title>
+  <meta name="description" content="Learn how quantitative asset managers use large language models (LLMs) to automate trading rule generation, backtesting, and semantic factor mining.">
+  <meta name="keywords" content="large language models, quantitative trading, alpha factor mining, agentic workflows, retrieval-augmented generation, semantic gating, fintech, algorithmic trading">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://research.mental-momentum.ai/r/automating-trading-rules-research-using-699apm">
+  <meta property="og:title" content="Automating Trading Rules from Research Reports Using LLMs">
+  <meta property="og:description" content="Large language models are transforming quantitative finance by powering autonomous systems that extract insights from unstructured reports to generate…">
+  <meta property="og:url" content="https://research.mental-momentum.ai/r/automating-trading-rules-research-using-699apm">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="https://research.mental-momentum.ai/static/og-default.jpg">
+  <meta property="og:article:published_time" content="2026-05-21T00:00:00Z">
+  <meta property="og:article:modified_time" content="2026-06-14T00:00:00Z">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://research.mental-momentum.ai/"},{"@type":"ListItem","position":2,"name":"Business, Finance & Strategy","item":"https://research.mental-momentum.ai/r/hub/business-finance-strategy"},{"@type":"ListItem","position":3,"name":"Economics & Finance","item":"https://research.mental-momentum.ai/r/hub/business-finance-strategy/economics-finance"},{"@type":"ListItem","position":4,"name":"Markets & Investing","item":"https://research.mental-momentum.ai/r/hub/business-finance-strategy/economics-finance/markets-investing"},{"@type":"ListItem","position":5,"name":"Automating Trading Rules from Research Reports Using LLMs","item":"https://research.mental-momentum.ai/r/automating-trading-rules-research-using-699apm"}]}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"Automating Trading Rules from Research Reports Using LLMs","url":"https://research.mental-momentum.ai/r/automating-trading-rules-research-using-699apm","publisher":{"@type":"Organization","name":"Mental Momentum Research","url":"https://research.mental-momentum.ai"},"author":{"@type":"Organization","name":"Mental Momentum Research","url":"https://research.mental-momentum.ai"},"datePublished":"2026-05-21","dateModified":"2026-06-14","description":"Learn how quantitative asset managers use large language models (LLMs) to automate trading rule generation, backtesting, and semantic factor mining.","keywords":"large language models, quantitative trading, alpha factor mining, agentic workflows, retrieval-augmented generation, semantic gating, fintech, algorithmic trading"}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Organization","name":"Mental Momentum Research","url":"https://research.mental-momentum.ai","description":"Mental Momentum Research publishes deep-dive research reports across AI, business strategy, mind and brain science, health and longevity, society, and the physical sciences.","logo":{"@type":"ImageObject","url":"https://research.mental-momentum.ai/logo-200.png","width":200,"height":48},"sameAs":["https://mental-momentum.ai"]}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How does RAG differ from domain-specific fine-tuning in quantitative trading workflows?","acceptedAnswer":{"@type":"Answer","text":"RAG integrates external real-time data for high auditability but adds latency and context window bloat. Fine-tuning permanently alters model weights for faster, lower-cost reasoning but requires significant upfront development and data preparation."}},{"@type":"Question","name":"What is semantic gating in the context of alpha factor mining?","acceptedAnswer":{"@type":"Answer","text":"Semantic gating uses LLM reasoning to dynamically activate or deactivate trading rules based on contextual market states. As demonstrated by frameworks like Alpha-R1, this approach significantly outperforms traditional heuristic methods like Lasso regression."}},{"@type":"Question","name":"Why do institutional trading desks restrict LLMs to writing code in proprietary domain-specific languages?","acceptedAnswer":{"@type":"Answer","text":"Forcing LLMs to use proprietary domain-specific languages, such as Goldman Sachs' Slang, prevents execution errors and code hallucinations. This constraint creates a structured, compiled dependency graph that can be validated by existing risk management systems."}},{"@type":"Question","name":"How does the Trade-R1 framework prevent reward hacking in stochastic financial environments?","acceptedAnswer":{"@type":"Answer","text":"Trade-R1 uses process-level verification and a triangular consistency metric to evaluate the logical alignment between retrieved evidence, reasoning, and trading decisions. This ensures reinforcement learning rewards are granted for sound economic logic rather than lucky, random returns."}}]}
+  </script>
+  <link rel="preload"
+        href="/static/katex/katex.min.css"
+        as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="/static/katex/katex.min.css">
+  </noscript>
+  <style>
+    /* Subset of deep-sparkle/src/index.css :root / .dark design tokens for standalone pages. */
+    :root {
+      --background: 222.2 84% 4.9%;
+      --foreground: 210 20% 95%;
+      --card: 260 30% 12%;
+      --card-foreground: 210 40% 98%;
+      --popover: 260 30% 12%;
+      --popover-foreground: 210 40% 98%;
+      --primary: 20 90% 65%;
+      --primary-foreground: 0 0% 100%;
+      --secondary: 260 25% 15%;
+      --secondary-foreground: 210 40% 98%;
+      --muted: 260 20% 18%;
+      --muted-foreground: 220 15% 80%;
+      --accent: 260 25% 15%;
+      --accent-foreground: 210 40% 98%;
+      --destructive: 0 62.8% 30.6%;
+      --destructive-foreground: 210 40% 98%;
+      --border: 260 20% 25%;
+      --input: 260 25% 15%;
+      --ring: 217.2 91.2% 59.8%;
+      --radius: 0.75rem;
+      --chat-input-bg: rgba(255, 255, 255, 0.06);
+      --chat-input-border: rgba(255, 255, 255, 0.15);
+      --gradient-mental-momentum:
+        radial-gradient(ellipse 100% 80% at 100% 100%, rgba(244, 162, 128, 0.9) 0%, rgba(244, 162, 128, 0.87) 2%, rgba(244, 162, 128, 0.84) 4%, rgba(244, 162, 128, 0.80) 6%, rgba(244, 162, 128, 0.76) 8%, rgba(244, 162, 128, 0.72) 10%, rgba(244, 162, 128, 0.68) 12%, rgba(244, 162, 128, 0.64) 14%, rgba(244, 162, 128, 0.60) 16%, rgba(244, 162, 128, 0.56) 18%, rgba(244, 162, 128, 0.52) 20%, rgba(244, 162, 128, 0.48) 22%, rgba(244, 162, 128, 0.44) 24%, rgba(244, 162, 128, 0.40) 26%, rgba(244, 162, 128, 0.36) 28%, rgba(244, 162, 128, 0.32) 30%, rgba(244, 162, 128, 0.28) 32%, rgba(244, 162, 128, 0.24) 34%, rgba(244, 162, 128, 0.20) 36%, rgba(244, 162, 128, 0.17) 38%, rgba(244, 162, 128, 0.14) 40%, rgba(244, 162, 128, 0.11) 42%, rgba(244, 162, 128, 0.08) 44%, rgba(244, 162, 128, 0.05) 46%, rgba(244, 162, 128, 0.02) 48%, transparent 50%),
+        radial-gradient(ellipse 140% 110% at 100% 100%, rgba(201, 93, 47, 0.7) 0%, rgba(201, 93, 47, 0.55) 10%, rgba(201, 93, 47, 0.4) 15%, rgba(201, 93, 47, 0.27) 20%, rgba(201, 93, 47, 0.15) 25%, rgba(201, 93, 47, 0.07) 32%, transparent 40%),
+        radial-gradient(ellipse 200% 180% at 100% 100%, rgba(101, 33, 118, 0.6) 0%, rgba(101, 33, 118, 0.52) 12%, rgba(101, 33, 118, 0.45) 20%, rgba(101, 33, 118, 0.38) 28%, rgba(101, 33, 118, 0.32) 35%, rgba(101, 33, 118, 0.25) 42%, rgba(101, 33, 118, 0.18) 50%, rgba(101, 33, 118, 0.10) 57%, transparent 65%),
+        linear-gradient(to bottom, hsl(222.2, 84%, 4.9%) 0%, hsla(222.2, 84%, 4.9%, 0.98) 3%, hsla(222.2, 84%, 4.9%, 0.9) 8%, hsla(222.2, 84%, 4.9%, 0.7) 15%, hsla(222.2, 84%, 4.9%, 0.4) 25%, transparent 40%),
+        #222237;
+    }
+    .dark {
+      --background: 222.2 84% 4.9%;
+      --foreground: 210 20% 95%;
+      --muted-foreground: 220 15% 80%;
+      --primary: 20 90% 65%;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: 0.015em;
+      background: var(--gradient-mental-momentum);
+      color: hsl(var(--foreground));
+    }
+    .page-root { min-height: 100vh; display: flex; flex-direction: column; }
+    .content-scroll { flex: 1; overflow-y: auto; }
+    main[data-research-id] { max-width: 56rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+    @media (min-width: 1024px) { main[data-research-id] { max-width: 64rem; } }
+    @media (min-width: 1280px) { main[data-research-id] { max-width: 72rem; } }
+
+    /* Branded header (anonymous chat shell bar) */
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 3.5rem;
+      padding: 0 1rem;
+      gap: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: hsl(var(--background));
+    }
+    .site-header a.logo-link { display: flex; align-items: center; text-decoration: none; }
+    .site-header img.logo { height: 2rem; width: auto; display: block; }
+    .site-header-nav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem 1.25rem;
+      font-size: 0.875rem;
+      flex: 1;
+      justify-content: center;
+    }
+    .site-header-nav a {
+      color: rgba(255, 255, 255, 0.55);
+      text-decoration: none;
+      touch-action: manipulation;
+    }
+    .site-header-nav a:hover { color: rgba(255, 255, 255, 0.85); }
+    .site-header .header-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.375rem 0.875rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: hsl(var(--primary-foreground));
+      background: hsl(var(--primary));
+      border-radius: calc(var(--radius) - 2px);
+      text-decoration: none;
+      touch-action: manipulation;
+    }
+    .site-header .header-cta:hover { filter: brightness(1.05); }
+
+    /* Question widget — mirrors chat input / user bubble chrome */
+    .question-widget {
+      margin-bottom: 1.5rem;
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--chat-input-border);
+      background: var(--chat-input-bg);
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: hsl(var(--foreground));
+    }
+    .key-takeaways {
+      margin-bottom: 1.5rem;
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      background: rgba(59, 130, 246, 0.08);
+    }
+    .key-takeaways-label {
+      margin: 0 0 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: rgb(147, 197, 253);
+    }
+    .key-takeaways ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: hsl(var(--foreground));
+    }
+    .key-takeaways li { margin-bottom: 0.35em; }
+
+    .intro-summary {
+      margin-bottom: 1.5rem;
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: hsl(var(--foreground));
+    }
+
+    /* Published line + E-E-A-T attribution (``research_author`` from ``meta.json``). */
+    .research-meta-line {
+      margin-bottom: 1.25rem;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      line-height: 1.5;
+    }
+    .research-meta-line a {
+      color: rgba(255, 255, 255, 0.55);
+      text-decoration: none;
+    }
+    .research-meta-line a:hover { color: rgba(255, 255, 255, 0.8); }
+
+    /* Collapsible methodology / AI disclosure */
+    .research-about {
+      margin-bottom: 1rem;
+      font-size: 0.8125rem;
+      color: rgba(255, 255, 255, 0.45);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 0.75rem;
+    }
+    .research-about-summary {
+      cursor: pointer;
+      list-style: none;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.75rem;
+      user-select: none;
+    }
+    .research-about-summary::-webkit-details-marker { display: none; }
+    .research-about-body { margin-top: 0.5rem; line-height: 1.6; }
+    .research-about-body p { margin: 0; }
+    .research-about-body a {
+      color: rgba(255, 255, 255, 0.55);
+      text-decoration: none;
+    }
+    .research-about-body a:hover { color: rgba(255, 255, 255, 0.8); }
+
+    /* Answer body — prose prose-sm prose-invert equivalents (markdown-message.tsx) */
+    .answer-body {
+      font-size: 15px;
+      line-height: 1.65;
+      color: hsl(var(--muted-foreground));
+    }
+    .answer-body > *:first-child { margin-top: 0; }
+    .answer-body p { margin: 0 0 1.25em; }
+    .answer-body h2 {
+      margin: 2rem 0 0.75rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+    }
+    .answer-body h2:first-child { margin-top: 0; }
+    .answer-body ul, .answer-body ol {
+      margin: 0 0 1.25em;
+      padding-left: 1.25rem;
+    }
+    .answer-body li { margin-bottom: 0.35em; }
+    .answer-body a {
+      color: rgb(147, 197, 253);
+      text-decoration: underline;
+      text-decoration-color: rgba(255, 255, 255, 0.2);
+      touch-action: manipulation;
+    }
+    .answer-body strong { color: hsl(var(--foreground)); font-weight: 600; }
+    .answer-body em { font-style: italic; }
+    .answer-body code {
+      font-size: 0.875em;
+      padding: 0.1em 0.35em;
+      border-radius: 0.25rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgb(147, 197, 253);
+    }
+    .answer-body pre {
+      margin: 0 0 1.25em;
+      padding: 0.75rem 1rem;
+      overflow-x: auto;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.1);
+      font-size: 0.8125rem;
+      line-height: 1.5;
+    }
+    .answer-body pre code { padding: 0; background: none; color: inherit; }
+    .answer-body img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--radius);
+      margin: 1rem 0;
+      display: block;
+    }
+    .answer-body table {
+      width: 100%;
+      margin: 0 0 1.25em;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .answer-body th, .answer-body td {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+    /* Inline citation superscripts — BASE_MARKDOWN_COMPONENTS.sup */
+    .answer-body sup[data-cite-num] {
+      display: inline-block;
+      vertical-align: super;
+      margin-left: 0.1em;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 500;
+      padding: 0 0.25rem;
+      border-radius: 9999px;
+      background: rgba(59, 130, 246, 0.15);
+      color: rgb(147, 197, 253);
+    }
+    /* Clickable inline citation superscripts */
+    sup.cite-ref { cursor: pointer; }
+    sup.cite-ref:hover { background: rgba(59, 130, 246, 0.3); }
+    /* Citation row number badge — clickable to scroll back to body */
+    .citations-widget .cite-num[data-cite-num] { cursor: pointer; }
+    .citations-widget .cite-num[data-cite-num]:hover { background: rgba(59, 130, 246, 0.3); }
+    /* Transient highlight when scrolled-to */
+    .cite-highlight {
+      outline: 2px solid rgba(59, 130, 246, 0.6);
+      border-radius: 4px;
+      transition: outline 0.4s ease-out;
+    }
+
+    /* Main sources — citations-widget.tsx */
+    .citations-widget {
+      margin-top: 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .cite-tab-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      margin-bottom: 0.75rem;
+    }
+    .cite-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0;
+      padding-right: 1.25rem;
+      border-radius: 0;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.45);
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .cite-tab--active {
+      color: rgb(147, 197, 253);
+      border-bottom-color: rgb(147, 197, 253);
+    }
+    .cite-tab:hover:not(.cite-tab--active) {
+      color: rgba(255, 255, 255, 0.7);
+      border-bottom-color: rgba(255, 255, 255, 0.2);
+    }
+    .cite-panel--hidden { display: none; }
+    .citations-widget .cite-count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 1.25rem;
+      padding: 0 0.375rem;
+      border-radius: 0.25rem;
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 10px;
+    }
+    .citations-widget .cite-list {
+      margin: 0.75rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .citations-widget .cite-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.625rem;
+    }
+    .citations-widget .cite-num {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      padding: 0 0.25rem;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 500;
+      background: rgba(59, 130, 246, 0.15);
+      color: rgb(147, 197, 253);
+    }
+    .citations-widget .cite-body { min-width: 0; flex: 1; }
+    .citations-widget .cite-title {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: hsl(var(--foreground));
+    }
+    .citations-widget .cite-title a {
+      color: rgb(147, 197, 253);
+      text-decoration: underline;
+      text-decoration-color: rgba(255, 255, 255, 0.2);
+    }
+    .citations-widget .cite-meta {
+      margin-top: 0.125rem;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* Related research (semantic internal links) */
+    .related-research {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .related-research-heading {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+    }
+    .related-research-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .related-research-list li {
+      margin-bottom: 0.5rem;
+    }
+    .related-research-link {
+      font-size: 0.875rem;
+      color: rgb(147, 197, 253);
+      text-decoration: underline;
+      text-decoration-color: rgba(255, 255, 255, 0.2);
+    }
+    .related-research-link:hover {
+      color: hsl(var(--primary));
+    }
+
+    /* LandingFooter-style site footer */
+    .site-footer {
+      width: 100%;
+      max-width: 56rem;
+      margin: 0 auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2rem 1rem;
+    }
+    @media (min-width: 1024px) { .site-footer { max-width: 64rem; } }
+    @media (min-width: 1280px) { .site-footer { max-width: 72rem; } }
+    .site-footer-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      text-align: center;
+    }
+    @media (min-width: 640px) {
+      .site-footer-inner {
+        flex-direction: row;
+        text-align: left;
+      }
+    }
+    .site-footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.5);
+    }
+    @media (min-width: 640px) {
+      .site-footer-links { justify-content: flex-start; }
+    }
+    .site-footer-links a {
+      color: inherit;
+      text-decoration: none;
+      touch-action: manipulation;
+    }
+    .site-footer-links a:hover { color: rgba(255, 255, 255, 0.8); }
+    .site-footer-copy {
+      margin: 0;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      flex-shrink: 0;
+    }
+    /* Phase 2: optional script src="" defer for mm-shell-v1.js */
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  </noscript>
+  <!-- Google Analytics (GA4, mm-research stream — see deep-sparkle DOCS_ANALYTICS_GA4.md) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V4Y4G1HBG3"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V4Y4G1HBG3', {
+      page_title: 'Automating Trading Rules from Research Reports Using LLMs',
+      page_location: 'https://research.mental-momentum.ai/r/automating-trading-rules-research-using-699apm'
+    });
+  </script>
+</head>
+<body>
+  <div class="page-root">
+    <header class="site-header" role="banner">
+      <a class="logo-link" href="https://research.mental-momentum.ai" aria-label="Mental Momentum Research home">
+        <img class="logo" src="https://research.mental-momentum.ai/logo-200.png" width="200" height="48" alt="Mental Momentum">
+      </a>
+      <nav class="site-header-nav" aria-label="Main">
+        <a href="https://research.mental-momentum.ai/about">About</a>
+        <a href="https://research.mental-momentum.ai/r/library">Library</a>
+      </nav>
+      <a class="header-cta" href="https://research.mental-momentum.ai">Sign In / Sign Up</a>
+    </header>
+    <div class="content-scroll">
+      <main data-research-id="699apm">
+<nav class="breadcrumb" aria-label="Breadcrumb" style="font-size:0.8125rem;color:rgba(255,255,255,0.5);margin-bottom:0.5rem;">
+  <a href="https://research.mental-momentum.ai/" style="color:rgba(255,255,255,0.65);text-decoration:none;">Home</a> / <a href="https://research.mental-momentum.ai/r/hub/business-finance-strategy" style="color:rgba(255,255,255,0.65);text-decoration:none;">Business, Finance &amp; Strategy</a> / <a href="https://research.mental-momentum.ai/r/hub/business-finance-strategy/economics-finance" style="color:rgba(255,255,255,0.65);text-decoration:none;">Economics &amp; Finance</a> / <a href="https://research.mental-momentum.ai/r/hub/business-finance-strategy/economics-finance/markets-investing" style="color:rgba(255,255,255,0.65);text-decoration:none;">Markets &amp; Investing</a> / <span class="breadcrumb-current" style="color:rgba(255,255,255,0.5);">Automating Trading Rules from Research Reports Using LLMs</span>
+</nav>
+<a class="breadcrumb-hub-link" href="https://research.mental-momentum.ai/r/hub/business-finance-strategy/economics-finance/markets-investing" style="display:inline-block;font-size:0.75rem;font-weight:500;color:rgb(147,197,253);text-decoration:none;margin-bottom:1rem;">Part of Markets &amp; Investing</a>
+        <div class="research-meta-line" aria-label="Last updated date">
+          Updated 2026-06-14
+        </div>
+        <div class="question-widget" role="region" aria-label="Research question">
+          How are LLMs being used to automate the generation and validation of trading rules from unstructured research reports?
+        </div>
+        <div class="key-takeaways" aria-label="Key takeaways">
+          <p class="key-takeaways-label">Key takeaways</p>
+          <ul>
+            <li>LLM-powered multi-agent systems can autonomously generate, program, and backtest trading rules from unstructured financial reports, significantly accelerating the research pipeline.</li>
+            <li>Institutions balance Retrieval-Augmented Generation for accessing real-time market data with domain-specific fine-tuning to improve logical reasoning and reduce execution latency.</li>
+            <li>To prevent reward hacking in noisy markets, systems employ process-level verification that rewards the logical consistency between retrieved evidence, reasoning chains, and decisions.</li>
+            <li>To prevent catastrophic errors and algorithmic hallucinations, LLMs are constrained to generating executable trading logic strictly within proprietary, deterministic programming languages.</li>
+            <li>Standard LLMs suffer from lookahead bias by memorizing future events, requiring specialized Point-in-Time pretraining to ensure temporal isolation and valid historical backtesting.</li>
+          </ul>
+        </div>
+        <div class="intro-summary" aria-label="Research summary">
+          Large language models are transforming quantitative finance by powering autonomous systems that extract insights from unstructured reports to generate testable trading rules. To ensure reliability, firms combine real-time data retrieval with fine-tuned models that output code in secure, proprietary programming languages. Specialized point-in-time training and logical verification are also utilized to prevent models from corrupting historical backtests with memorized future data. Ultimately, while AI accelerates research, human oversight remains vital to manage systemic risk.
+        </div>
+        <article class="answer-body" aria-label="Research answer">
+          <h1>Automating Trading Rules from Research Reports Using LLMs</h1>
+<h2>Evolution of Quantitative System Architectures</h2>
+<p>The architectural foundations of quantitative financial analysis are undergoing a structural transition, moving from static algorithmic pipelines toward multi-agent, heuristically driven workflows powered by large language models (LLMs). Traditional algorithmic trading, established in the early 2000s, relies on deterministic and modular sequences: data ingestion, predefined signal generation, risk management, and market execution <sup data-cite-num="1" class="cite-ref">1</sup>. While these legacy systems excel in high-frequency, low-latency environments, they fundamentally lack the capacity to process unstructured semantic data or autonomously adapt to sudden mid-session macroeconomic regime shifts <sup data-cite-num="1" class="cite-ref">1</sup><sup data-cite-num="2" class="cite-ref">2</sup>. In contrast, LLMs function as advanced analytical reasoning engines capable of compressing vast volumes of unstructured text - such as earnings call transcripts, analyst notes, and regulatory filings - into actionable lower-dimensional representations that can be interpreted by quantitative trading algorithms <sup data-cite-num="1" class="cite-ref">1</sup>.</p>
+<p>This integration signifies the emergence of agentic trading systems. Rather than operating as rigid execution bots, these systems are constructed as expert-system decision pipelines <sup data-cite-num="2" class="cite-ref">2</sup>. Agentic frameworks introduce explicit cognitive loops: perceiving unstructured market information, retrieving historical context from memory stores, generating trading hypotheses, and formulating execution logic in programmatic languages <sup data-cite-num="1" class="cite-ref">1</sup><sup data-cite-num="2" class="cite-ref">2</sup>. Quantitative asset managers have empirically documented that while raw LLMs are poor predictors of future returns due to static training cutoffs and temporal biases, their unparalleled capacity for textual compression is highly effective for synthesizing market sentiment and integrating alternative data sources into systematic investment approaches <sup data-cite-num="1" class="cite-ref">1</sup><sup data-cite-num="2" class="cite-ref">2</sup>. For example, backtesting strategies that utilize language models to process analyst sentiment from 2004 to 2019 demonstrated significant outperformance over baseline market indices <sup data-cite-num="1" class="cite-ref">1</sup>.</p>
+<p>The deployment of these models across institutional trading desks is heavily stratified by the degree of autonomy granted to the agentic system. Implementations range from interactive research assistants that accelerate quantitative code generation for human researchers, to fully autonomous research pipelines that systematically generate, backtest, and refine complex trading signals without human intervention <sup data-cite-num="3" class="cite-ref">3</sup><sup data-cite-num="4" class="cite-ref">4</sup>. Understanding the infrastructural trade-offs, validation mechanics, and inherent biases of these systems is critically necessary for deploying LLMs reliably in institutional trading environments.</p>
+<h2>Information Extraction and Infrastructure Trade-Offs</h2>
+<p>The extraction of financial data from unstructured research reports requires selecting an optimal architectural framework to balance computational cost, execution latency, and reasoning accuracy. The three dominant paradigms for integrating LLMs into financial data extraction workflows are Retrieval-Augmented Generation (RAG), domain-specific fine-tuning, and multi-agent orchestration <sup data-cite-num="5" class="cite-ref">5</sup><sup data-cite-num="6" class="cite-ref">6</sup><sup data-cite-num="9" class="cite-ref">9</sup>. Each approach presents distinct operational economics and technical capabilities.</p>
+<h3>Retrieval-Augmented Generation Economics</h3>
+<p>RAG architectures integrate an external retrieval pipeline - typically utilizing vector databases, semantic search indexing, and document chunking - with an LLM's generative capabilities <sup data-cite-num="7" class="cite-ref">7</sup><sup data-cite-num="11" class="cite-ref">11</sup>. When a quantitative system queries a financial report, the RAG framework retrieves the most semantically relevant text chunks and injects them into the model's context window at inference time <sup data-cite-num="11" class="cite-ref">11</sup><sup data-cite-num="12" class="cite-ref">12</sup>. </p>
+<p>The primary advantage of RAG in financial markets is knowledge freshness and data provenance. RAG systems can access real-time market data, regulatory filings, and breaking news without requiring costly and time-consuming model retraining <sup data-cite-num="5" class="cite-ref">5</sup><sup data-cite-num="6" class="cite-ref">6</sup><sup data-cite-num="13" class="cite-ref">13</sup>. Furthermore, because the output is explicitly grounded in retrieved documents, RAG systems offer a high degree of auditability. They can cite specific paragraphs in a research report or SEC filing, satisfying institutional compliance, transparency, and explainability requirements <sup data-cite-num="9" class="cite-ref">9</sup><sup data-cite-num="13" class="cite-ref">13</sup>. </p>
+<p>However, RAG introduces significant operational complexities and latency bottlenecks at scale. The insertion of retrieved documents expands the prompt payload, leading to a phenomenon known as "context bloat." In high-volume trading environments, expanding a base prompt from 15 tokens to over 500 tokens through document injection dramatically increases API token costs and inference latency, adding between 50 and 300 milliseconds per query <sup data-cite-num="14" class="cite-ref">14</sup><sup data-cite-num="15" class="cite-ref">15</sup>. Additionally, RAG relies entirely on the quality of the external retrieval pipeline; if the semantic search fails to surface the correct financial clause, the model's output will be inherently flawed, exhibiting the classic "garbage in, garbage out" paradigm <sup data-cite-num="11" class="cite-ref">11</sup>. </p>
+<h3>Domain-Specific Fine-Tuning Cost Profiles</h3>
+<p>Fine-tuning involves permanently modifying the underlying weights and parameters of an LLM by training it on highly curated, domain-specific datasets, such as proprietary analyst reports, trading rule libraries, and specialized financial ontologies <sup data-cite-num="12" class="cite-ref">12</sup><sup data-cite-num="16" class="cite-ref">16</sup>. While RAG supplies the model with external facts on an ad-hoc basis, fine-tuning deeply alters the model's fundamental reasoning behavior, output formatting, and stylistic alignment <sup data-cite-num="11" class="cite-ref">11</sup><sup data-cite-num="17" class="cite-ref">17</sup>. </p>
+<p>For institutional trading desks, fine-tuning is utilized when deep domain reasoning is required over relatively stable knowledge bases, or when stringent latency requirements prohibit external retrieval steps <sup data-cite-num="6" class="cite-ref">6</sup><sup data-cite-num="17" class="cite-ref">17</sup>. Fine-tuned models process queries faster and utilize fewer tokens per interaction. In enterprise deployments, this efficiency can yield a 10x to 50x reduction in per-query costs at high volumes, dwarfing the initial training investments within weeks <sup data-cite-num="14" class="cite-ref">14</sup><sup data-cite-num="15" class="cite-ref">15</sup>. Empirical studies evaluating complex reasoning tasks demonstrate that fine-tuning improves accuracy more significantly than RAG alone, as the model internalizes the logical structure of the analysis rather than simply summarizing appended text chunks <sup data-cite-num="17" class="cite-ref">17</sup>. </p>
+<p>The primary drawback of fine-tuning is the substantial upfront capital and labor expenditure. Preparing high-quality financial datasets requires tens to hundreds of hours of expert human labor, costing thousands of dollars per training run, and the resulting models face the risk of catastrophic forgetting or rapid obsolescence as market terminology evolves <sup data-cite-num="14" class="cite-ref">14</sup><sup data-cite-num="16" class="cite-ref">16</sup>. To mitigate these deficiencies, many institutions adopt a hybrid approach: fine-tuning a model to internalize quantitative reasoning logic and response formatting, while concurrently utilizing RAG to supply real-time market pricing and dynamic macroeconomic news <sup data-cite-num="15" class="cite-ref">15</sup><sup data-cite-num="17" class="cite-ref">17</sup>.</p>
+<h3>Comparison of Architecture Resource Requirements</h3>
+<p>The decision to implement RAG, fine-tuning, or a hybrid system is largely dictated by the scale of the trading operation and the specific requirements of the financial task.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Architectural Approach</th>
+<th style="text-align: left;">Setup Economics</th>
+<th style="text-align: left;">Operational Economics</th>
+<th style="text-align: left;">Latency Profile</th>
+<th style="text-align: left;">Optimal Financial Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Retrieval-Augmented Generation (RAG)</strong></td>
+<td style="text-align: left;">Low initial cost; 2-4 weeks development; $350-$2,850/month infrastructure setup <sup data-cite-num="14" class="cite-ref">14</sup>.</td>
+<td style="text-align: left;">High variable cost; context bloat increases API token consumption <sup data-cite-num="15" class="cite-ref">15</sup>.</td>
+<td style="text-align: left;">Adds 50-300ms retrieval latency per query <sup data-cite-num="14" class="cite-ref">14</sup>.</td>
+<td style="text-align: left;">Parsing daily news, dynamic earnings reports, and ad-hoc compliance queries <sup data-cite-num="9" class="cite-ref">9</sup>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Domain-Specific Fine-Tuning</strong></td>
+<td style="text-align: left;">High initial cost; $2,000-$10,000 for labor/data prep; $50-$5,000 training compute <sup data-cite-num="14" class="cite-ref">14</sup>.</td>
+<td style="text-align: left;">Low variable cost; 10-50x cheaper per query for volumes &gt;100,000/day <sup data-cite-num="14" class="cite-ref">14</sup>.</td>
+<td style="text-align: left;">Low latency; bypasses external retrieval steps <sup data-cite-num="14" class="cite-ref">14</sup><sup data-cite-num="15" class="cite-ref">15</sup>.</td>
+<td style="text-align: left;">Structured entity extraction, credit underwriting logic, and consistent style alignment <sup data-cite-num="9" class="cite-ref">9</sup><sup data-cite-num="11" class="cite-ref">11</sup>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Hybrid System (RAG + Fine-Tuning)</strong></td>
+<td style="text-align: left;">Highest initial cost; requires both data engineering and ML training pipelines <sup data-cite-num="13" class="cite-ref">13</sup>.</td>
+<td style="text-align: left;">Highest overall cost; multiplies maintenance of databases and model weights <sup data-cite-num="13" class="cite-ref">13</sup>.</td>
+<td style="text-align: left;">Moderate to High; depends heavily on retrieval optimization <sup data-cite-num="17" class="cite-ref">17</sup>.</td>
+<td style="text-align: left;">High-stakes legal analysis, healthcare diagnostics, and institutional financial services <sup data-cite-num="13" class="cite-ref">13</sup><sup data-cite-num="17" class="cite-ref">17</sup>.</td>
+</tr>
+</tbody>
+</table>
+<h2>Autonomous Agentic Workflows</h2>
+<p>While extraction pipelines focus on answering discrete queries, agentic workflows utilize LLMs to autonomously execute multi-step operational tasks across disparate systems <sup data-cite-num="6" class="cite-ref">6</sup><sup data-cite-num="18" class="cite-ref">18</sup>. In an agentic setup, the LLM acts as an orchestration layer, possessing the programmatic authority to interact with external APIs, invoke code interpreters, query databases, and continuously evaluate its own progress against a defined trading objective <sup data-cite-num="6" class="cite-ref">6</sup><sup data-cite-num="7" class="cite-ref">7</sup>.</p>
+<p>In quantitative finance, these agentic workflows have been formalized into structured research pipelines aimed at dramatically reducing the time required to evaluate new trading strategies. Man Group, a leading institutional hedge fund, illustrates this structural divergence through the deployment of two distinct AI systems: Alpha Assistant and AlphaTrend <sup data-cite-num="4" class="cite-ref">4</sup><sup data-cite-num="8" class="cite-ref">8</sup>. </p>
+<p>The Alpha Assistant is designed as an interactive, agentic coding partner. A researcher inputs an analytical objective in natural language, and the assistant utilizes its knowledge of the firm's internal systems, proprietary data libraries, and market weights to generate and execute firm-specific code snippets <sup data-cite-num="3" class="cite-ref">3</sup>. This flexible approach accelerates implementation but relies heavily on continuous human interaction, trading analytical depth for broad exploratory scope <sup data-cite-num="4" class="cite-ref">4</sup>.</p>
+<p>Conversely, AlphaTrend represents a specialized, autonomous research pipeline. It operates as a predefined agentic workflow that systematically generates, implements, and researches trend-following signal proposals without requiring step-by-step human intervention <sup data-cite-num="4" class="cite-ref">4</sup>. The overarching system, referred to internally as AlphaGPT, subjects these AI-generated trade ideas to the same rigorous backtesting and review processes as human-generated research. By proposing signals, writing the corresponding evaluation code, and running historical backtests autonomously, the system can produce viable research concepts in minutes rather than days, evaluating a volume of investment ideas that would be impossible for human teams to process manually <sup data-cite-num="20" class="cite-ref">20</sup><sup data-cite-num="9" class="cite-ref">9</sup>.</p>
+<h2>Automation of Alpha Factor Mining Frameworks</h2>
+<p>The systematic translation of unstructured text into predictive trading rules is formally characterized as alpha factor mining. Traditionally, quantitative researchers manually reviewed economic conditions, technical indicators, and market anomalies to construct formulaic trading signals. LLMs have rapidly digitized this process, enabling multi-agent systems to systematically propose, construct, and validate hundreds of alpha factors programmatically.</p>
+<h3>Multi-Agent Debate and Evolutionary Generation</h3>
+<p>Recent research frameworks treat alpha mining as a collaborative workflow that simulates the dynamics of a professional quantitative trading floor. Systems such as FactorMAD utilize a multi-agent debate architecture based on LLMs to develop interpretable stock alpha factors <sup data-cite-num="2" class="cite-ref">2</sup><sup data-cite-num="22" class="cite-ref">22</sup>. By structuring agents into distinct roles - such as hypothesis generators, code developers, and evaluators - these systems iteratively refine trading logic through simulated adversarial critique <sup data-cite-num="23" class="cite-ref">23</sup>.</p>
+<p>The automated generation process typically follows a defined sequential trajectory. First, in the hypothesis generation phase, an LLM analyzes unstructured data streams and proposes a market inefficiency or momentum trend <sup data-cite-num="23" class="cite-ref">23</sup>. Second, during implementation, a specialized coding agent translates the natural language hypothesis into a mathematical expression or programmatic rule <sup data-cite-num="23" class="cite-ref">23</sup>. Third, an execution agent runs a backtest of the rule against historical market data. Finally, a judging agent reviews the performance metrics and provides targeted feedback to the generator agent to optimize the underlying logic <sup data-cite-num="23" class="cite-ref">23</sup><sup data-cite-num="24" class="cite-ref">24</sup><sup data-cite-num="25" class="cite-ref">25</sup>.</p>
+<p>Different frameworks apply varying degrees of autonomy to this process. Systems like Alpha-GPT incorporate human-in-the-loop interaction, providing researchers with a visual dashboard to guide the LLM's evolutionary search for alphas. This interaction successfully steers the model away from overcrowded trades, counteracting alpha decay, and has shown significant improvements in predictive performance <sup data-cite-num="24" class="cite-ref">24</sup><sup data-cite-num="25" class="cite-ref">25</sup>. Alternatively, multimodal foundation agents like FinAgent have achieved substantial autonomy, yielding an average 36% improvement in profit metrics across testing datasets, including a notable 92.27% return over established baselines in highly specific testing environments <sup data-cite-num="10" class="cite-ref">10</sup>. </p>
+<p>Other frameworks prioritize context-aware screening over raw generation. Alpha-R1 is an 8-billion parameter reasoning model that evaluates the semantic rationale of existing factors against shifting market states, dynamically activating or deactivating trading rules based on contextual consistency rather than simple numerical momentum <sup data-cite-num="11" class="cite-ref">11</sup><sup data-cite-num="12" class="cite-ref">12</sup>.</p>
+<h3>Performance Evaluation of Alpha-R1 Framework</h3>
+<p>The integration of semantic reasoning into factor screening demonstrates marked outperformance over traditional heuristic methodologies. When tested against standard quantitative gating strategies like Lasso regression and IC Momentum (Information Coefficient Momentum), the Alpha-R1 framework significantly improved cumulative returns and risk-adjusted metrics across major indices.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Screening Methodology</th>
+<th style="text-align: left;">S&amp;P 500 Cumulative Return</th>
+<th style="text-align: left;">S&amp;P 500 Sharpe Ratio</th>
+<th style="text-align: left;">S&amp;P 500 Max Drawdown</th>
+<th style="text-align: left;">CSI 300 Cumulative Return</th>
+<th style="text-align: left;">CSI 300 Sharpe Ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Alpha-R1 (Semantic Gating)</strong></td>
+<td style="text-align: left;">18.93%</td>
+<td style="text-align: left;">1.36</td>
+<td style="text-align: left;">18.41%</td>
+<td style="text-align: left;">14.02%</td>
+<td style="text-align: left;">1.87</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Lasso (L1 Regularization)</strong></td>
+<td style="text-align: left;">-1.86%</td>
+<td style="text-align: left;">-0.35</td>
+<td style="text-align: left;">17.36%</td>
+<td style="text-align: left;">1.58%</td>
+<td style="text-align: left;">0.13</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>IC Momentum (Top 10 Factors)</strong></td>
+<td style="text-align: left;">9.69%</td>
+<td style="text-align: left;">0.74</td>
+<td style="text-align: left;">13.99%</td>
+<td style="text-align: left;">-3.64%</td>
+<td style="text-align: left;">-0.52</td>
+</tr>
+</tbody>
+</table>
+<p>As evidenced by the data, the semantic gating approach nearly doubled the returns of the strongest heuristic baseline on the S&amp;P 500 while maintaining superior robustness to regime shifts <sup data-cite-num="11" class="cite-ref">11</sup>. </p>
+<h2>Reinforcement Learning and Process-Level Verification</h2>
+<p>Optimizing LLMs to generate reliable trading rules extends beyond basic factor generation; it requires verifying the logic the model employs to arrive at a market decision. Reinforcement Learning from Verifiable Rewards (RLVR) has proven highly effective in domains like mathematics and software engineering, where a generated output is objectively correct or incorrect, providing a clear learning signal <sup data-cite-num="29" class="cite-ref">29</sup>. However, financial markets present a highly stochastic and noisy environment. A logically sound and mathematically rigorous trading rule might generate a negative return due to random market volatility, while an entirely illogical rule might yield a short-term profit by chance <sup data-cite-num="13" class="cite-ref">13</sup>. Relying purely on outcome-based financial returns causes standard reinforcement learning algorithms to degenerate into "reward hacking," where the model optimizes for spurious historical correlations rather than robust economic reasoning <sup data-cite-num="12" class="cite-ref">12</sup><sup data-cite-num="13" class="cite-ref">13</sup>.</p>
+<p>To bridge verifiable rewards with stochastic market environments, researchers developed advanced frameworks like Trade-R1. This architecture employs process-level reasoning verification, moving away from simple outcome feedback toward evaluating the logical consistency of the model's analytical chain <sup data-cite-num="13" class="cite-ref">13</sup><sup data-cite-num="31" class="cite-ref">31</sup>. The verification process is constructed around a "triangular consistency metric." This approach transforms the evaluation of lengthy financial documents into a structured RAG task, meticulously assessing the pairwise alignment between three distinct nodes: the retrieved evidence (raw market data and news), the reasoning chain (synthesized investment thesis), and the final trading decision (execution logic such as LONG or SHORT) <sup data-cite-num="12" class="cite-ref">12</sup><sup data-cite-num="13" class="cite-ref">13</sup>.</p>
+<p>Only when the reasoning chain accurately reflects the retrieved evidence, and the final decision logically follows from that reasoning chain, is the reinforcement reward granted. The model integrates Fixed-effect Semantic Rewards (FSR) to ensure stable logic alignment, and Dynamic-effect Semantic Rewards (DSR) to optimize magnitude scaling across shifting market regimes. This rigorous verification significantly reduces reward hacking and improves cross-market generalization <sup data-cite-num="13" class="cite-ref">13</sup>. This approach requires complex supervised fine-tuning utilizing a curriculum-based transition from easy to hard financial concepts. Training often employs "reverse reasoning distillation" - a technique where high-quality reasoning traces are synthetically reconstructed from superior proprietary models (e.g., OpenAI reasoning models) to serve as step-by-step training targets for smaller, open-source models <sup data-cite-num="32" class="cite-ref">32</sup><sup data-cite-num="33" class="cite-ref">33</sup><sup data-cite-num="34" class="cite-ref">34</sup>. Evaluated against baseline reasoning models on assets like Nvidia (NVDA), the Trading-R1 architecture achieved an 8.08% cumulative return with a Sharpe Ratio of 2.72 and a maximum drawdown of only 3.80%, vastly outperforming generic instruction-following models <sup data-cite-num="34" class="cite-ref">34</sup>.</p>
+<h2>Integration with Proprietary Domain-Specific Languages</h2>
+<p>Despite their advanced textual reasoning capabilities, LLMs are inherently prone to logical hallucinations and non-deterministic structural outputs. To ensure execution fidelity and prevent catastrophic trading errors, institutional quantitative platforms generally prohibit LLMs from executing trades directly via natural language or generalized Python scripts. Instead, the LLM is constrained to generating code in strictly governed, proprietary domain-specific languages (DSLs) <sup data-cite-num="35" class="cite-ref">35</sup><sup data-cite-num="36" class="cite-ref">36</sup><sup data-cite-num="37" class="cite-ref">37</sup>.</p>
+<p>Financial institutions have historically invested immense resources into developing in-house programming languages. Prominent examples include Goldman Sachs' Slang (Securities LANGuage), which interfaces directly with their SecDB risk engine, and Jane Street's extensive reliance on the functional programming language OCaml <sup data-cite-num="38" class="cite-ref">38</sup><sup data-cite-num="39" class="cite-ref">39</sup>. These proprietary languages are optimized for high-performance pricing calculations, bi-temporal data access, and exact memory management, executing deterministic mathematical expressions at speeds generic scripting languages cannot match <sup data-cite-num="39" class="cite-ref">39</sup><sup data-cite-num="40" class="cite-ref">40</sup>. </p>
+<p>When integrating LLM agents into these environments, researchers prompt the models to output algorithms utilizing these specific DSL grammars or strictly typed quantitative libraries. For instance, an LLM evaluating an unstructured macroeconomic report might translate its trading hypothesis into a compiled expression composed of native DSL elements like "Settlement," "Fixing," and "Geometric Brownian Motion" <sup data-cite-num="41" class="cite-ref">41</sup>. By forcing the LLM to write in a structured DSL, firms create a compiled dependency graph that can be rigorously validated by the institution's existing risk management infrastructure before any capital is deployed <sup data-cite-num="41" class="cite-ref">41</sup>. Furthermore, because proprietary DSLs are esoteric and publicly undocumented, models must be explicitly fine-tuned or provided with extensive in-context documentation to generate valid syntax. This intentional obscurity acts as a powerful security mechanism and a talent retention moat, preventing proprietary trading logic from being easily exported to competitor platforms <sup data-cite-num="38" class="cite-ref">38</sup>.</p>
+<h2>Lookahead Bias and Backtesting Integrity</h2>
+<p>The most severe methodological vulnerability in deploying LLMs for trading rule validation is lookahead bias. The validity of quantitative backtesting relies entirely on the assumption that a strategy is evaluated purely on point-in-time information. However, large foundation models are pre-trained on vast, internet-scale corpora that encompass historical data spanning multiple years. This training paradigm effectively embeds the "future" outcomes of past events into the model's parametric memory, compromising the integrity of historical simulations <sup data-cite-num="42" class="cite-ref">42</sup><sup data-cite-num="43" class="cite-ref">43</sup><sup data-cite-num="44" class="cite-ref">44</sup>.</p>
+<h3>The Memorization Problem</h3>
+<p>When an LLM is asked to predict a stock's movement based on a 2019 corporate earnings report, it may inadvertently utilize its encoded knowledge of the 2020 market crash or subsequent supply chain disruptions. Research indicates that models frequently exhibit an "extrapolative bias" where apparent prescience is merely the retrieval of memorized future data <sup data-cite-num="14" class="cite-ref">14</sup><sup data-cite-num="15" class="cite-ref">15</sup>. As models scale in parameter size, their capacity to memorize historical data increases. This creates an inverse scaling paradox in finance: larger models often show higher simulated in-sample backtest returns but suffer devastating out-of-sample collapses when deployed in live trading environments <sup data-cite-num="44" class="cite-ref">44</sup><sup data-cite-num="47" class="cite-ref">47</sup>. </p>
+<p>To precisely quantify this phenomenon, researchers developed the Lookahead Propensity (LAP) metric. Utilizing state-of-the-art pre-training data detection techniques, LAP establishes a formal positive correlation between a prompt's likelihood of existing in the training corpus and its resulting forecast accuracy <sup data-cite-num="15" class="cite-ref">15</sup>. In empirical tests utilizing news sentiment strategies, researchers discovered that anonymizing entity identifiers in financial headlines actually improved the model's performance during the training window. This finding definitively demonstrated that the model's general knowledge of the named companies caused a "distraction effect" that actively interfered with objective sentiment measurement <sup data-cite-num="42" class="cite-ref">42</sup>. Furthermore, studies filtering out memorized signals revealed that clean, uncontaminated trading signals produced significantly higher average daily returns (14.48 bps versus 2.13 bps for tainted signals), proving that memorization inflates apparent accuracy at the direct expense of genuine generalization <sup data-cite-num="44" class="cite-ref">44</sup>.</p>
+<h3>Time-Aware Pretraining and Performance Decay</h3>
+<p>To resolve lookahead bias without sacrificing model reasoning capabilities, researchers are developing Point-in-Time (PiT) language models. A prominent academic example is DatedGPT, a family of twelve 1.3-billion parameter language models trained from scratch on strictly partitioned temporal datasets <sup data-cite-num="14" class="cite-ref">14</sup><sup data-cite-num="48" class="cite-ref">48</sup>. By enforcing strict annual cutoffs (from 2013 to 2024) and training each model on 100 billion tokens restricted to those timeframes, developers ensure absolute temporal integrity. When a 2019-cutoff model is probed about post-2019 events (such as the COVID-19 pandemic), perplexity metrics confirm a sharp reversal, verifying that the temporal partitioning successfully prevents future information leakage <sup data-cite-num="14" class="cite-ref">14</sup><sup data-cite-num="48" class="cite-ref">48</sup><sup data-cite-num="49" class="cite-ref">49</sup>.</p>
+<p>The evaluation of this bias is formally benchmarked using the Look-Ahead-Bench, a standardized protocol that measures the "Alpha Decay" of financial LLMs <sup data-cite-num="43" class="cite-ref">43</sup><sup data-cite-num="50" class="cite-ref">50</sup>. Alpha Decay quantifies the performance drop between an in-sample training window and an out-of-sample future period. Standard, internet-scale models routinely exhibit massive negative alpha decay, whereas strictly constrained PiT models demonstrate stable or positive alpha across temporally distinct market regimes <sup data-cite-num="43" class="cite-ref">43</sup><sup data-cite-num="47" class="cite-ref">47</sup><sup data-cite-num="50" class="cite-ref">50</sup>.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Model Name</th>
+<th style="text-align: left;">Parameter Scale</th>
+<th style="text-align: left;">License Type</th>
+<th style="text-align: left;">Alpha Decay (In-Sample to Out-of-Sample)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Pitinf-Large</strong></td>
+<td style="text-align: left;">Proprietary</td>
+<td style="text-align: left;">PiT-Inference</td>
+<td style="text-align: left;">+1.30 percentage points</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Pitinf-Medium</strong></td>
+<td style="text-align: left;">Proprietary</td>
+<td style="text-align: left;">PiT-Inference</td>
+<td style="text-align: left;">+0.85 percentage points</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Pitinf-Small</strong></td>
+<td style="text-align: left;">Proprietary</td>
+<td style="text-align: left;">PiT-Inference</td>
+<td style="text-align: left;">+0.31 percentage points</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Llama 3.1 70B</strong></td>
+<td style="text-align: left;">70 Billion</td>
+<td style="text-align: left;">Community</td>
+<td style="text-align: left;">-15.25 percentage points</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Llama 3.1 8B</strong></td>
+<td style="text-align: left;">8 Billion</td>
+<td style="text-align: left;">Community</td>
+<td style="text-align: left;">-17.23 percentage points</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>DeepSeek 3.2</strong></td>
+<td style="text-align: left;">Standard</td>
+<td style="text-align: left;">MIT</td>
+<td style="text-align: left;">-21.77 percentage points</td>
+</tr>
+</tbody>
+</table>
+<p>The benchmark data highlights the severity of the scaling paradox: highly capable open-weight models like DeepSeek 3.2 and Llama 3.1 experience performance collapses exceeding 15 to 20 percentage points when evaluated on out-of-sample data, confirming extreme lookahead bias <sup data-cite-num="47" class="cite-ref">47</sup><sup data-cite-num="50" class="cite-ref">50</sup>. Conversely, models designed with strict Point-in-Time inference architectures maintain stable predictive capability, proving that genuine alpha generation requires absolute temporal isolation during pretraining <sup data-cite-num="47" class="cite-ref">47</sup><sup data-cite-num="50" class="cite-ref">50</sup>.</p>
+<h2>Governance and Human Oversight Architectures</h2>
+<p>The deployment of multi-agent trading architectures necessitates stringent operational governance to manage the risk of catastrophic logic failures. Unconstrained autonomous agents executing high-frequency decisions without human oversight can generate unpredictable feedback loops and massive capital loss <sup data-cite-num="16" class="cite-ref">16</sup><sup data-cite-num="17" class="cite-ref">17</sup>. Industry consensus dictates that vendors claiming fully autonomous, "black-box" trading automation without explicit control checkpoints carry unacceptable regulatory, financial, and compliance risks <sup data-cite-num="16" class="cite-ref">16</sup>.</p>
+<p>Governance architectures are categorized by the proximity and authority of the human operator within the AI decision loop. </p>
+<p><strong>Human-in-the-Loop (HITL)</strong> designs mandate that a human expert directly evaluates and approves the LLM's proposed action before any capital is committed <sup data-cite-num="17" class="cite-ref">17</sup><sup data-cite-num="18" class="cite-ref">18</sup>. HITL is strictly prioritized for high-impact, high-risk trades or tasks involving regulatory ambiguity. Implementing structured human gating - utilizing approval workflows, escalation ladders, and confidence-based routing metrics - has been empirically shown to reduce critical error rates in autonomous agent pipelines from 23% to 5.1%, representing a 78% reduction in catastrophic failures <sup data-cite-num="17" class="cite-ref">17</sup>. Best practices in HITL involve "collaborative drafting," where human operators actively edit the AI-generated trading rules rather than providing binary approve or reject responses. Research indicates that the act of editing engages critical thinking, yielding final strategy quality that is 35% higher than human-only drafting and 42% higher than passive binary approval <sup data-cite-num="17" class="cite-ref">17</sup>. However, excessive HITL controls create operational friction and latency, ultimately neutralizing the speed advantages that make AI attractive <sup data-cite-num="16" class="cite-ref">16</sup>.</p>
+<p>To scale operations efficiently, institutions are transitioning toward <strong>Human-on-the-Loop (HOTL)</strong> frameworks. In a HOTL architecture, the AI agent executes its perceive-decide-act cycle autonomously within strictly predefined, hard-coded guardrails <sup data-cite-num="18" class="cite-ref">18</sup>. Human supervisors monitor aggregate dashboards spanning multiple agents operating in parallel, stepping in only for exception handling or when the model approaches defined volatility thresholds <sup data-cite-num="18" class="cite-ref">18</sup><sup data-cite-num="19" class="cite-ref">19</sup>. Advanced routing gateways allow administrators to dynamically tag specific low-risk actions (e.g., historical data querying, daily portfolio reporting) for full autonomy, while intercepting high-stakes actions (e.g., live order routing, limit parameter adjustments). These intercepted actions are instantly converted into human-readable approval prompts and delivered via enterprise communication channels (e.g., Slack or Microsoft Teams), allowing organizations to harness the speed of AI while retaining essential oversight at critical junctures <sup data-cite-num="16" class="cite-ref">16</sup><sup data-cite-num="18" class="cite-ref">18</sup>.</p>
+<h2>Regional Disparities in Unstructured Financial Data</h2>
+<p>The extraction of trading rules from unstructured reports is further complicated by profound regional and linguistic disparities in financial reporting standards. The efficacy of a large language model is heavily dependent on the formatting of the ingested data and the cultural and regulatory biases inherent in its pre-training corpus. Global quantitative strategies therefore require rigorous data harmonization across jurisdictions.</p>
+<h3>Accounting Standard Structural Variations</h3>
+<p>For foreign and domestic enterprises operating in Asian markets, annual financial reports must comply with specific local regulations. In China, entities must adhere to Chinese Accounting Standards (CAS), which consist of Accounting Standards for Business Enterprises (ASBEs) and Accounting Standards for Small Business Enterprises (ASSBEs) <sup data-cite-num="20" class="cite-ref">20</sup>. While widely viewed as substantially converged with International Financial Reporting Standards (IFRS) and bearing structural similarities to US GAAP, CAS maintains critical discrepancies <sup data-cite-num="20" class="cite-ref">20</sup>. </p>
+<p>For instance, under US GAAP or IFRS, fixed asset valuation methods and the restatement of comparative figures during entity mergers follow specific, flexible guidelines. In contrast, CAS imposes highly detailed rules requiring comparative figures to be strictly restated during the merging of companies controlled by the same entity - a mandate without a direct equivalent in IFRS <sup data-cite-num="20" class="cite-ref">20</sup>. Furthermore, the ASSBEs align closely with local tax calculation methods, introducing localized accounting terminology that general-purpose Western LLMs frequently misinterpret <sup data-cite-num="20" class="cite-ref">20</sup>. When designing extraction pipelines, quantitative analysts must ensure that the RAG architecture or the fine-tuned model is explicitly mapped to these localized financial ontologies. Failure to account for these regional reporting variations leads directly to misclassification of line items, semantic misunderstandings, and erroneous trading signal generation <sup data-cite-num="20" class="cite-ref">20</sup><sup data-cite-num="56" class="cite-ref">56</sup>.</p>
+<h3>Model Origin Bias and Information Asymmetry</h3>
+<p>Beyond structural formatting, LLMs exhibit fundamental evaluation biases based on their country of origin and the geopolitical context of their training data. State-of-the-art models developed in the United States (such as ChatGPT or Llama) and China (such as DeepSeek or Qwen) inherently reflect the differing linguistic environments, public sentiment, and information availability of their respective developer nations <sup data-cite-num="57" class="cite-ref">57</sup><sup data-cite-num="21" class="cite-ref">21</sup>.</p>
+<p>Empirical studies investigating the evaluation of Chinese corporate equities have revealed significant prediction divergence between Western and Chinese LLMs. When evaluating the exact same set of firms utilizing the Moral Foundations Questionnaire (MFQ-2) and World Values Survey methodologies, U.S.-based LLMs routinely generate distinct analytical signals compared to China-based models <sup data-cite-num="57" class="cite-ref">57</sup><sup data-cite-num="22" class="cite-ref">22</sup>. This discrepancy is largely attributed to severe information asymmetry in the underlying training data. Analysis of media datasets reveals a "negative news gap" of 0.78, indicating that negative coverage of Chinese firms is heavily concentrated in domestic Chinese media relative to the U.S. media ecosystem <sup data-cite-num="22" class="cite-ref">22</sup>. </p>
+<p>Consequently, U.S. models, trained predominantly on Western news and English-language internet data, frequently lack the nuanced, localized context regarding Chinese firms, leading to divergent and potentially overly optimistic trading signals <sup data-cite-num="22" class="cite-ref">22</sup>. Conversely, models like DeepSeek can access a broader spectrum of domestic datasets, resulting in more granular risk assessments <sup data-cite-num="22" class="cite-ref">22</sup>. As multinational quantitative firms deploy LLMs for global sentiment extraction and factor mining, understanding this "model origin bias" is critical. To build resilient, globally aware trading strategies, practitioners must leverage diverse, multi-model ensembles optimized for their respective language environments, ensuring that cultural, regulatory, and informational blind spots are counterbalanced in the alpha generation process <sup data-cite-num="21" class="cite-ref">21</sup><sup data-cite-num="22" class="cite-ref">22</sup>.</p>
+<h2>Conclusion</h2>
+<p>The integration of large language models into quantitative trading infrastructure marks a definitive shift from human-driven, heuristic factor mining to automated, agentic research pipelines. By deploying complex architectures that carefully balance Retrieval-Augmented Generation for real-time market data with domain-specific fine-tuning for deep economic reasoning, financial institutions can effectively parse unstructured global financial reports into actionable market signals. However, the successful automation of trading rules relies entirely on overcoming profound technical and methodological challenges. Models must be rigorously scrubbed of memorization and lookahead bias via point-in-time pretraining, ensuring temporal integrity during backtesting. Furthermore, their reasoning chains must be continuously verified against stochastic market outcomes using process-level metrics like the triangular consistency metric, and their final outputs must be seamlessly translated into deterministic, proprietary execution languages to prevent algorithmic hallucinations. Ultimately, while multi-agent AI systems offer unprecedented scale in processing unstructured market intelligence across diverse regional reporting standards, strict human-on-the-loop governance remains essential to mitigate systemic risks, prevent reward hacking, and navigate the extreme complexities of modern global finance.</p>
+        </article>
+        <section class="related-research" aria-label="Related articles">
+  <h2 class="related-research-heading">Related articles</h2>
+  <ul class="related-research-list">
+    <li><a href="https://research.mental-momentum.ai/r/integration-alternative-data-llm-trading-fdjqyk" class="related-research-link">Integration of Alternative Data in LLM Trading Pipelines</a></li>
+    <li><a href="https://research.mental-momentum.ai/r/evolutionary-computation-trading-rule-khzu1d" class="related-research-link">Evolutionary computation for trading rule discovery</a></li>
+    <li><a href="https://research.mental-momentum.ai/r/llm-sentiment-financial-disclosures-as-p8hxai" class="related-research-link">LLM Sentiment from Financial Disclosures as a Return Signal</a></li>
+    <li><a href="https://research.mental-momentum.ai/r/what-is-feature-engineering-quantitative-q3bkqy" class="related-research-link">What Is Feature Engineering in Quantitative Trading</a></li>
+    <li><a href="https://research.mental-momentum.ai/r/automated-machine-learning-overfitting-ihkcak" class="related-research-link">Automated Machine Learning and Overfitting in Quantitative Finance</a></li>
+  </ul>
+</section>
+        <details class="research-about">
+          <summary class="research-about-summary">About this research</summary>
+            <div class="research-about-body">
+            <p>This article was produced using AI-assisted research using
+            <a href="https://research.mental-momentum.ai" rel="noopener noreferrer">mmresearch.app</a>
+            and reviewed by human. (ResoluteWren_23)</p>
+          </div>
+        </details>
+        <section class="citations-widget" aria-label="Sources">
+          <div class="cite-tab-bar" role="tablist">
+            <button type="button" class="cite-tab cite-tab--active" data-panel="main" role="tab" aria-selected="true">
+              Main sources <span class="cite-count-badge">22</span>
+            </button>
+            <button type="button" class="cite-tab" data-panel="aux" role="tab" aria-selected="false">
+              Auxiliary <span class="cite-count-badge">85</span>
+            </button>
+          </div>
+          <div class="cite-panel" id="cite-panel-main" role="tabpanel">
+            <ul class="cite-list">
+              <li class="cite-row" id="cite-row-1">
+                <span class="cite-num" data-cite-num="1" aria-hidden="true">1</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.institutionalinvestor.com/article/2bsts3iaff2qv8b9rg8w0/portfolio/aqr-experiments-with-gpt-to-improve-returns" rel="nofollow noopener noreferrer" target="_blank">institutionalinvestor.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.institutionalinvestor.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-2">
+                <span class="cite-num" data-cite-num="2" aria-hidden="true">2</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.aqr.com/-/media/AQR/Documents/Insights/White-Papers/AQR-A-New-Paradigm-in-Active-Equity.pdf?sc_lang=en" rel="nofollow noopener noreferrer" target="_blank">aqr.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.aqr.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-3">
+                <span class="cite-num" data-cite-num="3" aria-hidden="true">3</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.man.com/insights/ai-agents-trend" rel="nofollow noopener noreferrer" target="_blank">A Trend Following Deep Dive: AI, Agents and Trend | Man Group</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.man.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-4">
+                <span class="cite-num" data-cite-num="4" aria-hidden="true">4</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.man.com/insights/alphatrend-agentic-research-workflows" rel="nofollow noopener noreferrer" target="_blank">A Trend Following Deep Dive: AlphaTrend and Agentic Research Workflows | Man Group</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.man.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-5">
+                <span class="cite-num" data-cite-num="5" aria-hidden="true">5</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://redblox.ai/blog/fine-tuning-vs-rag-vs-agents" rel="nofollow noopener noreferrer" target="_blank">redblox.ai</a>
+                  </div>
+                  <div class="cite-meta">
+<span>redblox.ai</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-6">
+                <span class="cite-num" data-cite-num="6" aria-hidden="true">6</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://ittech-pulse.com/our-tech-insights/rag-vs-fine-tuning-vs-agents-choosing-the-right-ai-approach/" rel="nofollow noopener noreferrer" target="_blank">RAG vs Fine-Tuning vs Agents: Choosing the Right AI Approach</a>
+                  </div>
+                  <div class="cite-meta">
+<span>ittech-pulse.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-7">
+                <span class="cite-num" data-cite-num="7" aria-hidden="true">7</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.elementum.ai/blog/rag-vs-agentic-ai" rel="nofollow noopener noreferrer" target="_blank">RAG vs. Agentic AI: When to Use Each in Enterprise Workflows | Elementum AI</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.elementum.ai</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-8">
+                <span class="cite-num" data-cite-num="8" aria-hidden="true">8</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.businessinsider.com/man-group-new-ai-team-plans-alpha-assistant-2023-11" rel="nofollow noopener noreferrer" target="_blank">Man Group Launches New AI Team, Lays Out Ambitions - Business Insider</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.businessinsider.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-9">
+                <span class="cite-num" data-cite-num="9" aria-hidden="true">9</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.ai-street.co/p/inside-man-group-s-alphagpt" rel="nofollow noopener noreferrer" target="_blank">Inside Man Group’s AlphaGPT - by Matt Robinson</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.ai-street.co</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-10">
+                <span class="cite-num" data-cite-num="10" aria-hidden="true">10</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://ideas.repec.org/p/arx/papers/2402.18485.html" rel="nofollow noopener noreferrer" target="_blank">A Multimodal Foundation Agent for Financial Trading: Tool-Augmented, Diversified, and Generalist</a>
+                  </div>
+                  <div class="cite-meta">
+<span>ideas.repec.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-11">
+                <span class="cite-num" data-cite-num="11" aria-hidden="true">11</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://openreview.net/pdf/fe3694d370c5d14f34c14d441ea3170c84b65bec.pdf" rel="nofollow noopener noreferrer" target="_blank">openreview.net</a>
+                  </div>
+                  <div class="cite-meta">
+<span>openreview.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-12">
+                <span class="cite-num" data-cite-num="12" aria-hidden="true">12</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.catalyzex.com/author/Zuo%20Bai" rel="nofollow noopener noreferrer" target="_blank">Zuo Bai</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.catalyzex.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-13">
+                <span class="cite-num" data-cite-num="13" aria-hidden="true">13</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://chatpaper.com/paper/224300" rel="nofollow noopener noreferrer" target="_blank">Trade-R1: Bridging Verifiable Rewards to Stochastic Environments via Process-Level Reasoning Verification</a>
+                  </div>
+                  <div class="cite-meta">
+<span>chatpaper.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-14">
+                <span class="cite-num" data-cite-num="14" aria-hidden="true">14</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://afajof.org/management/viewp.php?n=198940" rel="nofollow noopener noreferrer" target="_blank">afajof.org</a>
+                  </div>
+                  <div class="cite-meta">
+<span>afajof.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-15">
+                <span class="cite-num" data-cite-num="15" aria-hidden="true">15</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://yutongyan.xyz/research/" rel="nofollow noopener noreferrer" target="_blank">Yutong Yan</a>
+                  </div>
+                  <div class="cite-meta">
+<span>yutongyan.xyz</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-16">
+                <span class="cite-num" data-cite-num="16" aria-hidden="true">16</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.acceldata.io/blog/measuring-real-roi-from-agentic-ai-beyond-automation-metrics" rel="nofollow noopener noreferrer" target="_blank">Questions About Decision Automation and Human-in-the-Loop</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.acceldata.io</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-17">
+                <span class="cite-num" data-cite-num="17" aria-hidden="true">17</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://dev.to/taimoor__z/-human-in-the-loop-hitl-for-ai-agents-patterns-and-best-practices-5ep5" rel="nofollow noopener noreferrer" target="_blank">Human-in-the-Loop (HITL) for AI Agents: Patterns and Best Practices - DEV Community</a>
+                  </div>
+                  <div class="cite-meta">
+<span>dev.to</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-18">
+                <span class="cite-num" data-cite-num="18" aria-hidden="true">18</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://bytebridge.medium.com/from-human-in-the-loop-to-human-on-the-loop-evolving-ai-agent-autonomy-c0ae62c3bf91" rel="nofollow noopener noreferrer" target="_blank">medium.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>bytebridge.medium.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-19">
+                <span class="cite-num" data-cite-num="19" aria-hidden="true">19</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.mdpi.com/1099-4300/28/4/377" rel="nofollow noopener noreferrer" target="_blank">mdpi.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.mdpi.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-20">
+                <span class="cite-num" data-cite-num="20" aria-hidden="true">20</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.amcham-shanghai.org/en/article/chinas-accounting-standards-chinese-gaap-vs-us-gaap-and-ifrs" rel="nofollow noopener noreferrer" target="_blank">amcham-shanghai.org</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.amcham-shanghai.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-21">
+                <span class="cite-num" data-cite-num="21" aria-hidden="true">21</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.hkubs.hku.hk/research/thought-leadership/ft-chinese-column/china-u-s-competition-in-large-language-models-global-perspectives-on-opportunities-and-challenges/" rel="nofollow noopener noreferrer" target="_blank">China-U.S. Competition in Large Language Models: Global Perspectives on Opportunities and Challenges - HKU Business School</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.hkubs.hku.hk</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-22">
+                <span class="cite-num" data-cite-num="22" aria-hidden="true">22</span>
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.hbs.edu/ris/Publication%20Files/26-013_c6b42163-3a78-4df0-8275-dcb6d1b089e1.pdf" rel="nofollow noopener noreferrer" target="_blank">hbs.edu</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.hbs.edu</span>                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="cite-panel cite-panel--hidden" id="cite-panel-aux" role="tabpanel">
+            <ul class="cite-list">
+              <li class="cite-row" id="cite-row-aux-1">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://wundertrading.com/journal/en/agentic-trading" rel="nofollow noopener noreferrer" target="_blank">Agentic Trading Explained: How Autonomous AI Agents Are Transforming Financial Markets</a>
+                  </div>
+                  <div class="cite-meta">
+<span>wundertrading.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-2">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/html/2605.19337v1" rel="nofollow noopener noreferrer" target="_blank">Agentic Trading: When LLM Agents Meet Financial Markets</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-9">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.techment.com/blogs/rag-vs-fine-tuning-vs-ai-agents-llm-strategy/" rel="nofollow noopener noreferrer" target="_blank">RAG vs Fine-Tuning vs AI Agents: Choosing the Right LLM Strategy</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.techment.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-11">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://aisera.com/blog/llm-fine-tuning-vs-rag/" rel="nofollow noopener noreferrer" target="_blank">RAG vs Fine Tuning: The Ultimate Side by Side Comparison</a>
+                  </div>
+                  <div class="cite-meta">
+<span>aisera.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-12">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://medium.com/@airabbitX/rag-vs-fine-tuning-for-llms-a-comprehensive-guide-cc9dcc2ddef9" rel="nofollow noopener noreferrer" target="_blank">medium.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>medium.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-13">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.nitorinfotech.com/blog/which-llm-strategy-wins-build-fine-tune-or-rag/" rel="nofollow noopener noreferrer" target="_blank">Build vs Fine-Tune vs RAG: Choosing the Right LLM Strategy | Nitor Infotech</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.nitorinfotech.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-14">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://pecollective.com/blog/rag-vs-fine-tuning-cost/" rel="nofollow noopener noreferrer" target="_blank">RAG vs Fine-Tuning: Cost Comparison and When to Use Each (2026)</a>
+                  </div>
+                  <div class="cite-meta">
+<span>pecollective.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-15">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://dev.to/remojansen/rag-vs-fine-tuning-which-one-wins-the-cost-game-long-term-12dg" rel="nofollow noopener noreferrer" target="_blank">RAG vs Fine-Tuning: Which One Wins the Cost Game Long-Term? - DEV Community</a>
+                  </div>
+                  <div class="cite-meta">
+<span>dev.to</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-16">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://orq.ai/blog/finetuning-vs-rag" rel="nofollow noopener noreferrer" target="_blank">Fine-Tuning vs RAG: Key Differences Explained (2026 Guide)</a>
+                  </div>
+                  <div class="cite-meta">
+<span>orq.ai</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-17">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.actian.com/blog/databases/should-you-use-rag-or-fine-tune-your-llm/" rel="nofollow noopener noreferrer" target="_blank">RAG vs. Fine-Tuning vs. Hybrid: Choosing the Right AI Architecture</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.actian.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-18">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://servicesground.com/blog/agentic-ai-comparisons/" rel="nofollow noopener noreferrer" target="_blank">Agentic AI Comparisons: Agents vs Chatbots, RAG vs Fine-Tuning - Services Ground</a>
+                  </div>
+                  <div class="cite-meta">
+<span>servicesground.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-20">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.youtube.com/watch?v=vs0WXLyhses" rel="nofollow noopener noreferrer" target="_blank">youtube.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.youtube.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-22">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.semanticscholar.org/paper/AlphaForge%3A-A-Framework-to-Mine-and-Dynamically-Shi-Luo/67b68385fb304e7c75297c481c403fdc0a7da70e" rel="nofollow noopener noreferrer" target="_blank">semanticscholar.org</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.semanticscholar.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-23">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/html/2602.07085v3" rel="nofollow noopener noreferrer" target="_blank">QuantaAlpha: An Evolutionary Framework for LLM-Driven Alpha Mining</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-24">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/pdf/2509.11420" rel="nofollow noopener noreferrer" target="_blank">arxiv.org</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-25">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.researchgate.net/publication/372827826_Alpha-GPT_Human-AI_Interactive_Alpha_Mining_for_Quantitative_Investment" rel="nofollow noopener noreferrer" target="_blank">researchgate.net</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.researchgate.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-29">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://huggingface.co/papers?q=verifiable%20rewards" rel="nofollow noopener noreferrer" target="_blank">Daily Papers - Hugging Face</a>
+                  </div>
+                  <div class="cite-meta">
+<span>huggingface.co</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-31">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://huggingface.co/papers?q=financial%20decision-making" rel="nofollow noopener noreferrer" target="_blank">Daily Papers - Hugging Face</a>
+                  </div>
+                  <div class="cite-meta">
+<span>huggingface.co</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-32">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.semanticscholar.org/paper/Trading-R1%3A-Financial-Trading-with-LLM-Reasoning-Xiao-Sun/d9cb5bb3ef2a2f352ac571b7ead452a4256da192" rel="nofollow noopener noreferrer" target="_blank">semanticscholar.org</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.semanticscholar.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-33">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.emergentmind.com/topics/trading-r1" rel="nofollow noopener noreferrer" target="_blank">Trading-R1: Structured Financial Reasoning</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.emergentmind.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-34">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.themoonlight.io/en/review/trading-r1-financial-trading-with-llm-reasoning-via-reinforcement-learning" rel="nofollow noopener noreferrer" target="_blank">[Literature Review] Trading-R1: Financial Trading with LLM Reasoning via Reinforcement Learning</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.themoonlight.io</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-35">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.researchgate.net/publication/403878624_Domain_Specific_Financial_Large_Language_Models_Architecture_Guardrails_and_Regulatory_Alignment" rel="nofollow noopener noreferrer" target="_blank">researchgate.net</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.researchgate.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-36">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/pdf/2508.02366" rel="nofollow noopener noreferrer" target="_blank">arxiv.org</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-37">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.reddit.com/r/ProgrammingLanguages/comments/1r111xx/building_my_own_programming_language_for_writing/" rel="nofollow noopener noreferrer" target="_blank">Reddit - Please wait for verification</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.reddit.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-38">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.quantlabsnet.com/post/hidden-power-of-proprietary-quant-programming-languages-how-wall-street-locks-in-talent" rel="nofollow noopener noreferrer" target="_blank">quantlabsnet.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.quantlabsnet.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-39">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.efinancialcareers.com/news/2023/04/goldman-sachs-slang-84" rel="nofollow noopener noreferrer" target="_blank">efinancialcareers.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.efinancialcareers.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-40">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://medium.com/the-markets/title-programming-languages-used-in-quantitative-trading-unlocking-financial-opportunities-39f0c16c71ea" rel="nofollow noopener noreferrer" target="_blank">medium.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>medium.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-41">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://github.com/johnbywater/quantdsl" rel="nofollow noopener noreferrer" target="_blank">github.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>github.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-42">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://ideas.repec.org/p/arx/papers/2309.17322.html" rel="nofollow noopener noreferrer" target="_blank">Assessing Look-Ahead Bias in Stock Return Predictions Generated By GPT Sentiment Analysis</a>
+                  </div>
+                  <div class="cite-meta">
+<span>ideas.repec.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-43">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/pdf/2601.13770" rel="nofollow noopener noreferrer" target="_blank">arxiv.org</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-44">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.researchgate.net/publication/379767258_Lookahead_Bias_in_Pretrained_Language_Models" rel="nofollow noopener noreferrer" target="_blank">researchgate.net</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.researchgate.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-47">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.pitinference.com/" rel="nofollow noopener noreferrer" target="_blank">PiT Inference — Point-in-Time LLMs for Finance</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.pitinference.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-48">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/pdf/2603.11838" rel="nofollow noopener noreferrer" target="_blank">arxiv.org</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-49">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/abs/2603.11838" rel="nofollow noopener noreferrer" target="_blank">[2603.11838] DatedGPT: Preventing Lookahead Bias in Large Language Models with Time-Aware Pretraining</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-50">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.lookaheadbench.com/" rel="nofollow noopener noreferrer" target="_blank">Look-Ahead-Bench</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.lookaheadbench.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-56">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://niko-gamulin.medium.com/solving-the-linguistic-puzzle-of-financial-reports-with-artificial-intelligence-436d0506a3ba" rel="nofollow noopener noreferrer" target="_blank">medium.com</a>
+                  </div>
+                  <div class="cite-meta">
+<span>niko-gamulin.medium.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-57">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/html/2512.13723v1" rel="nofollow noopener noreferrer" target="_blank">Made-in China, Thinking in America:U.S. Values Persist in Chinese LLMs</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-60">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/pdf/2508.02366" rel="nofollow noopener noreferrer" target="_blank">arXiv: Hybrid Prompting Frameworks</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-61">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.quantlabsnet.com/post/hidden-power-of-proprietary-quant-programming-languages-how-wall-street-locks-in-talent" rel="nofollow noopener noreferrer" target="_blank">QuantLabs: Goldman Sachs SecDB and Slang</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.quantlabsnet.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-62">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.efinancialcareers.com/news/2023/04/goldman-sachs-slang-84" rel="nofollow noopener noreferrer" target="_blank">eFinancialCareers: Goldman Sachs Slang</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.efinancialcareers.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-63">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://news.ycombinator.com/item?id=1581069" rel="nofollow noopener noreferrer" target="_blank">Hacker News: Slang Discussion</a>
+                  </div>
+                  <div class="cite-meta">
+<span>news.ycombinator.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-64">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://github.com/johnbywater/quantdsl" rel="nofollow noopener noreferrer" target="_blank">GitHub: Quant DSL Application</a>
+                  </div>
+                  <div class="cite-meta">
+<span>github.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-65">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.reddit.com/r/ProgrammingLanguages/comments/1r111xx/building_my_own_programming_language_for_writing/" rel="nofollow noopener noreferrer" target="_blank">Reddit: Building a Quant DSL</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.reddit.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-66">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.semanticscholar.org/paper/Chain-of-Alpha%3A-Unleashing-the-Power-of-Large-for-Cao-Xi/d392598fbffaae986b15695b24611205be2e6ec3" rel="nofollow noopener noreferrer" target="_blank">Semantic Scholar: Chain of Alpha</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.semanticscholar.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-67">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.researchgate.net/publication/379767258_Lookahead_Bias_in_Pretrained_Language_Models" rel="nofollow noopener noreferrer" target="_blank">ResearchGate: Lookahead Bias in Pretrained LLMs</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.researchgate.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-68">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://nep.repec.org/nep-inv/2026-02-02" rel="nofollow noopener noreferrer" target="_blank">RePEc: Look-Ahead-Bench Analytics</a>
+                  </div>
+                  <div class="cite-meta">
+<span>nep.repec.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-69">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/pdf/2601.13770" rel="nofollow noopener noreferrer" target="_blank">arXiv: Look-Ahead-Bench Alpha Decay</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-70">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.researchgate.net/publication/375085357_The_Unequal_Opportunities_of_Large_Language_Models_Examining_Demographic_Biases_in_Job_Recommendations_by_ChatGPT_and_LLaMA" rel="nofollow noopener noreferrer" target="_blank">ResearchGate: Demographic Biases in AI Recommendations</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.researchgate.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-71">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.actian.com/blog/databases/should-you-use-rag-or-fine-tune-your-llm/" rel="nofollow noopener noreferrer" target="_blank">Actian: Benchmarking Cost and Latency RAG vs Fine-tuning</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.actian.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-72">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://pecollective.com/blog/rag-vs-fine-tuning-cost/" rel="nofollow noopener noreferrer" target="_blank">PE Collective: RAG vs Fine-Tuning Costs</a>
+                  </div>
+                  <div class="cite-meta">
+<span>pecollective.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-73">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://dev.to/remojansen/rag-vs-fine-tuning-which-one-wins-the-cost-game-long-term-12dg" rel="nofollow noopener noreferrer" target="_blank">Dev.to: RAG vs Fine-Tuning Long Term Economics</a>
+                  </div>
+                  <div class="cite-meta">
+<span>dev.to</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-74">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.redhat.com/en/topics/ai/rag-vs-fine-tuning" rel="nofollow noopener noreferrer" target="_blank">Red Hat: RAG vs Fine-tuning Analysis</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.redhat.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-75">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://b-eye.com/blog/rag-vs-fine-tuning/" rel="nofollow noopener noreferrer" target="_blank">B-Eye: RAG vs Fine-tuning Trade-offs</a>
+                  </div>
+                  <div class="cite-meta">
+<span>b-eye.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-76">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/pdf/2509.11420?" rel="nofollow noopener noreferrer" target="_blank">arXiv: Trading-R1 Performance Evaluation</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-77">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.themoonlight.io/en/review/trading-r1-financial-trading-with-llm-reasoning-via-reinforcement-learning" rel="nofollow noopener noreferrer" target="_blank">The Moonlight: Trading-R1 Review</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.themoonlight.io</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-78">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.researchgate.net/publication/372827826_Alpha-GPT_Human-AI_Interactive_Alpha_Mining_for_Quantitative_Investment" rel="nofollow noopener noreferrer" target="_blank">ResearchGate: Alpha-GPT Interactive Alpha Mining</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.researchgate.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-79">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://openreview.net/pdf/fe3694d370c5d14f34c14d441ea3170c84b65bec.pdf" rel="nofollow noopener noreferrer" target="_blank">OpenReview: Alpha-R1 Semantic Reasoning</a>
+                  </div>
+                  <div class="cite-meta">
+<span>openreview.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-80">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.reddit.com/r/Daytrading/comments/1ozk8vw/i_let_24_ai_models_trade_to_see_if_they_can/" rel="nofollow noopener noreferrer" target="_blank">Reddit: 24 AI Models Trading Battle</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.reddit.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-81">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://digitalcommons.montclair.edu/cgi/viewcontent.cgi?article=1157&amp;context=infomgmt-busanalytics-facpubs" rel="nofollow noopener noreferrer" target="_blank">Montclair State: Financial Data Extraction via LLMs</a>
+                  </div>
+                  <div class="cite-meta">
+<span>digitalcommons.montclair.edu</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-82">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12421730/" rel="nofollow noopener noreferrer" target="_blank">PMC: Sentiment Analysis in Finance</a>
+                  </div>
+                  <div class="cite-meta">
+<span>pmc.ncbi.nlm.nih.gov</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-83">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.researchgate.net/publication/393378788_Integrating_Large_Language_Models_in_Financial_Investments_and_Market_Analysis_A_Survey" rel="nofollow noopener noreferrer" target="_blank">ResearchGate: Integrating LLMs in Financial Investments</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.researchgate.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-84">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://niko-gamulin.medium.com/solving-the-linguistic-puzzle-of-financial-reports-with-artificial-intelligence-436d0506a3ba" rel="nofollow noopener noreferrer" target="_blank">Medium: Multilingual Financial Reports &amp; AI</a>
+                  </div>
+                  <div class="cite-meta">
+<span>niko-gamulin.medium.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-85">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.lbsim.ac.in/first-dry/The-market-performance-data-reveals-substantial-regional-disparities-driven-by-AI-exposure-9-6630" rel="nofollow noopener noreferrer" target="_blank">LBSIM: Regional Disparities in AI Exposure</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.lbsim.ac.in</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-86">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://lookaheadbench.com/" rel="nofollow noopener noreferrer" target="_blank">Look-Ahead-Bench: Leaderboard</a>
+                  </div>
+                  <div class="cite-meta">
+<span>lookaheadbench.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-87">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/pdf/2601.13770" rel="nofollow noopener noreferrer" target="_blank">arXiv: Look-Ahead-Bench Results</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-88">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://nep.repec.org/nep-inv/2026-02-02" rel="nofollow noopener noreferrer" target="_blank">RePEc: Investment NEP Report</a>
+                  </div>
+                  <div class="cite-meta">
+<span>nep.repec.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-89">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.researchgate.net/publication/397613430_Fusing_Narrative_Semantics_for_Financial_Volatility_Forecasting" rel="nofollow noopener noreferrer" target="_blank">ResearchGate: Fusing Narrative Semantics for Volatility Forecasting</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.researchgate.net</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-90">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.pitinference.com/" rel="nofollow noopener noreferrer" target="_blank">PiT-Inference: Point-in-Time LLMs</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.pitinference.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-91">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.google.com/search?q=time+in+China" rel="nofollow noopener noreferrer" target="_blank">Google Search: Time in China</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.google.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-92">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.google.com/search?q=time+in+United+States+of+America" rel="nofollow noopener noreferrer" target="_blank">Google Search: Time in USA</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.google.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-93">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://chatpaper.com/paper/224300" rel="nofollow noopener noreferrer" target="_blank">ChatPaper: Trade-R1 triangular consistency metric details</a>
+                  </div>
+                  <div class="cite-meta">
+<span>chatpaper.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-94">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.catalyzex.com/author/Zuo%20Bai" rel="nofollow noopener noreferrer" target="_blank">CatalyzeX: Trade-R1 Process-Level Reasoning</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.catalyzex.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-95">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.catalyzex.com/author/Yifan%20Sun" rel="nofollow noopener noreferrer" target="_blank">CatalyzeX: Verifiable Rewards</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.catalyzex.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-96">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://huggingface.co/papers?q=verifiable%20rewards" rel="nofollow noopener noreferrer" target="_blank">Hugging Face: Verifiable Process Rewards</a>
+                  </div>
+                  <div class="cite-meta">
+<span>huggingface.co</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-97">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://huggingface.co/papers?q=triangular%20consistency%20metric" rel="nofollow noopener noreferrer" target="_blank">Hugging Face: Triangular Consistency Metric</a>
+                  </div>
+                  <div class="cite-meta">
+<span>huggingface.co</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-98">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.amcham-shanghai.org/en/article/chinas-accounting-standards-chinese-gaap-vs-us-gaap-and-ifrs" rel="nofollow noopener noreferrer" target="_blank">AmCham Shanghai: China GAAP vs US GAAP</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.amcham-shanghai.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-99">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://arxiv.org/html/2512.13723v1" rel="nofollow noopener noreferrer" target="_blank">arXiv: LLMs and Global Values Bias</a>
+                  </div>
+                  <div class="cite-meta">
+<span>arxiv.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-100">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.hbs.edu/ris/download.aspx?name=26-013.pdf" rel="nofollow noopener noreferrer" target="_blank">Harvard Business School: Cross-border AI Prediction Gaps</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.hbs.edu</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-101">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://forum.effectivealtruism.org/posts/qx8hBRRE2NaxjwMYt/comparison-of-llm-scalability-and-performance-between-the-u" rel="nofollow noopener noreferrer" target="_blank">EA Forum: LLM Scalability China vs US</a>
+                  </div>
+                  <div class="cite-meta">
+<span>forum.effectivealtruism.org</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-102">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.hkubs.hku.hk/research/thought-leadership/ft-chinese-column/china-u-s-competition-in-large-language-models-global-perspectives-on-opportunities-and-challenges/" rel="nofollow noopener noreferrer" target="_blank">HKU Business School: China-U.S. Competition in LLMs</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.hkubs.hku.hk</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-103">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.techment.com/blogs/rag-vs-fine-tuning-vs-ai-agents-llm-strategy/" rel="nofollow noopener noreferrer" target="_blank">Techment: Enterprise LLM Strategy</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.techment.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-104">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://www.actian.com/blog/databases/should-you-use-rag-or-fine-tune-your-llm/" rel="nofollow noopener noreferrer" target="_blank">Actian: RAG vs Fine-tuning Strategy</a>
+                  </div>
+                  <div class="cite-meta">
+<span>www.actian.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-105">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://redblox.ai/blog/fine-tuning-vs-rag-vs-agents" rel="nofollow noopener noreferrer" target="_blank">Redblox AI: AI Stack Comparison</a>
+                  </div>
+                  <div class="cite-meta">
+<span>redblox.ai</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-106">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://pecollective.com/blog/rag-vs-fine-tuning-cost/" rel="nofollow noopener noreferrer" target="_blank">PE Collective: RAG Setup Costs</a>
+                  </div>
+                  <div class="cite-meta">
+<span>pecollective.com</span>                  </div>
+                </div>
+              </li>
+              <li class="cite-row" id="cite-row-aux-107">
+                <div class="cite-body">
+                  <div class="cite-title">
+                    <a href="https://ittech-pulse.com/our-tech-insights/rag-vs-fine-tuning-vs-agents-choosing-the-right-ai-approach/" rel="nofollow noopener noreferrer" target="_blank">ITTech Pulse: AI Capabilities and Business Needs</a>
+                  </div>
+                  <div class="cite-meta">
+<span>ittech-pulse.com</span>                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="site-footer" aria-label="Site footer">
+      <div class="site-footer-inner">
+        <nav class="site-footer-links" aria-label="Footer links">
+          <a href="https://research.mental-momentum.ai/about">About</a>
+          <a href="https://research.mental-momentum.ai/pricing">Pricing</a>
+          <a href="https://research.mental-momentum.ai/r/library">Shared Researches</a>
+          <a href="https://mental-momentum.ai/privacy-policy" rel="noopener noreferrer">Privacy</a>
+          <a href="https://mental-momentum.ai/terms-of-service" rel="noopener noreferrer">Terms</a>
+          <a href="https://mental-momentum.ai/terms-of-service#dmca" rel="noopener noreferrer">DMCA</a>
+          <a href="mailto:customer.care@mental-momentum.ai">Contact</a>
+          <a href="/r/automating-trading-rules-research-using-699apm/automating-trading-rules-research-using-699apm.md" rel="alternate" type="text/markdown">Markdown Version</a>
+        </nav>
+        <p class="site-footer-copy">© 2026 Mental Momentum Research</p>
+      </div>
+    </footer>
+  </div>
+  <script>
+(function () {
+  document.querySelectorAll('.cite-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('.cite-tab').forEach(function (t) {
+        t.classList.remove('cite-tab--active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.cite-panel').forEach(function (p) {
+        p.classList.add('cite-panel--hidden');
+      });
+      tab.classList.add('cite-tab--active');
+      tab.setAttribute('aria-selected', 'true');
+      var panel = document.getElementById('cite-panel-' + tab.dataset.panel);
+      if (panel) panel.classList.remove('cite-panel--hidden');
+    });
+  });
+  document.querySelectorAll('sup.cite-ref[data-cite-num]').forEach(function (sup) {
+    sup.addEventListener('click', function () {
+      var num = sup.dataset.citeNum;
+      var row = document.getElementById('cite-row-' + num);
+      if (!row) return;
+      var mainPanel = document.getElementById('cite-panel-main');
+      var mainTab = document.querySelector('.cite-tab[data-panel="main"]');
+      if (mainPanel && mainTab) {
+        document.querySelectorAll('.cite-tab').forEach(function (t) {
+          t.classList.remove('cite-tab--active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.cite-panel').forEach(function (p) {
+          p.classList.add('cite-panel--hidden');
+        });
+        mainTab.classList.add('cite-tab--active');
+        mainTab.setAttribute('aria-selected', 'true');
+        mainPanel.classList.remove('cite-panel--hidden');
+      }
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      highlight(row);
+    });
+  });
+  document.querySelectorAll('.citations-widget .cite-num[data-cite-num]').forEach(function (badge) {
+    badge.addEventListener('click', function () {
+      var num = badge.dataset.citeNum;
+      var sup = document.querySelector('sup.cite-ref[data-cite-num="' + num + '"]');
+      if (!sup) return;
+      sup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      highlight(sup);
+    });
+  });
+  document.querySelectorAll('.citations-widget .cite-num[data-cite-num]').forEach(function (badge) {
+    var num = badge.dataset.citeNum;
+    var sup = document.querySelector('sup.cite-ref[data-cite-num="' + num + '"]');
+    if (!sup) {
+      badge.style.cursor = 'default';
+      badge.title = 'Not cited inline';
+    }
+  });
+  function highlight(el) {
+    el.classList.add('cite-highlight');
+    setTimeout(function () { el.classList.remove('cite-highlight'); }, 1200);
+  }
+})();
+  </script>
+  <script defer src="/static/katex/katex.min.js"></script>
+  <script defer
+          src="/static/katex/contrib/auto-render.min.js"
+          onload="renderMathInElement(document.querySelector('main[data-research-id]'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:String.fromCharCode(92,40),right:String.fromCharCode(92,41),display:false},{left:String.fromCharCode(92,91),right:String.fromCharCode(92,93),display:true}],throwOnError:false})"></script>
+</body>
+</html>

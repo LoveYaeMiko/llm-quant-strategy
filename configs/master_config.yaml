@@ -1,0 +1,34 @@
+# =====================================================================
+# MASTER CONFIGURATION — single source of truth for the whole system.
+# Editing this file re-tunes every IC gate, lookback and execution limit
+# WITHOUT touching any source code.  (Blueprint §3)
+# =====================================================================
+
+project:
+  name: "LLM_Quant_2026"
+  start_date: "2015-01-01"
+  end_date: "2025-12-31" # Prevent using data after 2025 for training
+
+data:
+  pit_database_url: "postgresql://user:pass@localhost:5432/pit_data"
+  news_api_key: ${NEWS_API_KEY}
+
+llm_routing:
+  generator_model: "deepseek-v3"      # Cheap for schema generation
+  code_model: "gpt-4o"               # Accurate for code
+  critic_model: "claude-3.5-sonnet"  # For EvoQuant diagnosis
+  max_tokens: 4096
+
+factor_mining:
+  ic_threshold: 0.02                 # Minimum to keep
+  rank_ic_threshold: 0.035
+  max_lookback: 60                   # days
+  min_lookback: 5
+
+risk_management:
+  max_sharpe_drawdown: 0.15
+  market_state_bins: ["bull", "bear", "sideways"]
+
+online_execution:
+  latency_target_ms: 10              # Must execute fast
+  max_position_pct: 0.05

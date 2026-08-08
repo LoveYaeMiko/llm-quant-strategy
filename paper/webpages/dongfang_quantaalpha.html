@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=1006" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <meta http-equiv="Pragma" content="no-cache">
+    <title></title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <script src="/hiborweb/Layout/js?v=y-hSAvanSMBlkE1eYNOj0AZwGQP8Ydf-m7Ph5F3q0pk1"></script>
+
+    <link href="/hiborweb/Res/Layout/css?v=xUxRAsJ6h0QagbgEBRXTcFU6m2sm_QhWpGVTBOaCC1A1" rel="stylesheet"/>
+
+    
+    <![if !IE]>
+    <script type="text/javascript" src="/hiborweb/Res/Js/clipboard.min.js"></script>
+    <![endif]>
+    <script src="/hiborweb/DocDetailNew/js?v=JhJG5MdT9wDoAQX8-xy-bc9qho_6DU5Ailv07PYCEEg1"></script>
+
+    <link href="/hiborweb/Res/DocDetailNew/css?v=ataK-H7hWsXTUZytsGxA3_Ofo9Cm2Gp5LyBMNGUZNGM1" rel="stylesheet"/>
+
+    <script type="text/javascript">
+        var login = '<iframe src="/login.html" width=520 height=580 frameborder="0" scrolling="no"></iframe>';
+        var newContentUrl = '/hiborweb/DocDetail/NewContent';
+        var ncid = '32025a10-83b7-4319-a834-150119687575';
+        var displayLoginLayer = true;
+    </script>
+
+    <!--[if IE 6]>
+        <style type="text/css">
+            .list_nav a {
+              background:url(/hiborweb/res/img/nav_listbg2.gif) no-repeat right;
+              float:left;
+              margin-right:10px;
+            }
+            .nav_div li a:hover{ color:#fff;}
+            .nav_div ul.nav-sle li a{ color:#fff;}
+            .nav_div ul.nav-sle li ul li a{ color:#444;]
+        </style>
+    <![endif]-->
+</head>
+<body>
+        <div class="head">
+            <div class="head_div w1000">
+                
+                <iframe id="ilogin" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" src="/top.html" class="top-login"></iframe>
+            </div>
+        </div>
+    <div class="logo" id="logo">
+        <div class="w1000">
+            <div class="logo_img">
+                <a href="/" target="_blank">
+                    <img src="/hiborweb/res/img/logo.gif" alt="慧博投研资讯" border="0" />
+                </a>
+            </div>
+            <div class="search-div">
+                <div class="search-tab">
+                    <ul>
+                        <li id="searchTab1" class="clicked">研究报告</li>
+                        <li id="searchTab2">定期财报</li>
+                        <li id="searchTab3">公司公告</li>
+                    </ul>
+                </div>
+                <div class="search-box">
+                    <!--正文搜索-->
+                    <div class="search">
+                        <form name="f" id="fs" action="/newweb/HuiSou/s" target="_blank" onsubmit="return submitSearchForm()">
+                            <input type="text" class="search-text" id="kw" name="gjc" maxlength="100" onfocus="hideHint('kw')" onkeydown="hideHint('kw')" autocomplete="off">
+                            <label class="placeholder" id="kw_ph" for="kw" style="visibility: hidden">搜索内容不能为空</label>
+                            <input type="submit" class="search-btn" value="搜索">
+                            <input type="hidden" id="fs_sslb" name="sslb" value="1" />
+                            <input type="hidden" id="fs_sjfw" name="sjfw" value="" />
+                            <input type="hidden" id="fs_cxzd" name="cxzd" value="" />
+                            <input type="hidden" id="fs_px" name="px" value="" />
+                            <input type="hidden" id="fs_bgys" name="bgys" value="" />
+                            <input type="hidden" id="fs_gs" name="gs" value="" />
+                            <input type="hidden" id="fs_sdhy" name="sdhy" value="" />
+                            <input type="hidden" id="fs_sdgs" name="sdgs" value="" />
+                            <input type="hidden" id="fs_sdhgcl" name="sdhgcl" value="" />
+                            <input type="hidden" id="fs_mhss" name="mhss" value="" />
+                            <input type="hidden" id="fs_hy" name="hy" value="" />
+                            <input type="hidden" id="fs_gp" name="gp" value="" />
+                        </form>
+                        <div class="clear"></div>
+                    </div>
+                        <!--热搜-->
+                        <div class="hot-search" id="reSou">
+                            <div class="hot-txt-title">热搜：</div>
+                            <div class="hot-txt-body">
+                                    <span title="创新药">创新药</span>
+                                    <span title="AI">AI</span>
+                                    <span title="PCB">PCB</span>
+                                    <span title="光模块">光模块</span>
+                                    <span title="机器人">机器人</span>
+                                    <span title="算力">算力</span>
+                                    <span title="半导体">半导体</span>
+                                    <span title="存储">存储</span>
+                            </div>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--主导航-->
+    <div class="nav" id="nav">
+        <div class="nav_div w1000">
+            <ul id="nav-sle" class="nav-sle">
+                <li class="over"><a href="/" target="_blank">&nbsp;&nbsp;首 页&nbsp;&nbsp;</a></li>
+                <li class="list_nav">
+                    <a>报告分类</a>
+                    <ul>
+                        <li><a href="/microns_13.html" target="_blank">宏观经济</a></li>
+                        <li><a href="/microns_4.html" target="_blank">投资策略</a></li>
+                        <li><a href="/microns_2.html" target="_blank">行业分析</a></li>
+                        <li><a href="/microns_1.html" target="_blank">公司调研</a></li>
+                        <li><a href="/microns_16.html" target="_blank">债券研究</a></li>
+                        <li><a href="/microns_14.html" target="_blank">晨会早刊</a></li>
+                        <li><a href="/microns_5.html" target="_blank">机构资讯</a></li>
+                        <li><a href="/microns_21.html" target="_blank">新股研究</a></li>
+                        <li><a href="/microns_22.html" target="_blank">并购重组</a></li>
+                        <li><a href="/microns_9.html" target="_blank">港美研究</a></li>
+                        <li><a href="/microns_18.html" target="_blank">金融工程</a></li>
+                        <li><a href="/microns_19.html" target="_blank">投资组合</a></li>
+                        <li><a href="/microns_20.html" target="_blank">融资融券</a></li>
+                        <li><a href="/microns_8.html" target="_blank">期货研究</a></li>
+                        <li><a href="/microns_15.html" target="_blank">股指期货</a></li>
+                        <li><a></a></li>
+                        <li class="bor-btm"><a href="/microns_23.html" target="_blank">期权研究</a></li>
+                        <li class="bor-btm"><a href="/microns_6.html" target="_blank">基金频道</a></li>
+                        <li class="bor-btm"><a href="/microns_17.html" target="_blank">外汇研究</a></li>
+                        <li class="bor-btm"><a></a></li>
+                        <li class="bor-none"><a href="/freport_11_1.html" target="_blank">外文报告</a></li>
+                        <li class="bor-none"><a href="/anreport_12.html" target="_blank">公司公告</a></li>
+                        <li class="bor-none"><a href="/report.html" target="_blank">定期财报</a></li>
+                        <li class="bor-none"><a></a></li>
+                    </ul>
+                </li>
+                <li class="list_nav">
+                    <a>资讯分类</a>
+                    <ul class="ui-listyle">
+                        <li class="bor-none"><a href="/pictbg.html" target="_blank">图片研报</a></li>
+                        
+                    </ul>
+                </li>
+                <li class="list_nav">
+                    <a>慧博终端</a>
+                    <ul class="ui-listylepc">
+                        <li><a href="/soft/download.html" target="_blank">慧博智能策略终端（PC版）</a></li>
+                        <li class="bor-none"><a href="/soft/sjb/index.html" target="_blank">慧博投资分析APP（移动版）</a></li>
+                    </ul>
+                </li>
+                <li><a href="/hytop.html" target="_blank"><span>热点研报</span></a></li>
+                <li><a href="/elitelist.html" target="_blank"><span>精选研报</span></a></li>
+                <li><a href="/author.html" target="_blank"><span>知名分析师</span></a></li>
+                <li><a href="/edbweb/edb/01.html" target="_blank">经济数据库</a></li>
+                <li class="list_nav">
+                    <a>个人中心</a>
+                    <ul class="ui-listyle">
+                        <li><a href="/mycenter/register.html" target="_blank">用户管理</a></li>
+                        <li><a href="/favorites.html" target="_blank">我的收藏</a></li>
+                        <li><a href="/docupload.html" target="_blank">我要上传</a></li>
+                        <li><a href="/docupload_mag.html" target="_blank">云文档管理</a></li>
+                        <li class="bor-none"><a href="/wnote.html" target="_blank">我的云笔记</a></li>
+                        
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="ban_div">
+        <a href="/soft/download.html" target="_blank"><img src="/hiborweb/res/img/banner_top.gif?v=20260808210744"></a>
+    </div>
+    
+
+
+
+
+<div class="data_loading">
+    <img src="/hiborweb/Res/Img/waiting.gif"><span>加载中......</span>
+</div>
+
+<div class="wrap"></div>
+
+<div id="clientDownloadLayer4">
+    <div class="mask-bg"></div>
+    <div class="mask-main-wrap">
+        <div class="mask-title">温馨提示<i onclick="$('#clientDownloadLayer4').hide();"></i></div>
+        <div class="mask-tip-text"><p>10秒免费下载安装慧博PC客户端，解锁完整功能。支持手机号或用户名登录。</p></div>
+        <div class="mask-download-btn">
+            <a href="http://xz.hibor.com.cn/install/hibor-setup.exe" onclick="return clientDownloadLayerDownload('下载终端弹层4-1', '点击立即下载按钮', '下载终端安装文件', 1, 4);"><img src="/hiborweb/Res/Img/btm_download_btn.gif"></a>
+        </div>
+    </div>
+</div>
+    <div class="clear"></div>
+    <!--友情链接-->
+    
+    <div class="footer" id="footer">
+        <div class="footer_div">
+            <a href="javascript:void(0);" onclick="setHome(this, 'http://www.hibor.com.cn'); return false;">设为首页</a> |
+            <a href="javascript:void(0);" onclick="addFavorite('慧博资讯', location.href); return false;">加入收藏</a> |
+            <a href="/about.html#contactus" target="_blank">联系我们</a> |
+            <a href="/suggestions.html" target="_blank">反馈建议</a> |
+            <a href="/zhaopin.html" target="_blank">招贤纳士</a> |
+            <a href="/about.html#team" target="_blank">合作加盟</a> |
+            <a href="/disclaimer.html" target="_blank">免责声明</a>
+
+        </div>
+    </div>
+    <div class="footer_txt">
+        <pre>客服电话：400-806-1866    客服QQ：1223022    客服Email：hbzixun@126.com</pre>
+        <pre>Copyright@2002-2026    Hibor.com.cn    备案序号：<a href="http://beian.miit.gov.cn/" target="_blank" class="beian">冀ICP备18028519号-7</a>    冀公网安备：13060202001081</pre>
+         <br />
+        本网站用于投资学习与研究用途，如果您的文章和报告不愿意在我们平台展示，请联系我们，谢谢！
+        <pre>不良信息举报电话：400-806-1866 举报邮箱：hbzixun@126.com</pre>
+        <a href="http://www.hbjbzx.gov.cn/" target="_blank"><img src="/hiborweb/res/img/jubao.png" style="margin-top: 10px;" /></a>
+    </div>
+    <div id="weixinama" class="go-erwei">
+        <span style="text-align:center;">扫一扫，慧博手机终端下载！<img onclick="closeWeiXin()" src="/hiborweb/res/img/close.gif" /></span>
+        <a href="/soft/sjb/index.html" target="_blank"><img src="/hiborweb/res/img/phone.jpg" border="0" width="120" height="120" /></a>
+    </div>
+    <script type="text/javascript" src="/hiborweb/res/js/baidushare.js"></script>
+    <script type="text/javascript" src="https://s8.cnzz.com/stat.php?id=1752123&web_id=1752123&show=pic1&async=1" async defer></script>
+    <script type="text/javascript">var _hmt = _hmt || [];</script>
+    <script type="text/javascript" src="https://hm.baidu.com/hm.js?d554f0f6d738d9e505c72769d450253d" async defer></script>
+    <script>
+        //百度收录
+        (function () {
+            var bp = document.createElement('script');
+            var curProtocol = window.location.protocol.split(':')[0];
+            if (curProtocol === 'https') {
+                bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+            }
+            else {
+                bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+            }
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(bp, s);
+        })();
+        //360收录
+        /*
+        (function () {
+            var src = (document.location.protocol == "http:") ? "http://js.passport.qihucdn.com/11.0.1.js?dc05890175008963b3cd0f4458b27200" : "https://jspassport.ssl.qhimg.com/11.0.1.js?dc05890175008963b3cd0f4458b27200";
+            document.write('<script src="' + src + '" id="sozz"><\/script>');
+        })();
+        */
+    </script>
+    <!--遮罩层-->
+    <div id="divShade" class="shade"></div>
+    <div id="div_show">
+        <img src="/hiborweb/Res/Img/loading.gif" />
+        <p>正在加载，请稍候...</p>
+    </div>
+</body>
+</html>
