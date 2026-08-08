@@ -1,0 +1,6 @@
+# Claude Code 本地设置（机器相关，不提交）
+.claude/settings.local.json
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
