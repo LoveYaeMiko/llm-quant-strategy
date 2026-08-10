@@ -15,7 +15,8 @@ data:
   pit_database_url: "${PIT_DATABASE_URL}"
   news_api_key: ${NEWS_API_KEY}
   # Flip to true after a real ingestion is confirmed — gates the B1-B5 checks in `verify`.
-  real_data: false
+  # Set true 2026-08-10 after the full A-share ingest (5,162 symbols, 12.48M bars).
+  real_data: true
   # AlphaFeed primary / Baostock fallback (universe + fundamentals), AKShare for news.
   primary: "alphafeed"
   fallback: "baostock"
