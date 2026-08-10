@@ -88,6 +88,55 @@ def test_upsert_requires_columns():
         s.upsert(pd.DataFrame([{"close": 1.0}]))
 
 
+def test_price_and_universe_records_coexist_same_date():
+    """ADR-0003 collision: a price bar and a universe snapshot on the same
+    (symbol, valid_from) are DIFFERENT facts — upserting one must not clobber
+    the other. (Regression for the full-ingest bug that destroyed the 2015
+    universe cohort when the price phase re-upserted matching bars.)"""
+    s = PointInTimeStore()
+    s.upsert(
+        pd.DataFrame(
+            [{"symbol": "600519.SH", "valid_from": "2015-01-05", "record_type": "universe", "name": "贵州茅台"}]
+        )
+    )
+    s.upsert(
+        pd.DataFrame(
+            [{"symbol": "600519.SH", "valid_from": "2015-01-05", "record_type": "price", "close": 10.0}]
+        )
+    )
+    q = s.query("2015-01-05")
+    assert len(q) == 2, "price + universe must coexist on the same date"
+    assert set(q["record_type"]) == {"price", "universe"}
+    # same record_type on the same key still supersedes (restatement semantics)
+    s.upsert(
+        pd.DataFrame(
+            [{"symbol": "600519.SH", "valid_from": "2015-01-05", "record_type": "price", "close": 11.0}]
+        )
+    )
+    q = s.query("2015-01-05")
+    assert len(q) == 2
+    assert q.loc[q["record_type"] == "price", "close"].iloc[0] == 11.0
+
+
+def test_sqlite_price_and_universe_coexist_same_date(tmp_path):
+    db = tmp_path / "pit.db"
+    loader = SQLitePointInTimeLoader(db)
+    loader.upsert(
+        pd.DataFrame(
+            [{"symbol": "600519.SH", "valid_from": "2015-01-05", "record_type": "universe", "name": "贵州茅台"}]
+        )
+    )
+    loader.upsert(
+        pd.DataFrame(
+            [{"symbol": "600519.SH", "valid_from": "2015-01-05", "record_type": "price", "close": 10.0}]
+        )
+    )
+    q = loader.query("2015-01-05")
+    assert len(q) == 2
+    assert set(q["record_type"]) == {"price", "universe"}
+    loader.close()
+
+
 def test_sqlite_loader_roundtrip(tmp_path):
     db = tmp_path / "pit.db"
     loader = SQLitePointInTimeLoader(db)

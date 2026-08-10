@@ -66,13 +66,16 @@ def test_upsert_builds_on_conflict_sql(monkeypatch):
     assert len(calls) == 1
     sql, tuples, template, page_size = calls[0]
     assert "ON CONFLICT" in sql
-    assert template == "(%s, %s, %s, %s::jsonb)"
+    assert "record_type" in sql
+    assert template == "(%s, %s, %s, %s, %s::jsonb)"
     assert page_size == 1000
-    sym, vf, vt, payload = tuples[0]
+    sym, vf, vt, rt, payload = tuples[0]
     assert sym == "A"
     assert vf == "2024-01-01T00:00:00"
     assert vt is None
+    assert rt == "price"
     assert '"close": 1.0' in payload
+    assert "ON CONFLICT (symbol, valid_from, record_type)" in sql
 
 
 def test_query_hydrates_jsonb_rows(monkeypatch):

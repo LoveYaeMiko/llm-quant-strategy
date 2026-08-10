@@ -6,9 +6,10 @@ Raw ``psycopg2`` (no ORM). One shared table for every record kind::
         symbol      TEXT       NOT NULL,
         valid_from  TIMESTAMP  NOT NULL,
         valid_to    TIMESTAMP,          -- NULL ⇒ still valid
+        record_type TEXT       NOT NULL DEFAULT '',  -- price / universe / fundamental / text
         payload     JSONB      NOT NULL, -- feature columns incl. record_type
         updated_at  TIMESTAMP  NOT NULL DEFAULT now(),
-        PRIMARY KEY (symbol, valid_from)
+        PRIMARY KEY (symbol, valid_from, record_type)
     )
 
 Bulk writes go through ``execute_values`` (page_size 1000) with
@@ -45,9 +46,10 @@ CREATE TABLE IF NOT EXISTS pit_records (
     symbol      TEXT       NOT NULL,
     valid_from  TIMESTAMP  NOT NULL,
     valid_to    TIMESTAMP,
+    record_type TEXT       NOT NULL DEFAULT '',
     payload     JSONB      NOT NULL,
     updated_at  TIMESTAMP  NOT NULL DEFAULT now(),
-    PRIMARY KEY (symbol, valid_from)
+    PRIMARY KEY (symbol, valid_from, record_type)
 );
 CREATE INDEX IF NOT EXISTS ix_pit_times ON pit_records (valid_from, valid_to);
 """
@@ -69,26 +71,31 @@ class PostgresPointInTimeLoader:
         self._conn.commit()
 
     def upsert(self, records: pd.DataFrame) -> None:
-        """Bulk upsert, superseding prior facts for the same ``(symbol, valid_from)``."""
+        """Bulk upsert, superseding prior facts for the same ``(symbol, valid_from, record_type)``.
+
+        ``record_type`` is part of the key so a price bar and a universe snapshot
+        on the same (symbol, valid_from) coexist instead of clobbering each other
+        (the ADR-0003 collision that destroyed the 2015 universe cohort).
+        """
         store = PointInTimeStore()
         store.upsert(records)
         rows = [_payload_for(r) for _, r in store.records.iterrows()]
         if not rows:
             return
-        tuples = [(s, vf, vt, p) for s, vf, vt, p in rows]
+        tuples = [(s, vf, vt, rt, p) for s, vf, vt, rt, p in rows]
         with self._conn.cursor() as cur:
             psycopg2.extras.execute_values(
                 cur,
                 """
-                INSERT INTO pit_records (symbol, valid_from, valid_to, payload)
+                INSERT INTO pit_records (symbol, valid_from, valid_to, record_type, payload)
                 VALUES %s
-                ON CONFLICT (symbol, valid_from) DO UPDATE SET
+                ON CONFLICT (symbol, valid_from, record_type) DO UPDATE SET
                     valid_to   = EXCLUDED.valid_to,
                     payload    = EXCLUDED.payload,
                     updated_at = now()
                 """,
                 tuples,
-                template="(%s, %s, %s, %s::jsonb)",
+                template="(%s, %s, %s, %s, %s::jsonb)",
                 page_size=_PAGE_SIZE,
             )
         self._conn.commit()

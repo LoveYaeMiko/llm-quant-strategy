@@ -50,8 +50,8 @@ def _as_ts(value: object) -> pd.Timestamp:
     return pd.Timestamp(value)
 
 
-def _payload_for(row: pd.Series) -> tuple[str, str, Optional[str], str]:
-    """Serialize one store row into ``(symbol, valid_from, valid_to, payload_json)``.
+def _payload_for(row: pd.Series) -> tuple[str, str, Optional[str], str, str]:
+    """Serialize one store row into ``(symbol, valid_from, valid_to, record_type, payload_json)``.
 
     Shared by the SQLite and Postgres backends so both write byte-identical
     payloads. NumPy scalars are unwrapped; NaN becomes JSON ``null``.
@@ -64,7 +64,8 @@ def _payload_for(row: pd.Series) -> tuple[str, str, Optional[str], str]:
     payload = json.dumps(features, ensure_ascii=False, default=str)
     vf = _as_ts(row[VALID_FROM]).isoformat()
     vt = None if pd.isna(row[VALID_TO]) else _as_ts(row[VALID_TO]).isoformat()
-    return (row[SYMBOL], vf, vt, payload)
+    rt = str(row.get("record_type", "") or "")
+    return (row[SYMBOL], vf, vt, rt, payload)
 
 
 def _rows_to_frame(rows: Iterable[dict], fields: Optional[Iterable[str]] = None) -> pd.DataFrame:
@@ -123,6 +124,12 @@ class PointInTimeStore:
             if col not in records.columns:
                 raise ValueError(f"missing required column {col!r}")
         df = records.copy()
+        # ``record_type`` is part of the uniqueness key: a price bar and a
+        # universe snapshot for the same (symbol, valid_from) are DIFFERENT
+        # facts and must coexist. Frames without the discriminator (hand-built
+        # test fixtures) normalize to "" so the key stays stable across batches.
+        if "record_type" not in df.columns:
+            df["record_type"] = ""
         if VALID_TO not in df.columns:
             df[VALID_TO] = pd.NaT
         df[VALID_FROM] = pd.to_datetime(df[VALID_FROM])
@@ -132,9 +139,11 @@ class PointInTimeStore:
         if self.records.empty:
             self.records = df
         else:
+            if "record_type" not in self.records.columns:
+                self.records["record_type"] = ""
             self.records = pd.concat([self.records, df], ignore_index=True)
         self.records = self.records.drop_duplicates(
-            subset=[SYMBOL, VALID_FROM], keep="last"
+            subset=[SYMBOL, VALID_FROM, "record_type"], keep="last"
         ).sort_values([SYMBOL, VALID_FROM]).reset_index(drop=True)
 
     def query(
@@ -288,11 +297,12 @@ class SQLitePointInTimeLoader:
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS pit_records (
-                symbol     TEXT    NOT NULL,
-                valid_from TEXT    NOT NULL,
-                valid_to   TEXT,
-                payload    TEXT    NOT NULL,
-                PRIMARY KEY (symbol, valid_from)
+                symbol      TEXT    NOT NULL,
+                valid_from  TEXT    NOT NULL,
+                valid_to    TEXT,
+                record_type TEXT    NOT NULL DEFAULT '',
+                payload     TEXT    NOT NULL,
+                PRIMARY KEY (symbol, valid_from, record_type)
             )
             """
         )
@@ -308,8 +318,8 @@ class SQLitePointInTimeLoader:
         rows = [_payload_for(r) for _, r in store.records.iterrows()]
         self._conn.executemany(
             """
-            INSERT OR REPLACE INTO pit_records (symbol, valid_from, valid_to, payload)
-            VALUES (?, ?, ?, ?)
+            INSERT OR REPLACE INTO pit_records (symbol, valid_from, valid_to, record_type, payload)
+            VALUES (?, ?, ?, ?, ?)
             """,
             rows,
         )

@@ -8,7 +8,7 @@ Offline R&D pipeline (LLM-heavy factor mining) strictly separated from online ex
 |-----|------|
 | ADR-0001 | 价格 bar 闭区间：`valid_to = valid_from + 1D` |
 | ADR-0002 | 双列复权：`close`（后复权，锚定最新）+ `raw_close`（未复权）+ `adjust_factor` |
-| ADR-0003 | Postgres JSONB PIT 后端：`pit_records(symbol, valid_from, valid_to, payload, updated_at)`，主键 `(symbol, valid_from)` |
+| ADR-0003 | Postgres JSONB PIT 后端：`pit_records(symbol, valid_from, valid_to, record_type, payload, updated_at)`，主键 `(symbol, valid_from, record_type)` — record_type 入键，价格与 universe 同日不互斥 |
 | ADR-0004 | Universe 来自 Baostock `query_all_stock(day)`，过滤指数/北交所/B 股（exchange-aware 前缀） |
 | ADR-0005 | 研究 universe 有界（`hs300_500` / `all` / 字面列表） |
 
@@ -57,7 +57,7 @@ _Avoid_: "factor died", "strategy stopped working"
 
 ## 测试基线
 
-- **159 passed**（`python -m pytest tests/`）
+- **164 passed**（`python -m pytest tests/`）
 - 关键回归测试：
   - `test_to_price_records_multisymbol_factors_not_swapped` — 多符号因子不互换（索引对齐）
   - `test_to_price_records_applies_factor_backward` — 逐事件 ex_factor → 后复权（反向累计逆积）
