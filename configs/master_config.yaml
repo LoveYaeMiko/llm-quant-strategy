@@ -6,12 +6,45 @@
 
 project:
   name: "LLM_Quant_2026"
-  start_date: "2015-01-01"
-  end_date: "2025-12-31" # Prevent using data after 2025 for training
+  start_date: "2010-01-01"      # full-A backfill starts here (was 2015-01-01)
+  end_date: "2025-12-31"        # Prevent using data after 2025 for training
 
 data:
-  pit_database_url: "postgresql://user:pass@localhost:5432/pit_data"
+  # Interpolated from .env PIT_DATABASE_URL (postgresql://pit:pit@localhost:5432/pit_data
+  # in production; sqlite:///data/pit_data.db for local/offline runs).
+  pit_database_url: "${PIT_DATABASE_URL}"
   news_api_key: ${NEWS_API_KEY}
+  # Flip to true after a real ingestion is confirmed — gates the B1-B5 checks in `verify`.
+  real_data: false
+  # AlphaFeed primary / Baostock fallback (universe + fundamentals), AKShare for news.
+  primary: "alphafeed"
+  fallback: "baostock"
+  rate_limits:                   # tokens/minute per endpoint (AlphaFeed paid → generous)
+    alphafeed_daily: 300
+    alphafeed_daily_batch: 120
+    alphafeed_quote: 300
+    alphafeed_adjust: 120
+    baostock: 120
+  alphafeed:
+    api_key: "${ALPHAFEED_API_KEY}"   # interpolated from .env
+    batch_size: 100              # symbols per klines.batch call (paid quota: safe)
+  baostock:
+    enabled: "${BAOSTOCK_ENABLED}"
+  akshare:
+    enabled: "${AKSHARE_ENABLED}"
+  fundamentals:
+    pilot_size: 50               # Q4: --fundamentals 只试点前 50 只
+  checks:                        # B1-B5 thresholds
+    # must be a trading day — a holiday anchor means no baostock snapshot and a
+    # false "0 delisted" report (2015-01-01 is the New Year holiday; 01-05 is the first session)
+    survivorship_date: "2015-01-05"
+    max_staleness_days: 7
+    min_coverage: 0.70           # A-share ~242/261 trading bdays ≈ 0.93, so 0.70 is generous
+    adjustment_sample: 20        # price symbols sampled by the B3 check
+    price_limit_band: 0.30       # max allowed |adjusted daily return| (BJ board ±30%)
+  news:
+    watchlist: ["600519.SH", "000001.SZ", "600036.SH", "601318.SH", "000858.SZ"]  # smoke-test set
+  universe_dir: "data/universe"  # cached constituent lists (hs300/zz500/sse50) written by ingest
 
 llm_routing:
   generator_model: "deepseek-v3"      # Cheap for schema generation
@@ -32,3 +65,21 @@ risk_management:
 online_execution:
   latency_target_ms: 10              # Must execute fast
   max_position_pct: 0.05
+
+# Walk-forward research windows (requirements.md C1-C2). The research loops
+# (mine/backtest/monitor) run on `research.universe`; the underlying data stays full-A.
+research:
+  train_start: "2010-01-01"
+  train_end: "2019-12-31"
+  val_start: "2020-01-01"
+  val_end: "2021-12-31"
+  test_start: "2022-01-01"
+  test_end: "2025-12-31"
+  universe: "hs300_500"          # "all" | a symbol list | a cached name under data.universe_dir
+  mining:
+    iterations: 50               # C1: increased from default 3
+    walks: 20                    # C1: more walk-forward rounds
+    bonferroni_correction: true  # C1: multiple testing correction
+  decay:
+    window_days: 90
+    icir_threshold: 0.30         # aligns with factor_thresholds.yaml icir.keep_threshold
