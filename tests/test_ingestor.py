@@ -5,6 +5,7 @@ from __future__ import annotations
 import pandas as pd
 
 from src.config import Config
+from src.data.ingestion.convert import UNIVERSE
 from src.data.ingestion.ingestor import Ingestor, resolve_research_universe
 
 
@@ -85,6 +86,45 @@ def test_ingest_universe_writes_snapshots_and_caches(tmp_path, monkeypatch):
     assert stats.universe_records >= 1
     assert (tmp_path / "univ" / "hs300.json").is_file()
     assert (tmp_path / "univ" / "zz500.json").is_file()
+
+
+def test_ingest_universe_backs_off_when_today_empty(tmp_path, monkeypatch):
+    """baostock publishes no 'today' universe until the day's data is finalised —
+    _ingest_universe must walk back to the most recent non-empty snapshot."""
+    ing = Ingestor(_cfg(f"sqlite:///{tmp_path}/pit.db", str(tmp_path / "univ")))
+    today = str(pd.Timestamp.today().normalize().date())
+    prior = str((pd.Timestamp.today().normalize() - pd.Timedelta(days=1)).date())
+
+    def fake_universe(day):
+        if day == today:
+            return pd.DataFrame()  # not finalised yet -> empty
+        return pd.DataFrame({"symbol": ["600519.SH"], "date": [pd.Timestamp(day)], "name": ["贵州茅台"]})
+
+    monkeypatch.setattr(ing.baostock, "fetch_universe", fake_universe)
+    monkeypatch.setattr(ing.baostock, "fetch_index_constituents", lambda name, date: ["600519.SH"])
+    stats = ing.ingest(universe_only=True)
+    # survivorship anchor (2015-01-01) + walked-back prior day (both 1 symbol)
+    assert stats.universe_records == 2
+    assert len(ing.store.universe_as_of(prior, UNIVERSE)) == 1
+
+
+def test_ingest_universe_only_skips_price_pass(tmp_path, monkeypatch):
+    ing = Ingestor(_cfg(f"sqlite:///{tmp_path}/pit.db", str(tmp_path / "univ")))
+    monkeypatch.setattr(
+        ing.baostock, "fetch_universe",
+        lambda day: pd.DataFrame({"symbol": ["600519.SH"], "date": [pd.Timestamp(day)], "name": ["贵州茅台"]}),
+    )
+    monkeypatch.setattr(ing.baostock, "fetch_index_constituents", lambda name, date: ["600519.SH"])
+
+    def boom(*a, **k):  # the price pass must NOT run under universe_only
+        raise AssertionError("price pass ran under --universe-only")
+
+    monkeypatch.setattr(ing.primary, "fetch_klines", boom)
+    monkeypatch.setattr(ing.primary, "fetch_ex_factors", boom)
+    stats = ing.ingest(universe_only=True)
+    assert stats.universe_records >= 1
+    assert stats.bars == 0
+    assert stats.symbols_ok == 0
 
 
 def test_ingest_batch_failure_is_isolated(tmp_path, monkeypatch):

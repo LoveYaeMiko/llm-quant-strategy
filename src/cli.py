@@ -544,7 +544,18 @@ def cmd_verify(args) -> int:
     # verify audits the whole store (not the research universe), and the
     # checklist needs the price + universe records B4 reads
     market = _market_data(cfg, seed=args.seed, bound_to_universe=False)
-    checks = run_all(store=market.audit_store or market.pit_store, tracker=None, config=cfg)
+    # B5 (freshness): a historical backfill (ingest --end <past>) is stale by
+    # construction — measure staleness against the backfill horizon instead of
+    # today. "backfill" == the ingest run's end date; "live" == now().
+    freshness_as_of = None
+    if args.mode == "backfill":
+        freshness_as_of = str(cfg.get("project.end_date", pd.Timestamp.today().normalize().date()))
+    checks = run_all(
+        store=market.audit_store or market.pit_store,
+        tracker=None,
+        config=cfg,
+        freshness_as_of=freshness_as_of,
+    )
     print("=== blueprint verification checklist ===")
     for c in checks:
         print(f"  [{'PASS' if c.passed else 'FAIL'}] {c.name:10s} {c.detail}")
@@ -569,6 +580,7 @@ def cmd_ingest(args) -> int:
         news=args.news,
         resume=args.resume,
         limit=args.limit,
+        universe_only=args.universe_only,
     )
     print(stats.summary())
     return 1 if stats.symbols_failed else 0
@@ -655,6 +667,10 @@ def main(argv: list[str] | None = None) -> int:
 
     p_ver = sub.add_parser("verify", help="run the blueprint verification checklist")
     p_ver.add_argument("--seed", type=int, default=1)
+    p_ver.add_argument(
+        "--mode", choices=["backfill", "live"], default="live",
+        help="backfill: B5 freshness vs project.end_date; live: vs now()",
+    )
     p_ver.set_defaults(func=cmd_verify)
 
     p_ing = sub.add_parser("ingest", help="ingest real data (universe → prices → optional fundamentals/news)")
@@ -665,6 +681,10 @@ def main(argv: list[str] | None = None) -> int:
     p_ing.add_argument("--news", action="store_true", help="Q3 watchlist news (akshare)")
     p_ing.add_argument("--resume", action="store_true", help="only fetch bars after the newest stored bar")
     p_ing.add_argument("--limit", type=int, default=None, help="cap the number of symbols in the price pass")
+    p_ing.add_argument(
+        "--universe-only", action="store_true",
+        help="stop after universe snapshots + index caches (B4 prep); skip the price pass",
+    )
     p_ing.set_defaults(func=cmd_ingest)
 
     p_mon = sub.add_parser("monitor", help="score a factor's IC/ICIR decay over rolling windows")

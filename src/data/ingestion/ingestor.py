@@ -115,13 +115,21 @@ class Ingestor:
         news: bool = False,
         resume: bool = False,
         limit: Optional[int] = None,
+        universe_only: bool = False,
     ) -> IngestStats:
-        """Run the pipeline; returns an :class:`IngestStats` quality summary."""
+        """Run the pipeline; returns an :class:`IngestStats` quality summary.
+
+        ``universe_only=True`` stops after the universe snapshots (B4 prep) and
+        skips the price pass entirely.
+        """
         t0 = time.time()
         stats = IngestStats(survivorship_date=str(self.config.get("data.checks.survivorship_date", "")))
         try:
             if symbols is None:
                 self._ingest_universe(stats)
+            if universe_only:
+                stats = self._fill_quality(stats)
+                return stats
             self._ingest_prices(symbols, start, end, limit, resume, stats)
             if fundamentals:
                 self._ingest_fundamentals(symbols, stats)
@@ -144,20 +152,40 @@ class Ingestor:
         if not anchors or anchors[-1] != today:
             anchors.append(today)
         for day in anchors:
-            try:
-                frame = self.baostock.fetch_universe(day)
-            except Exception as exc:  # noqa: BLE001
-                stats.errors.append(f"universe {day}: {exc}")
-                logger.warning("universe snapshot %s failed: %s", day, exc)
-                continue
+            snap_day, frame = self._latest_universe_snapshot(day)
             if frame.empty:
+                stats.errors.append(f"universe {day}: no non-empty snapshot within backoff window")
+                logger.warning("universe snapshot %s failed (backoff exhausted)", day)
                 continue
             recs = universe_records(frame)
             self.store.upsert(recs)
             stats.universe_records += len(recs)
             self.universe_dir.mkdir(parents=True, exist_ok=True)
-            frame.to_csv(self.universe_dir / f"universe_{day}.csv", index=False)
+            frame.to_csv(self.universe_dir / f"universe_{snap_day}.csv", index=False)
         self._ingest_index_universe(stats)
+
+    def _latest_universe_snapshot(
+        self, day: str, max_backoff: int = 10
+    ) -> tuple[Optional[str], pd.DataFrame]:
+        """Return ``(snapshot_date, frame)`` for the most recent date <= ``day``
+        that has a non-empty universe.
+
+        baostock only publishes a day's universe snapshot once that day's data
+        is finalised, so ``today`` is empty until after close (and never on
+        weekends/holidays). Walk back a few days so the *present* cohort B4
+        reads is the most recent one the feed actually has — not an empty one.
+        """
+        d = pd.Timestamp(day)
+        for _ in range(max_backoff + 1):
+            try:
+                frame = self.baostock.fetch_universe(str(d.date()))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("universe %s failed: %s", d.date(), exc)
+                frame = pd.DataFrame()
+            if not frame.empty:
+                return str(d.date()), frame
+            d -= pd.Timedelta(days=1)
+        return None, pd.DataFrame()
 
     def _ingest_index_universe(self, stats: IngestStats) -> None:
         """Cache HS300/ZZ500 constituents as JSON for the research universe."""

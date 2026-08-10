@@ -26,6 +26,14 @@ def test_verify_offline():
     assert rc == 0
 
 
+def test_verify_backfill_mode_offline():
+    # --mode backfill is the B5 historical-run mode: accepted, and it wires
+    # freshness_as_of=project.end_date through run_all. Offline (real_data
+    # false) it must behave exactly like live.
+    rc = main(["verify", "--mode", "backfill", "--seed", "1"])
+    assert rc == 0
+
+
 def test_export_writes_compiled_json(outputs):
     rc = main(["export", "--name", "testfactor", "--formula", "Neg(TS_ZScore(Close, 20))"])
     assert rc == 0

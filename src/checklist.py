@@ -319,6 +319,7 @@ def run_all(
     store: Optional[PointInTimeStore] = None,
     tracker: Optional[CostTracker] = None,
     config: Optional[Config] = None,
+    freshness_as_of: Optional[str] = None,
 ) -> list[CheckResult]:
     formulas = formulas or [
         "Rank_Mul(Rank(Close), Rank(TS_Return(Close, 10)))",
@@ -353,6 +354,7 @@ def run_all(
                 ),
                 data_freshness_check(
                     store,
+                    as_of=freshness_as_of,
                     max_staleness_days=int(config.get("data.checks.max_staleness_days", 7)),
                     min_coverage=float(config.get("data.checks.min_coverage", 0.70)),
                 ),
