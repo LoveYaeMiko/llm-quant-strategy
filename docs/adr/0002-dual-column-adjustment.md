@@ -1,0 +1,3 @@
+# ADR-0002: Dual-column adjustment storage
+
+Price records carry `close` (backward-adjusted), `raw_close` (unadjusted), and `adjust_factor` (the ex-factor in force at that date) rather than a single adjusted close. Backward adjustment is PIT-stable (unlike forward adjustment, which rewrites all history whenever the latest price moves), so `TS_Return` has no ex-dividend gaps while `raw_close` + `adjust_factor` enable a real B3 consistency check (factor-change days must match raw-price jumps; adjusted returns must stay inside the board's price-limit band). The factor layer reads `close` by default; cross-sectional needs can read `raw_close`.

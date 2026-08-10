@@ -1,0 +1,3 @@
+# ADR-0003: Postgres JSONB PIT backend
+
+The production PIT store is a `PostgresPointInTimeLoader` in `src/data/postgres_loader.py`, driven by raw psycopg2 SQL (no SQLAlchemy) over a single `pit_records(symbol, valid_from, valid_to, payload JSONB)` table with `ON CONFLICT (symbol, valid_from) DO UPDATE`. JSONB mirrors the existing SQLite payload-blob contract so all three backends share one hydration path (`_rows_to_frame`) and a future fundamentals/news schema never needs a migration. SQLAlchemy was rejected (one fixed-contract table), click rejected (the CLI is argparse), python-dotenv rejected (stdlib `.env` loader exists). Local dev runs Postgres via `docker-compose.yml`; SQLite remains the offline test backend.

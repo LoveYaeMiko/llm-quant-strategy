@@ -1,0 +1,3 @@
+# ADR-0001: Closed-interval price bars
+
+Price bars are stored as PIT records with `valid_to = valid_from + 1d` (a bar at date d is a fact valid over `[d, d+1d)`), not the blueprint's open-ended `"2099-12-31"`. This matches the existing synthetic model, so `_market_from_records`' `unstack()` never sees duplicate `(date, symbol)` rows; loading the full historical set requires probing at a far-future date (`2099-01-01`) where every closed bar and open-ended universe/fundamental record is visible. Open-ended expiry is reserved for universe and fundamental records, whose validity genuinely extends until a later event.
