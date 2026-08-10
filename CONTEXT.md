@@ -57,9 +57,19 @@ _Avoid_: "factor died", "strategy stopped working"
 
 ## 测试基线
 
-- **164 passed**（`python -m pytest tests/`）
+- **165 passed**（`python -m pytest tests/`）
 - 关键回归测试：
   - `test_to_price_records_multisymbol_factors_not_swapped` — 多符号因子不互换（索引对齐）
   - `test_to_price_records_applies_factor_backward` — 逐事件 ex_factor → 后复权（反向累计逆积）
   - `test_baostock_lazy_login_resolves_fn_after_login` — baostock 惰性登录后按名解析函数
   - `test_baostock_fetch_universe_prefix_fallback` — exchange-aware 指数过滤（sh.000001 不泄漏）
+  - `test_price_and_universe_records_coexist_same_date` — 复合主键下价格与 universe 同日共存
+  - `test_ingest_universe_backs_off_when_today_empty` — 当天空快照回退
+  - `test_run_all_research_loop_skips_real_data_audit` — 研究循环只跑 4 项常开校验
+
+## 数据地基状态（2026-08-10，Phase 7.1–7.5 完成）
+
+- **全 A 全量入库**：12,480,696 价格 bar / 5,162 只 / 0 失败，覆盖 2010-01-04 ~ 2025-12-31（3,886 天），universe 快照 7,799 条；落库 Postgres 17（`postgresql://pit:pit@localhost:5432/pit_data`）。
+- **`data.real_data: true`**（已翻转）；`verify --mode backfill` B1–B5 全绿（2,594@2015 → 5,205@2026-08-07，230 只已退市保留）。
+- **研究循环校验门**：mine/backtest/evolve/monitor 跑窗口切片 store，只跑 4 项常开校验；`verify` 才追加 B1–B5（`real_data_audit` 参数）。
+- 里程碑标签：`phase7-data-foundation`、`phase7-real-data`。

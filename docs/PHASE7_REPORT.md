@@ -151,3 +151,110 @@
 ---
 
 *报告完。测试基线：`python -m pytest tests/` → 158 passed。真实数据试点落库 Postgres 17（`postgresql://pit:pit@localhost:5432/pit_data`）。*
+
+---
+
+# 附录 A：Phase 7.1 → 7.5 蓝图执行报告（2026-08-10）
+
+> 按 `blueprint/PHASE7_BLUEPRINT.md` 执行（提交基线 → 解除 B4/B5 阻塞 → 全 A 全量入库 → 翻转 `data.real_data` → 因子挖掘冒烟）。
+> **网络状态更新**：Baostock 数据端口 **10030 已恢复连通**，故全程直接使用 Baostock 拉取 universe，未采用蓝图针对端口阻断的 AlphaFeed 回退方案。
+> 测试基线：**165 passed**。
+
+---
+
+## 7.1 逻辑提交与里程碑（phase7-data-foundation）
+
+工作区大量未提交改动按逻辑分组落库：
+
+| 提交 | 内容 |
+|------|------|
+| `446eaf1` | 蓝图迁移到 `blueprint/` 目录 + 新增 `CONTEXT.md` |
+| `9c0d5dd` | docker-compose（Postgres 17）+ Phase 7 报告 + env 占位符 |
+| `97ff496` | ingestion 包初始化 |
+| `cdb7781` | CONTEXT.md：ADR 索引 + 网络状态 + 测试基线 |
+| `1d06a44` | LLM 量化交易系统核心（前一里程碑） |
+
+`CONTEXT.md` 更新：ADR 汇总表、测试基线、网络状态。
+
+## 7.2 解除 B4/B5 阻塞（commit `fd956be`）
+
+### B5 数据新鲜度 — `verify --mode backfill|live`
+历史回填的存储天然「陈旧」，新鲜度必须按回填窗口而非"今天"度量：
+
+- `verify --mode backfill` → `freshness_as_of = project.end_date`（回填封顶日）
+- `verify --mode live` → 以 `now()` 度量（面向日常增量运营）
+- 回归测试：`test_verify_backfill_mode_offline` / `test_verify_offline`
+
+### B4 幸存者校验 — Baostock universe 快照
+- 直接用 `query_all_stock(day)` 拉取全市场成分快照（过滤指数 / 北交所），写 `universe_{day}.csv` + `hs300.json` / `zz500.json` 研究 universe 缓存。
+- **关键修复 — 「当天空快照」回退**：`query_all_stock("当天")` 在当日数据未定稿（且周末/节假日永远为空）时返回 0 行。`_latest_universe_snapshot` 最多回退 10 个自然日取最近的非空快照（`2026-08-10` → 回退到 `2026-08-07`，5,205 只）。
+- 新增 `ingest --universe-only`：只跑 universe 阶段，B4 前置准备，不触碰价格。
+- 回归测试：`test_ingest_universe_backs_off_when_today_empty` / `test_ingest_universe_only_skips_price_pass`。
+
+## 7.3 全 A 全量入库（commit `4b322bb`）
+
+流程：`ingest --limit 100` 验证 → 全量回填 2010-01-01 ~ 2025-12-31。
+
+**全量入库摘要（`logs/ingest_full_20260810.log`）**：
+
+```
+价格K线记录    : 12,480,696
+成分股快照记录  : 7,799
+基本面/文本记录 : 0 / 0
+成功 / 失败个股 : 5,162 / 0
+耗时           : 1516.3s（约 25 分钟）
+价格覆盖天数    : 3,886
+价格区间        : 2010-01-04 ~ 2025-12-31
+最大缺口(工作日): 6 天   ← 春节休市，符合预期
+幸存者自查      : 230 只 2015-01-05 存在、现已退市/缺席
+```
+
+- **瞬时网络中断自愈**：全量期间出现一次 `WinError 10053`（连接被重置），重试逻辑接管，**0 失败**。
+- **数据完整性 Bug 修复（ADR-0003 更新）**：全量价格阶段发现价格 bar 与 universe 快照在**同一 `(symbol, valid_from)`** 上互相覆盖（`record_type` 无差别），2015 cohort 一度从 2,594 缩水到 444。修复：
+  - PIT 主键升级为复合主键 `(symbol, valid_from, record_type)`（Postgres + SQLite + 内存三端一致）；
+  - Postgres 就地迁移（清库重建 + universe 阶段重跑）；
+  - 回归测试：`test_price_and_universe_records_coexist_same_date` / `test_sqlite_price_and_universe_coexist_same_date`。
+
+## 7.4 翻转 `data.real_data` + 全门验证（commit `827bc20`，tag `phase7-real-data`）
+
+`configs/master_config.yaml` → `data.real_data: true`。`verify --mode backfill` **8/8 全 PASS**：
+
+| 检查 | 结果 | 明细 |
+|------|------|------|
+| pit | ✅ | query(2023-12-31) 0 条未来事实 |
+| fincad | ✅ | 输出净化 100% IC 归零，抑制率 100% > 50% |
+| diversity | ✅ | 最小 AST 距离 1.00 ≥ 0.40 |
+| cost | ✅ | 模拟月度 $0.53 ≤ $500 |
+| B1 no_future_leak | ✅ | 边界 2019-12-31 返回 **3,530** 条事实，0 条未来泄漏 |
+| B3 adjustment_consistency | ✅ | 20 符号 73,200 天；0 次超 ±30% 复权收益（最差 17.25%）；209 个因子变更日 187 个伴随原始价跳变 |
+| B4 survivorship | ✅ | **2,594** 只 @2015-01-05 → **5,205** 只 @2026-08-07；其中 **230** 只已退市仍被保留 |
+| B5 data_freshness | ✅ | 最新 bar 2025-12-31（0 天陈旧）；3,886/4,173 工作日覆盖 **93%** ≥ 70% |
+
+> 与 8-09 试点报告对比：B4/B5 由「预期失败」翻转为**实盘全绿** —— 这正是「universe 历史快照」+「backfill 模式」两项解除工作达成的目标。
+
+## 7.5 首次因子挖掘冒烟（commit `b667e3e`）
+
+`python -m src.cli mine --iterations 1`：全链路端到端跑通，**exit 0**，4 项常开校验 PASS。
+
+- 生成 3 个 LLM 假设（deepseek-v4-flash），公式翻译、因子计算、回测评估、风险门控、审计落盘全流程无异常。
+- **accepted 0/3**：三个因子（`Inv(TS_Std(Close,10))` / `Neg(TS_ZScore(Close,5))` / `Neg(TS_ZScore(Close,30))`）方向均为 short / long_short，Sharpe 为负、回撤 > 15%，被 `reject_high_risk` 门正确拒绝。
+- **诊断结论**：冒烟测试目的是验证流水线可运行，此结果证明「LLM 假设 → 因子生成 → 评估 → 风险门控」闭环完整，且**风险门在真实工作**（拒绝高回撤空头策略）。非缺陷，不改阈值强凑通过。
+
+### 研究循环校验门修复（同一提交）
+冒烟测试暴露一个设计缺口：研究循环（mine/backtest/evolve/monitor）跑在**窗口切片、universe 有界**的 store 上，B5 在训练窗口上必然「陈旧」、B4 的 universe 快照也被切出范围。修复：
+
+- `run_all(..., real_data_audit: bool = False)` —— 研究循环只跑 4 项常开校验；`verify` 显式传 `real_data_audit=True` 才追加 B1–B5；
+- 回归测试：`test_run_all_research_loop_skips_real_data_audit`；
+- 同时提交 `data/universe/hs300.json` / `zz500.json`（研究 universe 缓存），`.gitignore` 排除 `universe_*.csv` 快照与 `logs/`。
+
+## 测试与提交
+
+- **165 passed**（`python -m pytest tests/`，45s）
+- 提交链：`fd956be`(7.2) → `4b322bb`(7.3) → `827bc20`(7.4) → `b667e3e`(7.5 + 门修复)
+- 标签：`phase7-data-foundation`、`phase7-real-data`，工作区干净
+
+## 结论与下一步
+
+Phase 7.1→7.5 蓝图全部完成：生产级数据地基就绪，12.48M 条真实 A 股价格 + 全市场 universe 快照落库 Postgres，B1–B5 实盘全绿，挖掘流水线可运行。**下一步（Phase 8 研究）**：正式因子挖掘 `mine --iterations 50 --trials 20`，以 walk-forward 产出首批候选因子并评估衰减。
+
+*附录完。测试基线：165 passed。真实数据全量落库 Postgres 17（`postgresql://pit:pit@localhost:5432/pit_data`），12,480,696 价格 bar / 5,162 只。*
