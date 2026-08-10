@@ -26,6 +26,7 @@ from .bias_control.context_decoder import FinCADWrapper, MockLLMBackend
 from .bias_control.look_ahead_detector import LookAheadAudit, future_mentions
 from .config import Config
 from .cost_tracker import CostTracker
+from .data.ingestion.convert import PRICE as PRICE_RECORD, UNIVERSE as UNIVERSE_RECORD
 from .data.point_in_time_loader import PointInTimeStore
 from .factors.code_generator import CodeGenerator, ast_distance, parse_expression
 
@@ -164,6 +165,151 @@ def cost_check(tracker: Optional[CostTracker] = None, budget: float = 500.0) -> 
 
 
 # ---------------------------------------------------------------------------
+# B1-B5 real-data checks (gated on data.real_data — Q6)
+# ---------------------------------------------------------------------------
+# The four synthetic checks above prove the *pipeline*. The B1-B5 checks below
+# audit the *ingested real data* and only run after the human flips
+# ``data.real_data: true`` (the ingest summary makes that decision evidence-based).
+
+
+def no_future_leak_check(store, boundary: str = "2019-12-31") -> CheckResult:
+    """B1: a query at the train/val boundary exposes no fact born after it.
+
+    Closed-interval bars make this structurally true; the check proves it
+    empirically on whatever real data was ingested.
+    """
+    q = store.query(boundary)
+    born = pd.to_datetime(q.get("valid_from", pd.Series(dtype="datetime64[ns]")))
+    leaked = int((born > pd.Timestamp(boundary)).sum()) if len(born) else 0
+    return CheckResult(
+        name="no_future_leak",
+        passed=leaked == 0,
+        detail=f"query({boundary}) returned {len(q)} facts, {leaked} born after the boundary",
+        meta={"facts_visible": int(len(q)), "future_facts_leaked": leaked},
+    )
+
+
+def adjustment_consistency_check(store, sample: int = 20, price_limit_band: float = 0.30) -> CheckResult:
+    """B3: dual-column adjustment is real (Q2), not the tautology ``close==raw*factor``.
+
+    Audits a sample of price symbols:
+    * adjusted daily returns stay within the ±``price_limit_band`` price-limit band
+      (a correct backward adjustment removes the ex-dividend gap);
+    * factor-change days coincide with a raw-price jump (the change is an actual
+      corporate action, not a corrupted factor row).
+    """
+    syms = store.symbols(PRICE_RECORD)[:sample]
+    checked = 0
+    days = 0
+    band_breaks = 0
+    worst = 0.0
+    factor_changes = 0
+    changes_with_jump = 0
+    for sym in syms:
+        h = store.history(sym, PRICE_RECORD)
+        if h.empty or len(h) < 3 or not {"close", "raw_close", "adjust_factor"} <= set(h.columns):
+            continue
+        checked += 1
+        adj = h["close"].astype(float).pct_change().fillna(0.0)
+        raw = h["raw_close"].astype(float).pct_change().fillna(0.0)
+        factor = h["adjust_factor"].astype(float)
+        fchange = factor.diff().fillna(0.0).abs() > 1e-9
+        days += len(adj)
+        band_breaks += int((adj.abs() > price_limit_band).sum())
+        worst = max(worst, float(adj.abs().max())) if len(adj) else worst
+        factor_changes += int(fchange.sum())
+        if fchange.any():
+            changes_with_jump += int((raw[fchange].abs() > 0.005).sum())
+    if checked == 0:
+        return CheckResult(
+            name="adjustment_consistency",
+            passed=False,
+            detail="no price records with close/raw_close/adjust_factor to audit",
+        )
+    passed = band_breaks == 0
+    detail = (
+        f"{checked} symbols, {days:,} days audited; {band_breaks} adjusted returns beyond "
+        f"±{price_limit_band:.0%} (worst {worst:.2%}); {factor_changes} factor-change days, "
+        f"{changes_with_jump} with a raw-price jump"
+    )
+    return CheckResult(
+        name="adjustment_consistency",
+        passed=passed,
+        detail=detail,
+        meta={
+            "symbols_audited": checked,
+            "days_audited": days,
+            "band_breaks": band_breaks,
+            "worst_adjusted_return": worst,
+            "factor_changes": factor_changes,
+            "changes_with_jump": changes_with_jump,
+        },
+    )
+
+
+def survivorship_check(store, as_of: str = "2015-01-05") -> CheckResult:
+    """B4: the store retains names alive at ``as_of`` that have since left.
+
+    A store that can enumerate the 2015 cohort minus today's cohort is one that
+    does NOT silently drop delisted names — the survivorship trap the blueprint
+    calls out. Pass just proves both snapshots exist; the delisted count is the
+    number the human reads.
+    """
+    past = store.universe_as_of(as_of, UNIVERSE_RECORD)
+    latest = store.max_date(UNIVERSE_RECORD)
+    present = store.universe_as_of(latest, UNIVERSE_RECORD) if not pd.isna(latest) else []
+    delisted = sorted(set(past) - set(present))
+    return CheckResult(
+        name="survivorship",
+        passed=bool(past) and bool(present),
+        detail=(
+            f"{len(past)} symbols alive at {as_of}, {len(present)} at {latest}; "
+            f"{len(delisted)} of the {as_of} cohort have since left"
+        ),
+        meta={
+            "n_at_as_of": len(past),
+            "n_latest": len(present),
+            "n_delisted_since": len(delisted),
+            "as_of": str(as_of),
+            "latest_universe_date": str(latest),
+        },
+    )
+
+
+def data_freshness_check(
+    store,
+    as_of: Optional[str] = None,
+    max_staleness_days: int = 7,
+    min_coverage: float = 0.70,
+) -> CheckResult:
+    """B5: the newest bar is recent and the price history covers the range."""
+    latest = store.max_valid_from(PRICE_RECORD)
+    earliest = store.min_date(PRICE_RECORD)
+    if pd.isna(latest) or pd.isna(earliest):
+        return CheckResult(name="data_freshness", passed=False, detail="no price records in store")
+    as_of = as_of or pd.Timestamp.today().normalize()
+    staleness = int((pd.Timestamp(as_of) - latest).days)
+    dates = store.distinct_dates(PRICE_RECORD)
+    total = len(pd.bdate_range(earliest, latest))
+    coverage = len(dates) / total if total else 0.0
+    passed = staleness <= max_staleness_days and coverage >= min_coverage
+    return CheckResult(
+        name="data_freshness",
+        passed=passed,
+        detail=(
+            f"latest bar {latest.date()} ({staleness} days old, allowed {max_staleness_days}); "
+            f"{len(dates)}/{total} business days covered = {coverage:.0%} (floor {min_coverage:.0%})"
+        ),
+        meta={
+            "latest_bar": str(latest),
+            "staleness_days": staleness,
+            "coverage": round(coverage, 3),
+            "max_staleness_days": max_staleness_days,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
 # runner
 # ---------------------------------------------------------------------------
 
@@ -186,8 +332,44 @@ def run_all(
         cost_check(tracker),
     ]
     if store is not None:
-        checks.insert(0, pit_check(store))
+        ts = str(config.get("pit.validation_timestamp", "2019-06-28")) if config else "2019-06-28"
+        forbidden = str(config.get("pit.forbidden_future_date", "2019-07-01")) if config else "2019-07-01"
+        checks.insert(0, pit_check(store, ts=ts, forbidden=forbidden))
+    real = bool(config.get("data.real_data", False)) if config else False
+    if real:
+        if store is None:
+            raise ValueError("data.real_data=true requires a PIT store to audit")
+        boundary = str(config.get("research.train_end", "2019-12-31"))
+        checks.extend(
+            [
+                no_future_leak_check(store, boundary=boundary),
+                adjustment_consistency_check(
+                    store,
+                    sample=int(config.get("data.checks.adjustment_sample", 20)),
+                    price_limit_band=float(config.get("data.checks.price_limit_band", 0.30)),
+                ),
+                survivorship_check(
+                    store, as_of=str(config.get("data.checks.survivorship_date", "2015-01-05"))
+                ),
+                data_freshness_check(
+                    store,
+                    max_staleness_days=int(config.get("data.checks.max_staleness_days", 7)),
+                    min_coverage=float(config.get("data.checks.min_coverage", 0.70)),
+                ),
+            ]
+        )
     return checks
 
 
-__all__ = ["CheckResult", "pit_check", "fincad_check", "diversity_check", "cost_check", "run_all"]
+__all__ = [
+    "CheckResult",
+    "pit_check",
+    "fincad_check",
+    "diversity_check",
+    "cost_check",
+    "no_future_leak_check",
+    "adjustment_consistency_check",
+    "survivorship_check",
+    "data_freshness_check",
+    "run_all",
+]
