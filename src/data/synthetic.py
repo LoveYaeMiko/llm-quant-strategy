@@ -28,9 +28,12 @@ class SyntheticMarket:
     long: pd.DataFrame             # MultiIndex (date, symbol) panel with OHLCV
     price_panel: pd.DataFrame      # date x symbol closes
     forward_returns: pd.Series     # MultiIndex (date, symbol): ret over [d, d+1)
-    pit_store: PointInTimeStore    # populated PIT store
+    pit_store: PointInTimeStore    # populated PIT store (price records only)
     n_symbols: int
     n_days: int
+    # Price + universe records, for the B1-B5 checklist (B4 needs the
+    # survivorship snapshots that the price-only pit_store lacks).
+    audit_store: Optional[PointInTimeStore] = None
 
 
 def make_synthetic_market(
