@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+import os
+
 import pandas as pd
 import pytest
+
+# Offline guard: an empty value is "set", so config._load_dotenv won't repopulate
+# it from .env and no CLI/test path ever dials the real Postgres.
+os.environ["PIT_DATABASE_URL"] = ""
 
 from src.data.synthetic import make_synthetic_market
 from src.factors.code_generator import FactorContext
