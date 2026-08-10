@@ -1,0 +1,26 @@
+# Local PIT database (production backend). Start with: docker compose up -d
+# Connection: postgresql://pit:pit@localhost:5432/pit_data  (set PIT_DATABASE_URL in .env)
+# NOTE: pinned to 17-alpine. postgres:16 IS pullable via CN mirrors but the
+# large binary blob is very slow (~40 min); 17 pulled in minutes and is
+# functionally equivalent for JSONB + ON CONFLICT + execute_values. The volume
+# is PG17-formatted, so do NOT switch back to 16 without recreating it.
+services:
+  pit-db:
+    image: postgres:17-alpine
+    container_name: fqa-pit-db
+    environment:
+      POSTGRES_DB: pit_data
+      POSTGRES_USER: pit
+      POSTGRES_PASSWORD: pit
+    ports:
+      - "5432:5432"
+    volumes:
+      - pit_data_volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pit -d pit_data"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pit_data_volume:
