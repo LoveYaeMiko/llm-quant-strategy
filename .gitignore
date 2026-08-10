@@ -31,3 +31,4 @@ venv/
 *.pyc
 .coverage
 htmlcov/
+data/financials/

@@ -696,6 +696,102 @@ def _rank_ic(scores, forward) -> float:
 
 
 # ---------------------------------------------------------------------------
+# pead — Phase 9.2 single-factor validation
+# ---------------------------------------------------------------------------
+
+
+def _cached_universe_json(name: str, config) -> list[str]:
+    """Load a cached constituent list (e.g. ``hs300.json``) as system symbols."""
+    from pathlib import Path as _P
+
+    d = _P(str(config.get("data.universe_dir", "data/universe")))
+    p = d / f"{name}.json"
+    if not p.is_file():
+        raise SystemExit(f"universe file {p} not found — run `python -m src.cli ingest` first")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def cmd_pead(args) -> int:
+    """PEAD single-factor gate (PHASE9 §8.1): SUE rank-IC > 0.015 on 2022-2025.
+
+    Builds the PIT-correct seasonal SUE signal from the cached Baostock profit
+    panel, aligns it to the test-window forward-return panel, and reports the
+    factor_eval bundle (ic / rank_ic / icir / sharpe / maxdd) plus the full
+    portfolio backtest. Cross-sectional data-driven factor — NOT a formula, so
+    it lives outside the string-based --factor-pool path.
+    """
+    cfg = load_config()
+    pead_cfg = cfg.get("pead") or {}
+    symbols = list(args.symbols) if args.symbols else _cached_universe_json("hs300", cfg)
+    years = [int(y) for y in range(2020, 2026)]
+    cache = str(pead_cfg.get("cache_dir", "data/financials"))
+
+    from .backtest.metrics import factor_eval
+    from .data.financials import ensure_profit_panel
+    from .factors.pead import PEADFactor
+
+    panel = ensure_profit_panel(symbols, years, cache_dir=cache)
+    if panel.empty:
+        print("ERROR: empty profit panel — run the financials fetch first", file=sys.stderr)
+        return 1
+    factor = PEADFactor(
+        panel,
+        signal_expiry_days=int(pead_cfg.get("signal_expiry_days", 60)),
+        min_eps_history=int(pead_cfg.get("min_eps_history", 8)),
+    )
+    print(f"pead: {factor.symbols.__len__()} symbols with quarterly EPS, "
+          f"panel rows={len(panel)}")
+
+    market = _market_data(cfg, seed=args.seed, symbols=symbols)
+    start, end = _resolve_window(cfg, args, default="test")
+    market = _slice_market(market, start, end)
+    forward = market.forward_returns
+    tradable = _tradable(market)
+    dates = sorted(forward.index.get_level_values(0).unique())
+    print(f"window: {dates[0].date()} -> {dates[-1].date()} | {len(dates)} days | "
+          f"{len(forward.index.get_level_values(1).unique())} symbols")
+
+    scores = factor.score_panel(dates, symbols)
+    if scores.dropna().empty:
+        print("ERROR: no PIT-valid SUE signal in the window (expiry/history filters)", file=sys.stderr)
+        return 1
+    m = factor_eval(scores, forward, n_trials=args.trials)
+    bt = PointInTimeBacktest(
+        BacktestConfig(
+            long_pct=0.10, short_pct=0.10,
+            max_position_pct=float(cfg.get("online_execution.max_position_pct", 0.05)),
+        )
+    )
+    pm = bt.run(scores, tradable).metrics
+    gate = float(pead_cfg.get("ic_gate", 0.015))
+    top_ic = max(m["ic"], m["rank_ic"])
+    print(f"  rank_ic={m['rank_ic']:.4f}  ic={m['ic']:.4f}  icir={m['icir']:.3f}  "
+          f"n_days={m['n_days']}  significant={m['significant']}")
+    print(f"  portfolio sharpe={pm['sharpe']:.2f}  maxdd={pm['max_drawdown']:.3f}  "
+          f"t={pm['t_stat']:.2f}")
+
+    passed = top_ic >= gate
+    print(f"\n=== PEAD gate ===  max(ic, rank_ic)={top_ic:.4f} >= {gate} -> "
+          f"{'PASS' if passed else 'FAIL'}")
+
+    from .pool import write_json
+
+    out = _out_dir()
+    result = {
+        "factor": "PEAD (seasonal SUE)",
+        "window": [str(dates[0]), str(dates[-1])],
+        "n_symbols": len(symbols),
+        "panel_rows": int(len(panel)),
+        "metrics": m,
+        "portfolio": {k: pm.get(k) for k in ("sharpe", "max_drawdown", "annualized_return", "t_stat", "turnover")},
+        "gate": {"ic_threshold": gate, "passed": passed},
+    }
+    write_json(out / "pead_result.json", result)
+    print(f"artifacts: {out / 'pead_result.json'}")
+    return 0 if passed else 1
+
+
+# ---------------------------------------------------------------------------
 # export
 # ---------------------------------------------------------------------------
 
@@ -1110,6 +1206,17 @@ def main(argv: list[str] | None = None) -> int:
     p_bt.add_argument("--output", type=str, default=None,
                       help="JSON output path (default: outputs/backtest_<weights>.json)")
     p_bt.set_defaults(func=cmd_backtest)
+
+    p_pead = sub.add_parser("pead", help="Phase 9.2 PEAD single-factor validation gate")
+    p_pead.add_argument("--seed", type=int, default=1)
+    p_pead.add_argument("--window", choices=["train", "val", "test", "all"], default="test")
+    p_pead.add_argument("--start", type=str, default=None)
+    p_pead.add_argument("--end", type=str, default=None)
+    p_pead.add_argument("--symbols", nargs="*", default=None,
+                        help="override HS300 (default: data/universe/hs300.json)")
+    p_pead.add_argument("--trials", type=int, default=1,
+                        help="bootstrap trials for significance")
+    p_pead.set_defaults(func=cmd_pead)
 
     p_exp = sub.add_parser("export", help="compile a formula for the online layer")
     p_exp.add_argument("--formula", type=str, default=None)

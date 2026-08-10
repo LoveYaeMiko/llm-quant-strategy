@@ -125,6 +125,16 @@ online_execution:
   latency_target_ms: 10              # Must execute fast
   max_position_pct: 0.05
 
+# Phase 9.2 — PEAD (post-earnings announcement drift). Signal = seasonal SUE
+# (cumulative EPS vs same quarter one year earlier, PIT via Baostock pubDate).
+# The profit panel is fetched once and cached under data/financials/.
+pead:
+  enabled: true
+  signal_expiry_days: 60             # PHASE9 §4.2: signal decays after 60 days
+  min_eps_history: 8                 # at least 8 quarterly reports before use
+  ic_gate: 0.015                     # §8.1: single-factor IC > 0.015
+  cache_dir: "data/financials"
+
 # Walk-forward research windows (requirements.md C1-C2). The research loops
 # (mine/backtest/monitor) run on `research.universe`; the underlying data stays full-A.
 research:
