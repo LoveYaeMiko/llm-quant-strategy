@@ -136,7 +136,7 @@ def test_run_all_real_data_extends_checks():
             "research": {"train_end": "2024-01-20"},
         }
     )
-    checks = run_all(store=store, config=cfg)
+    checks = run_all(store=store, config=cfg, real_data_audit=True)
     names = {c.name for c in checks}
     assert names == {
         "pit", "fincad", "diversity", "cost",
@@ -144,10 +144,26 @@ def test_run_all_real_data_extends_checks():
     }
 
 
+def test_run_all_research_loop_skips_real_data_audit():
+    """Research loops (mine/backtest/evolve/monitor) audit a window-sliced,
+    universe-bounded store — B5 would always look stale there and B4's universe
+    snapshots are out of scope. Even with data.real_data=true, they must run
+    only the four standing checks; only verify opts into the B1-B5 audit."""
+    store = _price_store()
+    cfg = Config(
+        {
+            "data": {"real_data": True, "checks": {"survivorship_date": "2024-01-05"}},
+            "research": {"train_end": "2024-01-20"},
+        }
+    )
+    checks = run_all(store=store, config=cfg, real_data_audit=False)
+    assert {c.name for c in checks} == {"pit", "fincad", "diversity", "cost"}
+
+
 def test_run_all_real_data_requires_store():
     cfg = Config({"data": {"real_data": True}})
     try:
-        run_all(store=None, config=cfg)
+        run_all(store=None, config=cfg, real_data_audit=True)
         assert False, "expected ValueError"
     except ValueError:
         pass

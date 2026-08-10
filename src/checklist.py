@@ -320,6 +320,7 @@ def run_all(
     tracker: Optional[CostTracker] = None,
     config: Optional[Config] = None,
     freshness_as_of: Optional[str] = None,
+    real_data_audit: bool = False,
 ) -> list[CheckResult]:
     formulas = formulas or [
         "Rank_Mul(Rank(Close), Rank(TS_Return(Close, 10)))",
@@ -337,6 +338,12 @@ def run_all(
         forbidden = str(config.get("pit.forbidden_future_date", "2019-07-01")) if config else "2019-07-01"
         checks.insert(0, pit_check(store, ts=ts, forbidden=forbidden))
     real = bool(config.get("data.real_data", False)) if config else False
+    # B1-B5 audit the *ingested full store* (verify). Research loops (mine /
+    # backtest / evolve / monitor) run on a window-sliced, universe-bounded
+    # market, so their checklist must stay with the four standing checks — B5
+    # would always look stale on a train-window slice and B4's universe snapshots
+    # are sliced out of scope.
+    real = real and real_data_audit
     if real:
         if store is None:
             raise ValueError("data.real_data=true requires a PIT store to audit")

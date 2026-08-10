@@ -555,6 +555,7 @@ def cmd_verify(args) -> int:
         tracker=None,
         config=cfg,
         freshness_as_of=freshness_as_of,
+        real_data_audit=True,
     )
     print("=== blueprint verification checklist ===")
     for c in checks:
@@ -572,8 +573,11 @@ def cmd_ingest(args) -> int:
     from .data.ingestion.ingestor import Ingestor
 
     ing = Ingestor(cfg)
+    # --symbols all (blueprint verbatim) == the full universe: omit the list so
+    # the price pass resolves targets from the ingested universe snapshots.
+    symbols = None if args.symbols == ["all"] else args.symbols
     stats = ing.ingest(
-        symbols=args.symbols or None,
+        symbols=symbols,
         start=args.start,
         end=args.end,
         fundamentals=args.fundamentals,
