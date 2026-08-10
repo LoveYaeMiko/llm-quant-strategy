@@ -755,6 +755,12 @@ def cmd_pead(args) -> int:
     if scores.dropna().empty:
         print("ERROR: no PIT-valid SUE signal in the window (expiry/history filters)", file=sys.stderr)
         return 1
+    direction = getattr(args, "direction", "drift")
+    if direction == "reversal":
+        # 2022-2025 diagnosis: high-SUE stocks UNDERperform after earnings
+        # (Q4-Q0 fwd20 = -2.6%), so the reversal factor longs low SUE. Inverting
+        # the percentile rank is equivalent to flipping the long/short legs.
+        scores = 1.0 - scores
     m = factor_eval(scores, forward, n_trials=args.trials)
     bt = PointInTimeBacktest(
         BacktestConfig(
@@ -777,8 +783,9 @@ def cmd_pead(args) -> int:
     from .pool import write_json
 
     out = _out_dir()
+    factor_label = "earnings-reversal" if direction == "reversal" else "PEAD (seasonal SUE)"
     result = {
-        "factor": "PEAD (seasonal SUE)",
+        "factor": factor_label,
         "window": [str(dates[0]), str(dates[-1])],
         "n_symbols": len(symbols),
         "panel_rows": int(len(panel)),
@@ -1216,6 +1223,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="override HS300 (default: data/universe/hs300.json)")
     p_pead.add_argument("--trials", type=int, default=1,
                         help="bootstrap trials for significance")
+    p_pead.add_argument("--direction", choices=["drift", "reversal"], default="drift",
+                        help="drift = classic PEAD (high SUE -> long); "
+                             "reversal = earnings reversal (low SUE -> long, from 2022-2025 negative-PEAD diagnosis)")
     p_pead.set_defaults(func=cmd_pead)
 
     p_exp = sub.add_parser("export", help="compile a formula for the online layer")
