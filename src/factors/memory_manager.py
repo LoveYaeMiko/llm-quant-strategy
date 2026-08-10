@@ -20,9 +20,28 @@ import json
 from collections import Counter
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
+
+import numpy as np
 
 from . import code_generator as cg
+
+
+def _json_default(o: Any) -> Any:
+    """Coerce numpy scalars (np.True_, np.float64, ...) to Python natives.
+
+    Backtest metrics occasionally leak numpy scalar types — e.g. ``np.True_``
+    from a numpy reflected comparison, whose ``__class__.__name__`` is ``"bool"``
+    but which the standard encoder cannot serialize. This default keeps
+    ``Trajectory.save`` robust no matter which metric field carries the scalar.
+    """
+    if isinstance(o, (np.bool_, np.integer, np.floating)):
+        return o.item()
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    raise TypeError(
+        f"Object of type {o.__class__.__name__} is not JSON serializable"
+    )
 
 
 @dataclass
@@ -130,7 +149,10 @@ class MemoryManager:
     def save(self, path: str | Path) -> None:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w", encoding="utf-8") as fh:
-            json.dump([asdict(t) for t in self.trajectories], fh, ensure_ascii=False, indent=2)
+            json.dump(
+                [asdict(t) for t in self.trajectories], fh,
+                ensure_ascii=False, indent=2, default=_json_default,
+            )
 
     @classmethod
     def load(cls, path: str | Path) -> "MemoryManager":

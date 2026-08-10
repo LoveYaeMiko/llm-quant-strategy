@@ -94,9 +94,30 @@ class RiskAgent(BaseAgent):
         sharpe = metrics.get("sharpe", 0.0)
         return {"passed": bool(sharpe >= required), "sharpe": sharpe, "required_sharpe": required, "n_trials": int(n_trials)}
 
-    def _drawdown_check(self, metrics: dict, limit: float) -> dict:
-        dd = metrics.get("max_drawdown", 0.0)
-        return {"passed": bool(dd <= limit), "max_drawdown": dd, "limit": limit}
+    def _drawdown_check(self, metrics: dict, limit: float, rm: Optional[dict] = None) -> dict:
+        """Drawdown cap — validation_BLUEPRINT §3.3.
+
+        When ``rm.max_excess_drawdown`` is configured AND the metrics carry an
+        ``excess_max_drawdown`` (i.e. a benchmark was threaded through the eval
+        backtest), gate on the excess drawdown; otherwise fall back to the
+        absolute ``limit`` (``sharpe.max_drawdown_limit``).
+        """
+        rm = rm or {}
+        use_excess = (
+            rm.get("max_excess_drawdown") is not None
+            and metrics.get("excess_max_drawdown") is not None
+        )
+        if use_excess:
+            dd = metrics.get("excess_max_drawdown", 0.0)
+            limit = float(rm.get("max_excess_drawdown"))
+        else:
+            dd = metrics.get("max_drawdown", 0.0)
+        return {
+            "passed": bool(dd <= limit),
+            "max_drawdown": dd,
+            "excess": use_excess,
+            "limit": limit,
+        }
 
     # -- full validation ----------------------------------------------------
 
@@ -114,6 +135,7 @@ class RiskAgent(BaseAgent):
         mh = cfg.section("multiple_hypothesis") if cfg else {}
         sh = cfg.section("sharpe") if cfg else {}
         dd_limit = sh.get("max_drawdown_limit", 0.15)
+        rm = cfg.get("risk_management") if cfg else {}
 
         checks = {
             "overfitting": self._overfitting_check(scores, forward),
@@ -122,7 +144,7 @@ class RiskAgent(BaseAgent):
             "multiple_hypothesis": self._multiple_hypothesis_check(
                 metrics or {}, n_trials, alpha=mh.get("alpha", 0.05)
             ),
-            "drawdown": self._drawdown_check(metrics or {}, dd_limit),
+            "drawdown": self._drawdown_check(metrics or {}, dd_limit, rm),
         }
         return {
             "passed": all(c["passed"] for c in checks.values()),

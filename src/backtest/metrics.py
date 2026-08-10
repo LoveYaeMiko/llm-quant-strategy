@@ -78,6 +78,20 @@ def max_drawdown(returns: pd.Series) -> float:
     return float(-dd.min())
 
 
+def max_drawdown_from_curve(curve: pd.Series) -> float:
+    """Peak-to-trough drawdown of a level series (positive fraction).
+
+    Used for the validation_BLUEPRINT excess drawdown: ``curve`` is the cumulative
+    strategy/benchmark ratio minus 1 (a level that can cross zero), so the drop
+    is the largest *difference* between the level and its running maximum —
+    ``(curve - curve.cummax()).min()`` — matching the blueprint's
+    ``excess_returns - running_max``. A ratio form (``curve / running_max``)
+    would explode when the level crosses zero.
+    """
+    c = curve.fillna(0.0)
+    return float(-(c - c.cummax()).min())
+
+
 def annualized_return(returns: pd.Series, periods_per_year: int = 252) -> float:
     r = returns.dropna()
     if len(r) == 0:
@@ -151,7 +165,11 @@ def is_significant(
     if len(r) < 2:
         return False, 0.0
     required = significance_threshold_sharpe(len(r), n_trials, alpha, periods_per_year)
-    return float(sharpe_ratio(r, periods_per_year)) >= required, required
+    # coerce BOTH sides to Python float: when ``required`` is a numpy float64 the
+    # reflected comparison (np.float64.__le__) would return a numpy ``np.True_``
+    # scalar — whose __class__.__name__ is "bool" but which json.dump cannot
+    # serialize ("Object of type bool is not JSON serializable").
+    return bool(float(sharpe_ratio(r, periods_per_year)) >= float(required)), float(required)
 
 
 def factor_eval(

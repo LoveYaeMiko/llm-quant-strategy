@@ -537,6 +537,34 @@ def extract_lookbacks(node: Node) -> list[int]:
     return lookbacks
 
 
+def node_to_formula(node: Node) -> str:
+    """Re-serialise an AST back to its formula string (inverse of ``parse``)."""
+    if isinstance(node, NodeLiteral):
+        return f"{node.value:g}"
+    if isinstance(node, NodeVar):
+        return node.name
+    return f"{node.name}(" + ", ".join(node_to_formula(a) for a in node.args) + ")"
+
+
+def bump_lookbacks(formula: str, min_lookback: int) -> str:
+    """Upgrade every time-series lookback below ``min_lookback`` (LIMIT_DOWN
+    blueprint 方案 D).
+
+    The lookback of a ``TS_*`` operator is its trailing numeric argument, e.g.
+    the ``10`` in ``TS_Return(Close, 10)`` or ``TS_Rank(X, 20)``; those below
+    the floor are raised to it, so a 5/10-day high-frequency reversal the miner
+    slips in becomes a 60-day medium-frequency signal instead. Non-``TS_*``
+    numeric literals (e.g. a ``Power(Close, 2)`` exponent) are left untouched.
+    """
+    node = parse_expression(formula)
+    for c in _walk(node):
+        if isinstance(c, NodeCall) and c.name.upper().startswith("TS_") and c.args:
+            last = c.args[-1]
+            if isinstance(last, NodeLiteral) and 0 < last.value < min_lookback:
+                last.value = float(min_lookback)
+    return node_to_formula(node)
+
+
 # ---------------------------------------------------------------------------
 # Generated factor
 # ---------------------------------------------------------------------------
@@ -647,7 +675,10 @@ def default_formula_for(plan) -> str:
     if not isinstance(plan, SchemaPlan):
         plan = SchemaPlan.from_dict(plan if isinstance(plan, dict) else plan.to_dict())
     q = plan.qualities[0]
-    w = [5, 10, 20, 30, 60][abs(hash(plan.key())) % 5]
+    # LIMIT_DOWN blueprint 方案 D: medium/low-frequency only — a 5/10-day
+    # reversal's lookback produces the crash-continuation bleed diagnosed in
+    # Phase 8.1; 60/120/240 are the only allowed windows.
+    w = [60, 120, 240][abs(hash(plan.key())) % 3]
     if q in ("Momentum", "Trend", "Carry"):
         return f"Rank_Mul(Rank(Close), Rank(TS_Return(Close, {w})))"
     if q in ("Mean Reversion", "Short-Term Reversal"):

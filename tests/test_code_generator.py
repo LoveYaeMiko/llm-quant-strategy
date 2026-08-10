@@ -12,6 +12,7 @@ from src.factors.code_generator import (
     FormulaError,
     ast_distance,
     ast_subtrees,
+    bump_lookbacks,
     canonical,
     default_formula_for,
     eval_expression,
@@ -114,3 +115,48 @@ def test_within_lookback_bounds():
 def test_default_formula_for_deterministic():
     plan = SchemaPlan(event="Earnings Surprise", context="Bull Market", qualities=("Momentum",), direction="long", output="score")
     assert default_formula_for(plan) == default_formula_for(plan)
+
+
+# -- LIMIT_DOWN blueprint 方案 D: 60-day lookback floor -----------------------
+
+
+def test_bump_lookbacks_upgrades_short_ts_windows():
+    # A 5/10-day high-frequency reversal is raised to the 60-day floor.
+    assert bump_lookbacks("TS_Return(Close, 10)", 60) == "TS_Return(Close, 60)"
+    assert bump_lookbacks("TS_ZScore(Close, 5)", 60) == "TS_ZScore(Close, 60)"
+
+
+def test_bump_lookbacks_handles_nested_ts_calls():
+    # Both the outer and inner TS_* windows are bumped independently.
+    assert bump_lookbacks("TS_Rank(TS_Return(Close, 10), 20)", 60) == (
+        "TS_Rank(TS_Return(Close, 60), 60)"
+    )
+
+
+def test_bump_lookbacks_leaves_non_ts_literals_alone():
+    # A non-TS numeric argument (an exponent, not a lookback) must not be bumped.
+    assert bump_lookbacks("power(Close, 2)", 60) == "power(Close, 2)"
+
+
+def test_bump_lookbacks_does_not_lower_meeting_windows():
+    assert bump_lookbacks("TS_Return(Close, 120)", 60) == "TS_Return(Close, 120)"
+    assert bump_lookbacks("TS_Return(Close, 60)", 60) == "TS_Return(Close, 60)"
+
+
+def test_default_formula_for_lookback_in_allowed_set():
+    gen = CodeGenerator()
+    # hash() is salted per-process, so assert membership, not an exact window.
+    for qualities in (
+        ("Momentum",),
+        ("Low Volatility",),
+        ("Mean Reversion",),
+        ("Trend",),
+        ("Liquidity",),
+    ):
+        plan = SchemaPlan(
+            event="Trend Following", context="Normal Regime", qualities=qualities, direction="long", output="score"
+        )
+        formula = default_formula_for(plan)
+        lbs = [lb for lb in extract_lookbacks(gen.parse(formula)) if lb > 0]
+        if lbs:
+            assert all(lb in (60, 120, 240) for lb in lbs), (formula, lbs)

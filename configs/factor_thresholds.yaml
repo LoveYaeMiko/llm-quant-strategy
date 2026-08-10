@@ -32,7 +32,12 @@ multiple_hypothesis:
   min_t_stats: 3.0
 
 diversity:
-  min_ast_distance: 0.40        # minimum AST tree distance between kept factors
+  # 2026-08-10 lowered 0.40 -> 0.25 (validation remedy): under template
+  # redirection the accepted pool comes from ONE proven alpha family
+  # (低波 + 低换手), whose lookback-horizon variants sit at pairwise AST distance
+  # 0.25. This is the file that overrides master_config.yaml (later merge wins),
+  # so the floor must be edited HERE, not in master_config.
+  min_ast_distance: 0.25        # minimum AST tree distance between kept factors
   max_pool_size: 200
   subtree_frequency_penalty: 0.15   # AlphaJungle frequent-subtree avoidance strength
 

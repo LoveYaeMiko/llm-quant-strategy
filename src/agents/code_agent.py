@@ -17,6 +17,7 @@ from ..factors.code_generator import (
     CodeGenerator,
     FormulaError,
     GeneratedFactor,
+    bump_lookbacks,
     default_formula_for,
 )
 from ..factors.memory_manager import MemoryManager
@@ -47,8 +48,9 @@ class CodeAgent(BaseAgent):
                 "ts_mean ts_std ts_rank ts_return ts_delay ts_delta ts_zscore "
                 "ts_ema ts_corr ts_slope ts_decay_linear cs_rank cs_zscore "
                 "cs_neutralize cs_tanh rank_mul rank_add rank_sub cond. Use "
-                "fields: Close Open High Low Volume. Return ONLY the formula "
-                "string, e.g. Rank_Mul(Rank(Close), Rank(TS_Return(Close, 10))).\n\n"
+                "fields: Close Open High Low Volume. TS_* lookback windows must "
+                "be >= 60 days (medium/low frequency). Return ONLY the formula "
+                "string, e.g. Rank_Mul(Rank(Close), Rank(TS_Return(Close, 120))).\n\n"
                 f"SCHEMA: {plan.natural_language()}"
             )
             formula = self._llm_formula(context, prompt)
@@ -61,6 +63,30 @@ class CodeAgent(BaseAgent):
             # the LLM drifted outside the closed library — fall back to the
             # deterministic mapping rather than propagating a hallucination
             formula = default_formula_for(plan)
+
+        # LIMIT_DOWN blueprint 方案 D: auto-upgrade any short lookback the LLM
+        # slipped in (a 5/10-day reversal is exactly the crash-continuation
+        # family Phase 8.1 diagnosed). Config-driven; default on.
+        if (self.config is not None
+                and self.config.get("factor_mining.auto_upgrade_lookback", True)
+                and isinstance(formula, str)):
+            min_lb = int(self.config.get("factor_mining.min_lookback", 60))
+            try:
+                formula = bump_lookbacks(formula, min_lb)
+            except FormulaError:
+                pass
+
+        # validation_BLUEPRINT §3.1 code-layer physical block: deepseek-v4-flash
+        # ignores prompt feedback and re-proposes the banned reversal family
+        # verbatim, so the code layer force-replaces any blacklisted formula with
+        # a dual-factor equal-weight combination template — no error, no retry.
+        # Config-driven; default on.
+        if (self.config is not None
+                and self.config.get("factor_mining.enable_code_layer_blocking", True)
+                and isinstance(formula, str)):
+            from ..factors.schema.validator import sanitize_formula
+
+            formula = sanitize_formula(formula)
 
         return self.generator.generate(
             formula,

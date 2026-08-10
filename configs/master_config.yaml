@@ -56,12 +56,70 @@ llm_routing:
 factor_mining:
   ic_threshold: 0.02                 # Minimum to keep
   rank_ic_threshold: 0.035
-  max_lookback: 60                   # days
-  min_lookback: 5
+  # LIMIT_DOWN blueprint 方案 D: medium/low-frequency only. A 5/10-day reversal's
+  # lookback is what produced the crash-continuation bleed in Phase 8.1.
+  min_lookback: 60                   # days
+  max_lookback: 240
+  default_lookback: 120
+  allowed_lookbacks: [60, 120, 240]
+  auto_upgrade_lookback: true        # bump any <60 lookback the LLM slips in
+  # LIMIT_DOWN blueprint 方案 C: replay last-round rejection reasons into the
+  # mining LLM so it stops proposing the factor family just proven unprofitable.
+  enable_mining_feedback: true
+  feedback_rounds: 3
+  # validation_BLUEPRINT §3.1/§3.2: code-layer physical block (deepseek-v4-flash
+  # ignores prompt feedback and re-proposes the banned reversal family, so the
+  # code layer force-replaces it with a combination template) + per-iteration
+  # sampling slots (free LLM slots + deterministic dual-factor combination
+  # templates). 2+2 per iteration x 5 iterations = 20 factors, matching the
+  # 6/20 (>=30%) validation gate.
+  enable_code_layer_blocking: true
+  free_generation_slots: 2
+  template_slots: 2
+
+# NOTE: `diversity.min_ast_distance` lives in factor_thresholds.yaml — the
+# merge order (master -> thresholds -> llm_routing) means the later file wins,
+# so editing it here is silently overridden. Set the diversity floor there.
 
 risk_management:
   max_sharpe_drawdown: 0.15
+  # 2026-08 REVERTED to the absolute drawdown gate. validation_BLUEPRINT §3.3's
+  # excess-drawdown metric — max_drawdown_of(cum_strat/cum_bench - 1) — was
+  # proven mathematically broken for a market-neutral long-short book (beta≈0):
+  # it measures the absolute-height drop of the ratio level, so when the strategy
+  # compounds ahead of a volatile index, even a PURE CASH position scores
+  # excess_dd ≈ 1.03 (vs the 0.25 limit) because the benchmark's own swings
+  # (HS300 2013 trough -41%, 2015 peak +51%) dominate. 0/20 rejected under it,
+  # yet the same factors pass the absolute 15% gate with abs_dd 0.105-0.109.
+  # `benchmark` and `max_excess_drawdown` are removed so the eval gate and risk
+  # gate fall back to sharpe.max_drawdown_limit / max_drawdown_in_crisis.
   market_state_bins: ["bull", "bear", "sideways"]
+  # LIMIT_DOWN blueprint: a factor must not be a crash artefact — its portfolio
+  # drawdown inside each crisis window (on the limit-lock-tradeable series) must
+  # stay under max_drawdown_in_crisis (main gate stays 0.15).
+  crisis_test:
+    enabled: true
+    periods:
+      - name: "2015股灾"
+        start: "2015-05-01"
+        end: "2015-09-30"
+      - name: "2018熊市"
+        start: "2018-01-01"
+        end: "2018-12-31"
+      - name: "2024微盘股"
+        start: "2024-01-01"
+        end: "2024-02-29"
+    max_drawdown_in_crisis: 0.20
+
+# LIMIT_DOWN blueprint 方案 B: the backtest's portfolio Sharpe / max-drawdown
+# run on forward returns with price-limit-locked bars masked (a -10% continuation
+# you cannot actually transact), while IC/rank_ic stay on the raw series.
+evaluation:
+  ic_use_raw_returns: true
+  portfolio:
+    exclude_limit_locked: true
+    limit_threshold: 0.095           # 主板 10% limit band
+    dynamic_threshold: true          # 创业/科创 20% (2020-08-24+), 北交所 30%
 
 online_execution:
   latency_target_ms: 10              # Must execute fast

@@ -48,7 +48,9 @@ def test_experiment_auditor_snapshots_config():
     auditor.snapshot_config(rec, cfg)
     assert rec.config_hash
     assert rec.evaluation_assumptions["ic_threshold"] == 0.02
-    assert rec.evaluation_assumptions["max_lookback"] == 60
+    # LIMIT_DOWN blueprint 方案 D: medium/low-frequency lookback floor
+    assert rec.evaluation_assumptions["min_lookback"] == 60
+    assert rec.evaluation_assumptions["max_lookback"] == 240
 
 
 def test_experiment_auditor_routing_and_pit():

@@ -142,4 +142,12 @@ class PointInTimeBacktest:
                 var = cov.loc["bench", "bench"]
                 metrics["beta"] = float(cov.loc["strat", "bench"] / var) if var > 0 else 0.0
                 metrics["information_ratio"] = M.sharpe_ratio(excess, ann)
+                # validation_BLUEPRINT §3.3: excess max drawdown relative to the
+                # benchmark, on the cumulative ratio curve — the gate measures how
+                # far the strategy fell *behind* the benchmark, not absolute loss.
+                cum_strat = (1 + joint["strat"]).cumprod()
+                cum_bench = (1 + joint["bench"]).cumprod()
+                metrics["excess_max_drawdown"] = M.max_drawdown_from_curve(
+                    cum_strat / cum_bench - 1.0
+                )
         return metrics

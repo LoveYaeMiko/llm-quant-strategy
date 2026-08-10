@@ -30,6 +30,54 @@ def test_verify_offline(capsys):
     assert "blueprint verification checklist" in capsys.readouterr().out
 
 
+def test_forward_returns_do_not_fill_across_suspension_gaps():
+    # Regression for the Phase 8.1 systematic `reject_high_risk`: forward
+    # returns built with the default fill_method='pad' forward-fill close across
+    # a suspension/resumption gap and fabricate a multi-hundred-percent "return"
+    # on the day a name resumes (up to +1970% on real data). Those outliers
+    # dominate return-based Sharpe/max-drawdown while rank-IC stays intact, so
+    # every factor was rejected on a metric that had nothing to do with signal
+    # quality. The fix computes returns only between consecutive trading days.
+    import pandas as pd
+
+    from src.cli import _market_from_records
+
+    dates = pd.bdate_range("2020-01-01", periods=8)
+    # A: trades days 0-2, suspended days 3-5, resumes day 6 with a huge jump.
+    # With pad the day-5->day-6 forward return would be (500/102 - 1) ~ +390%.
+    # B: dense, normal drift.
+    rows = []
+    for i, (sym, closes) in enumerate(
+        {
+            "A": [100.0, 101.0, 102.0, None, None, None, 500.0, 505.0],
+            "B": [100.0, 100.5, 101.0, 101.5, 102.0, 102.5, 103.0, 103.5],
+        }.items()
+    ):
+        for d, c in zip(dates, closes):
+            if c is None:
+                continue
+            rows.append(
+                {
+                    "symbol": sym,
+                    "valid_from": d,
+                    "valid_to": d + pd.Timedelta(days=1),
+                    "open": c, "high": c, "low": c, "close": c, "volume": 1000.0,
+                }
+            )
+    market = _market_from_records(pd.DataFrame(rows))
+
+    fwd = market.forward_returns
+    assert fwd.index.names == ["date", "symbol"]
+    # No forward-return row across the suspension gap for A: the day-5 -> day-6
+    # "return" must be absent, not a fabricated +390% (the pad behaviour).
+    a_fwd = fwd.xs("A", level="symbol")
+    assert dates[5] not in a_fwd.index
+    assert a_fwd.max() < 0.5
+    # B stays dense and correct (roughly +0.5% per day).
+    b = fwd.xs("B", level="symbol")
+    assert abs(b.dropna().max()) < 0.2
+
+
 def test_verify_backfill_mode_offline(capsys):
     # --mode backfill is the B5 historical-run mode: it must parse and wire
     # freshness_as_of=project.end_date through run_all without crashing, and

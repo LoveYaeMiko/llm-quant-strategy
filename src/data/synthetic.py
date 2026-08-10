@@ -34,6 +34,10 @@ class SyntheticMarket:
     # Price + universe records, for the B1-B5 checklist (B4 needs the
     # survivorship snapshots that the price-only pit_store lacks).
     audit_store: Optional[PointInTimeStore] = None
+    # Forward returns with price-limit-locked bars masked to NaN (LIMIT_DOWN
+    # blueprint 方案 B): IC keeps the raw ``forward_returns``, portfolio
+    # Sharpe/max-drawdown use this. None on the synthetic market (no limits).
+    forward_returns_tradable: Optional[pd.Series] = None
 
 
 def make_synthetic_market(

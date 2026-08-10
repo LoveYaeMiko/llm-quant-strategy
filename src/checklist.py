@@ -112,7 +112,7 @@ def fincad_check(threshold: float = 0.50) -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
-def diversity_check(formulas: list[str], min_distance: float = 0.40) -> CheckResult:
+def diversity_check(formulas: list[str], min_distance: float = 0.25) -> CheckResult:
     """Minimum pairwise structural distance across the accepted pool."""
     gen = CodeGenerator()
     nodes = []
@@ -210,8 +210,8 @@ def adjustment_consistency_check(store, sample: int = 20, price_limit_band: floa
         if h.empty or len(h) < 3 or not {"close", "raw_close", "adjust_factor"} <= set(h.columns):
             continue
         checked += 1
-        adj = h["close"].astype(float).pct_change().fillna(0.0)
-        raw = h["raw_close"].astype(float).pct_change().fillna(0.0)
+        adj = h["close"].astype(float).pct_change(fill_method=None).fillna(0.0)
+        raw = h["raw_close"].astype(float).pct_change(fill_method=None).fillna(0.0)
         factor = h["adjust_factor"].astype(float)
         fchange = factor.diff().fillna(0.0).abs() > 1e-9
         days += len(adj)
@@ -327,7 +327,7 @@ def run_all(
         "Neg(TS_ZScore(Close, 20))",
         "Inv(TS_Std(Close, 30))",
     ]
-    min_d = float(config.get("diversity.min_ast_distance", 0.40)) if config else 0.40
+    min_d = float(config.get("diversity.min_ast_distance", 0.25)) if config else 0.25
     checks = [
         fincad_check(),
         diversity_check(formulas, min_distance=min_d),

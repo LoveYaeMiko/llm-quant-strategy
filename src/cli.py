@@ -22,6 +22,7 @@ import json
 import os
 import random
 import sys
+from copy import deepcopy
 from pathlib import Path
 
 import pandas as pd
@@ -34,6 +35,7 @@ from .agents.risk_agent import RiskAgent
 from .agents.signal_agent import SignalAgent
 from .audit import ExperimentAuditor
 from .backtest.engine import BacktestConfig, PointInTimeBacktest
+from .backtest.limit_locked import tradeable_forward_returns
 from .bias_control.context_decoder import FinCADWrapper
 from .checklist import run_all
 from .config import Config, load_config
@@ -87,7 +89,7 @@ def _market_data(config: Config, seed: int = 1, symbols=None, bound_to_universe:
         recs = _bound_to_universe(config, recs, store, symbols)
     market = _market_from_records(recs)
     _attach_audit_store(market, store, recs)
-    return market
+    return _attach_tradable_forward(market, config)
 
 
 def _bound_to_universe(config: Config, recs: pd.DataFrame, store, symbols) -> pd.DataFrame:
@@ -143,7 +145,12 @@ def _market_from_records(records: pd.DataFrame):
             rec[col] = 0.0
     long = rec.set_index(["date", "symbol"])[["open", "high", "low", "close", "volume"]].sort_index()
     close_wide = long["close"].unstack()
-    fwd = close_wide.pct_change().shift(-1).stack().rename("fwd")
+    # fill_method=None: a forward return is only valid between two *consecutive*
+    # trading days of the same name. The default fill_method='pad' forward-fills
+    # close across suspension/resumption gaps and fabricates multi-hundred-percent
+    # returns that dominate return-based metrics (Sharpe/maxDD) while rank-IC
+    # stays unaffected — the systematic `reject_high_risk` cause in Phase 8.1.
+    fwd = close_wide.pct_change(fill_method=None).shift(-1).stack().rename("fwd")
     return SyntheticMarket(
         records=store.records,
         long=long,
@@ -153,6 +160,40 @@ def _market_from_records(records: pd.DataFrame):
         n_symbols=len(close_wide.columns),
         n_days=len(close_wide),
     )
+
+
+def _attach_tradable_forward(market, config=None) -> SyntheticMarket:
+    """Set ``market.forward_returns_tradable`` (LIMIT_DOWN blueprint 方案 B).
+
+    Portfolio Sharpe / max-drawdown must be computed on forward returns with
+    price-limit-locked bars masked (a -10% continuation you cannot actually
+    transact), while rank IC stays on the raw series. Thresholds come from
+    ``evaluation.portfolio``; defaults match the blueprint (0.095 / dynamic).
+    Called by ``_market_data`` and ``_slice_market``; the synthetic fallback
+    carries no price-limit structure so its tradable series equals raw.
+    """
+    port = {}
+    if config is not None:
+        port = dict(config.get("evaluation.portfolio", {}) or {})
+    exclude = bool(port.get("exclude_limit_locked", True))
+    thr = float(port.get("limit_threshold", getattr(market, "limit_threshold", 0.095)))
+    dyn = bool(port.get("dynamic_threshold", getattr(market, "limit_dynamic", True)))
+    market.limit_threshold = thr
+    market.limit_dynamic = dyn
+    market.forward_returns_tradable = (
+        tradeable_forward_returns(
+            market.forward_returns, market.long, base_threshold=thr, dynamic_threshold=dyn
+        )
+        if exclude
+        else market.forward_returns
+    )
+    return market
+
+
+def _tradable(market) -> pd.Series:
+    """The portfolio-evaluation forward series for ``market`` (falls back to raw)."""
+    t = getattr(market, "forward_returns_tradable", None)
+    return t if t is not None else market.forward_returns
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +211,16 @@ def _pipeline(config: Config):
     space = SemanticSpace()
     generator = CodeGenerator()
 
-    signal_agent = SignalAgent(space=space, memory=memory, llm=backend, config=cfg, seed=0)
+    signal_agent = SignalAgent(
+        space=space,
+        memory=memory,
+        llm=backend,
+        config=cfg,
+        seed=0,
+        rejection_history_path=str(_out_dir() / "rejection_history.json"),
+        feedback_enabled=bool(cfg.get("factor_mining.enable_mining_feedback", True)),
+        feedback_rounds=int(cfg.get("factor_mining.feedback_rounds", 3)),
+    )
     code_agent = CodeAgent(generator=generator, memory=memory, llm=backend, config=cfg)
     eval_agent = EvalAgent(memory=memory, llm=backend, config=cfg)
     risk_agent = RiskAgent(memory=memory, llm=backend, config=cfg, seed=0)
@@ -204,7 +254,43 @@ def _make_scores_fn(ctx):
 
 def _market_returns(market) -> pd.Series:
     """Daily equal-weighted market return series (for regime classification)."""
-    return market.price_panel.pct_change().mean(axis=1).dropna()
+    # Same fill_method=None as the forward-return builder — no pad-fabricated gaps.
+    return market.price_panel.pct_change(fill_method=None).mean(axis=1).dropna()
+
+
+def _benchmark_returns(market, config) -> pd.Series:
+    """Daily benchmark return series for the excess-drawdown gate (§3.3).
+
+    validation_BLUEPRINT wants HS300 (``000300.SH``), but the PIT store is
+    stock-only — index *bars* were never ingested (only index constituents, for
+    the universe). The resolver therefore prefers the configured index when its
+    bars happen to exist, otherwise falls back to the equal-weighted market
+    return (``_market_returns``) — the natural benchmark for a long-short neutral
+    portfolio on a stock-only store.
+    """
+    name = str((config.get("risk_management") or {}).get("benchmark", "") or "")
+    if name:
+        try:
+            syms = set(market.pit_store.symbols("price"))
+        except Exception:  # noqa: BLE001 — any store hiccup degrades to EW market
+            syms = set()
+        if name in syms:
+            try:
+                rec = market.pit_store.history(name, "price")
+                closes = rec.set_index("valid_from")["close"].sort_index()
+                closes = closes[~closes.index.duplicated(keep="last")]
+                ret = closes.pct_change(fill_method=None).dropna()
+                if len(ret) > 10:
+                    print(f"benchmark: {name} (from PIT store, {len(ret)} bars)")
+                    return ret
+            except Exception:  # noqa: BLE001
+                pass
+    bench = _market_returns(market)
+    print(
+        f"benchmark: equal-weighted market ({len(bench)} days) "
+        f"({'configured index ' + name + ' not in store' if name else 'no benchmark configured'})"
+    )
+    return bench
 
 
 # ---------------------------------------------------------------------------
@@ -247,6 +333,10 @@ def _slice_market(market, start, end):
         print(f"WARNING: window [{start} .. {end}] is empty — using the full market", file=sys.stderr)
         return market
     out = _market_from_records(rec)
+    # carry the limit-lock thresholds + recompute the tradable forward on the slice
+    out.limit_threshold = getattr(market, "limit_threshold", 0.095)
+    out.limit_dynamic = getattr(market, "limit_dynamic", True)
+    _attach_tradable_forward(out)
     # carry the price+universe audit store through the slice so B4 still sees the
     # survivorship snapshots inside the window
     if market.audit_store is not None:
@@ -310,18 +400,97 @@ def cmd_mine(args) -> int:
     n_hyps = args.hypotheses
     accepted: list[dict] = []
     report_rows: list[dict] = []
+    tradable = _tradable(market)  # LIMIT_DOWN blueprint 方案 B: portfolio eval series
+    # validation_BLUEPRINT §2.1/§3.2: per-iteration candidate pool = free (LLM,
+    # through the code-layer firewall) + combination-template (deterministic
+    # dual-factor equal-weight) slots. Defaults free=2, template=2 -> 20 factors
+    # across the 5-iteration validation, matching the 6/20 (>=30%) success gate.
+    free_slots = int(cfg.get("factor_mining.free_generation_slots", 0) or 0)
+    tpl_slots = int(cfg.get("factor_mining.template_slots", 0) or 0)
+    slots_configured = bool(free_slots or tpl_slots)
+    free_slots = free_slots if slots_configured else n_hyps
+    tpl_slots = tpl_slots if slots_configured else 0
+    # validation_BLUEPRINT §3.3's excess-drawdown gate was reverted to the absolute
+    # 15% gate (2026-08): the excess metric is structurally unpassable for a
+    # market-neutral book (a pure-cash position scores excess_dd ≈ 1.03 vs the
+    # 0.25 limit). Only thread a benchmark when max_excess_drawdown is explicitly
+    # re-enabled in config — the engine then computes excess_max_drawdown and the
+    # eval/risk gates gate on it; with the key absent they fall back to the
+    # absolute drawdown limits (sharpe.max_drawdown_limit / max_drawdown_in_crisis).
+    rm = cfg.get("risk_management") or {}
+    benchmark = _benchmark_returns(market, cfg) if rm.get("max_excess_drawdown") is not None else None
+
+    # CLI overrides (LIMIT_DOWN blueprint §6): --enable-feedback /
+    # --feedback-rounds / --crisis-test
+    signal = p["agents"]["signal"]
+    if getattr(args, "enable_feedback", None) is not None:
+        signal.feedback_enabled = args.enable_feedback
+    if getattr(args, "feedback_rounds", None):
+        signal.feedback_rounds = args.feedback_rounds
+    if getattr(args, "crisis_test", None):
+        crisis = cfg.raw.setdefault("risk_management", {}).setdefault("crisis_test", {})
+        crisis["enabled"] = True
 
     print(
-        f"mining: {n_iter} iterations x {n_hyps} hypotheses | "
-        f"llm={'deepseek-v4-flash' if p['backend'] else 'OFFLINE'}"
+        f"mining: {n_iter} iterations x {free_slots + tpl_slots} candidates "
+        f"(free={free_slots}, template={tpl_slots}) | "
+        f"llm={'deepseek-v4-flash' if p['backend'] else 'OFFLINE'} | "
+        f"feedback={signal.feedback_enabled} | "
+        f"limit-locked-excluded={(cfg.get('evaluation.portfolio') or {}).get('exclude_limit_locked', True)}"
     )
+    # run6 diagnosis (2026-08-10): ``rejection_history.json`` PERSISTS across
+    # cmd_mine invocations (95 entries / 43 unique accumulated from run5+run6).
+    # The agent loads it at construction (signal_agent.py) and the template
+    # generator blocks every entry against the bounded 24-formula pool — so at
+    # run6's start 20/24 pool members were already locked by STALE prior-run
+    # rejections, the pool exhausted by iter2, template slots returned 0 in
+    # iters 2/4, and the 20-candidate contract degraded to 14 (5/20 = 25%,
+    # below the 6/20 >=30% validation gate). Rejection history must be scoped
+    # to the current run only: the mining-feedback prompt and the template-pool
+    # block both then reflect just this run's rejections (record_rejection
+    # rewrites the file on each call, so the on-disk history self-heals too).
+    signal.rejection_history = []
+    # Accepted formulas accumulate so template slots never re-draw a winner —
+    # accepted formulas are NOT in ``rejection_history`` (blueprint §3.2 leak:
+    # run4's iter4 template slot re-drew iter0's accepted free formula verbatim,
+    # an exact duplicate that failed the diversity checklist). Blocking ALL
+    # free-path formulas instead (a previous attempt) exhausted the bounded
+    # template pool, so only the small accepted set is added to ``skip``.
+    accepted_ever: set[str] = set()
     for it in range(n_iter):
-        plans = p["agents"]["signal"].generate_hypotheses(context, n=n_hyps)
-        for plan in plans:
+        candidates: list[dict] = []
+        # 1. free slots — LLM (or offline semantic-space) proposals, each passed
+        #    through the code-layer firewall (sanitize_formula) in CodeAgent.
+        for plan in signal.generate_hypotheses(context, n=free_slots):
             gf = p["agents"]["code"].translate(context, plan)
+            candidates.append(
+                {"gf": gf, "source": "free", "plan": plan}
+            )
+        # 2. template slots — deterministic combination templates, evaluated as-is.
+        #    ``skip`` dedups against the free path (a sanitized free formula can
+        #    otherwise coincide with a template — blueprint §3.2 merge-dedup) and
+        #    against formulas already accepted in earlier rounds.
+        free_formulas = {c["gf"].formula for c in candidates}
+        for formula in signal.generate_template_formulas(
+            n=tpl_slots, skip=free_formulas | accepted_ever
+        ):
+            gf = p["generator"].generate(
+                formula,
+                name=f"combo{abs(hash(formula)) % 10**9:09d}",
+                meaning="双因子等权组合模板（validation_BLUEPRINT §3.1）",
+                category="combination_template",
+            )
+            candidates.append({"gf": gf, "source": "combination_template", "plan": None})
+
+        for cand in candidates:
+            gf = cand["gf"]
+            plan = cand["plan"]
             try:
                 scores = scores_fn(gf.formula)
-                metrics = p["eval_agent"].evaluate(context, scores, forward, n_trials=args.trials)
+                metrics = p["eval_agent"].evaluate(
+                    context, scores, forward, n_trials=args.trials,
+                    forward_tradable=tradable, benchmark=benchmark,
+                )
             except Exception as exc:
                 metrics = {"verdict": "error", "error": str(exc)}
                 scores = None
@@ -335,23 +504,55 @@ def cmd_mine(args) -> int:
             passed = risk["passed"]
             row = {
                 "iteration": it,
-                "schema": plan.key(),
+                "schema": plan.key() if plan else "",
                 "formula": gf.formula,
+                "source": cand["source"],
                 "verdict": metrics.get("verdict", "?"),
                 "risk_passed": passed,
                 "rank_ic": round(metrics.get("rank_ic", 0.0), 4),
                 "icir": round(metrics.get("icir", 0.0), 3),
                 "sharpe": round(metrics.get("sharpe", 0.0), 2),
+                "excess_dd": round(metrics.get("excess_max_drawdown", 0.0), 4),
             }
             report_rows.append(row)
             if passed:
+                if gf.formula in accepted_ever:
+                    # exact duplicate of an already-accepted formula (run5
+                    # regression: a free slot re-drew an earlier template-slot
+                    # winner verbatim). The verification checklist measures
+                    # pairwise AST distance over the accepted pool — an exact
+                    # duplicate contributes 0.00 and fails the diversity gate.
+                    # Track the acceptance but never let the same formula into
+                    # the pool twice.
+                    accepted_ever.add(gf.formula)
+                    continue
+                accepted_ever.add(gf.formula)
                 record.add_factor(gf.to_dict(), metrics, "accepted")
-                accepted.append({"factor": gf.to_dict(), "metrics": metrics, "risk": risk})
+                accepted.append(
+                    {"factor": gf.to_dict(), "metrics": metrics, "risk": risk, "source": cand["source"]}
+                )
                 p["memory"].record_result(
-                    iteration=it, schema=plan.to_dict(), formula=gf.formula, metrics=metrics
+                    iteration=it,
+                    schema=plan.to_dict() if plan else {"source": cand["source"], "formula": gf.formula},
+                    formula=gf.formula,
+                    metrics=metrics,
                 )
             else:
                 record.add_factor(gf.to_dict(), metrics, f"rejected:{metrics.get('verdict','?')}")
+                # LIMIT_DOWN blueprint 方案 C: feed the rejection back to the miner
+                signal.record_rejection(
+                    {
+                        "formula": gf.formula,
+                        "source": cand["source"],
+                        "verdict": metrics.get("verdict", "?"),
+                        "reason": metrics.get("verdict", "rejected"),
+                        "ic": metrics.get("ic", 0.0),
+                        "rank_ic": metrics.get("rank_ic", 0.0),
+                        "sharpe": metrics.get("sharpe", 0.0),
+                        "max_drawdown": metrics.get("max_drawdown", 0.0),
+                        "excess_max_drawdown": metrics.get("excess_max_drawdown", 0.0),
+                    }
+                )
 
     # ---- summary -----------------------------------------------------------
     df = pd.DataFrame(report_rows)
@@ -407,6 +608,9 @@ def cmd_backtest(args) -> int:
     start, end = _resolve_window(cfg, args, default="test")
     market = _slice_market(market, start, end)
     forward = market.forward_returns
+    # LIMIT_DOWN blueprint 方案 B: portfolio Sharpe/maxDD use the limit-locked
+    # masked series; rank-IC (below) keeps the raw series.
+    tradable = _tradable(market)
     from .factors.code_generator import FactorContext
 
     fctx = FactorContext(market.long)
@@ -417,6 +621,44 @@ def cmd_backtest(args) -> int:
             max_position_pct=float(cfg.get("online_execution.max_position_pct", 0.05)),
         )
     )
+
+    # Phase 8.3 — multi-factor combination backtest over a managed factor pool.
+    if args.factor_pool:
+        from .pool import combination_backtest, load_pool, write_json
+
+        pool = load_pool(args.factor_pool)
+        if args.neutralize and args.neutralize not in ("none", "market"):
+            print(
+                f"WARNING: --neutralize {args.neutralize} needs industry/size fundamentals "
+                "(not ingested yet); the composite is cross-sectionally z-scored "
+                "(market-level neutral) instead.",
+                file=sys.stderr,
+            )
+        weights = "icir" if args.weights == "icir_weighted" else args.weights
+        res = combination_backtest(
+            fctx, forward, pool, weights=weights, n_trials=args.trials,
+            bt_config=bt.config, forward_tradable=tradable,
+        )
+        dest = Path(args.output) if args.output else _out_dir() / f"backtest_{weights}.json"
+        write_json(dest, res)
+        comp = res.get("composite", {})
+        print(f"combination ({weights}) across {res.get('n_factors', 0)} factors")
+        print(
+            f"  sharpe={comp.get('sharpe', 0):.2f} ann_ret={comp.get('annualized_return', 0):.1%} "
+            f"maxdd={comp.get('max_drawdown', 0):.1%} t={comp.get('t_stat', 0):.2f} "
+            f"turnover={comp.get('turnover', 0):.2f}"
+        )
+        for f, m in res.get("per_factor", {}).items():
+            if "error" in m:
+                print(f"  {f:<50} ERROR")
+            else:
+                print(
+                    f"  {f:<50} sharpe={m.get('sharpe', 0):.2f} "
+                    f"maxdd={m.get('max_drawdown', 0):.1%}"
+                )
+        print(f"wrote {dest}")
+        return 0
+
     formulas = args.formulas
     if not formulas:
         # fall back to the accepted pool from the last mining run
@@ -431,7 +673,7 @@ def cmd_backtest(args) -> int:
     for f in formulas:
         try:
             scores = eval_expression(f, fctx)
-            res = bt.run(scores, forward)
+            res = bt.run(scores, tradable)
             m = res.metrics
             m["rank_ic"] = _rank_ic(scores, forward)
             results[f] = m
@@ -604,6 +846,39 @@ def cmd_monitor(args) -> int:
     from .monitoring.decay_tracker import DecayTracker
 
     fctx = FactorContext(market.long)
+
+    # Phase 8.4 — decay watchlist across a whole factor pool.
+    if args.watchlist:
+        from .pool import load_pool, monitor_watchlist, write_json
+
+        pool = load_pool(args.watchlist)
+        res = monitor_watchlist(
+            fctx,
+            market.forward_returns,
+            pool,
+            window_days=args.window_days,
+            icir_threshold=args.threshold,
+        )
+        dest = Path(args.output) if args.output else _out_dir() / "monitor_report.json"
+        write_json(dest, {"results": res})
+        n_decayed = sum(
+            1 for r in res.values() if isinstance(r, dict) and r.get("decayed")
+        )
+        print(
+            f"watchlist {len(res)} factors, {n_decayed} decayed "
+            f"(ICIR floor {args.threshold}, window {args.window_days}d)"
+        )
+        for f, r in res.items():
+            if "error" in r:
+                print(f"  {f:<50} ERROR {r['error']}")
+            else:
+                print(
+                    f"  {f:<50} recent_icir={r.get('recent_icir', 0):+.2f} "
+                    f"{'DECAYED' if r.get('decayed') else 'ok'}"
+                )
+        print(f"wrote {dest}")
+        return 0 if n_decayed == 0 else 1
+
     formula = args.formula or "Rank_Mul(Rank(Close), Rank(TS_Return(Close, 10)))"
     scores = eval_expression(formula, fctx)
     tracker = DecayTracker.from_config(cfg)
@@ -616,6 +891,171 @@ def cmd_monitor(args) -> int:
             f"{'DECAYED' if w.decayed else 'ok'}"
         )
     return 1 if res.decayed else 0
+
+
+# ---------------------------------------------------------------------------
+# pool — Phase 8 factor-pool management
+# ---------------------------------------------------------------------------
+
+
+def _pool_market(args, default: str = "val"):
+    """Load the research-universe market sliced to a walk-forward window."""
+    cfg = load_config()
+    market = _market_data(cfg, seed=getattr(args, "seed", 1), symbols=getattr(args, "symbols", None))
+    start, end = _resolve_window(cfg, args, default=default)
+    market = _slice_market(market, start, end)
+    from .factors.code_generator import FactorContext
+
+    return cfg, market, FactorContext(market.long), market.forward_returns
+
+
+def _html_page(title: str, body: str) -> str:
+    return f"""<!doctype html>
+<html><head><meta charset="utf-8"><title>{title}</title>
+<style>
+  body {{ font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 2rem; color: #1a1a1a; }}
+  h1 {{ font-size: 1.3rem; }} table {{ border-collapse: collapse; margin: 1rem 0; }}
+  th, td {{ border: 1px solid #ddd; padding: 4px 10px; font-size: 0.85rem; text-align: right; }}
+  th {{ background: #f5f5f5; }} td:first-child {{ text-align: left; }}
+</style></head><body><h1>{title}</h1>{body}</body></html>"""
+
+
+def _table_html(headers: list[str], rows: list[list]) -> str:
+    head = "".join(f"<th>{h}</th>" for h in headers)
+    trs = ["<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows]
+    return f"<table><thead><tr>{head}</tr></thead><tbody>{''.join(trs)}</tbody></table>"
+
+
+def cmd_pool(args) -> int:
+    from .pool import diversify_pool, evaluate_pool, filter_pool, load_pool, write_json
+
+    out = _out_dir()
+    src = Path(args.input) if getattr(args, "input", None) else out / "factors.json"
+    if not src.exists():
+        print(f"ERROR: input pool not found: {src}", file=sys.stderr)
+        return 1
+    pool = load_pool(src)
+    action = args.pool_action
+
+    if action == "filter":
+        _, market, fctx, forward = _pool_market(args, default="val")
+        formulas = [str(e.get("factor", {}).get("formula", "")) for e in pool]
+        metrics = evaluate_pool(fctx, forward, formulas, n_trials=args.trials)
+        kept = filter_pool(pool, metrics, min_ic=args.min_ic, min_icir=args.min_icir)
+        dest = Path(args.output) if args.output else out / "factor_pool_filtered.json"
+        write_json(
+            dest,
+            {
+                "factors": kept,
+                "filter": {"window": args.window, "min_ic": args.min_ic, "min_icir": args.min_icir,
+                           "n_in": len(pool), "n_out": len(kept)},
+            },
+        )
+        print(f"filter ({args.window} window): {len(pool)} -> {len(kept)} "
+              f"(val IC>={args.min_ic}, ICIR>={args.min_icir})")
+        for e in kept:
+            m = e.get("val_metrics", {})
+            print(f"  {e['factor']['formula']:<50} val_ic={m.get('ic', 0):.4f} "
+                  f"val_icir={m.get('icir', 0):.2f} sharpe={m.get('sharpe', 0):.2f}")
+        print(f"wrote {dest}")
+        return 0
+
+    if action == "diversify":
+        kept = diversify_pool(pool, min_distance=args.min_distance, order_by="ic")
+        dest = Path(args.output) if args.output else out / "factor_pool_diverse.json"
+        write_json(
+            dest,
+            {"factors": kept, "diversify": {"min_ast_distance": args.min_distance,
+                                            "n_in": len(pool), "n_out": len(kept)}},
+        )
+        print(f"diversify: {len(pool)} -> {len(kept)} (min AST distance {args.min_distance})")
+        for e in kept:
+            print(f"  {e['factor']['formula']}")
+        print(f"wrote {dest}")
+        return 0
+
+    if action == "report":
+        from .factors.code_generator import CodeGenerator, ast_distance
+
+        gen = CodeGenerator()
+        nodes = []
+        for e in pool:
+            try:
+                nodes.append((e, gen.parse(e["factor"]["formula"])))
+            except Exception:  # noqa: BLE001
+                continue
+        dists, below, pairs = [], 0, 0
+        for i, (_, na) in enumerate(nodes):
+            for (_, nb) in nodes[i + 1:]:
+                pairs += 1
+                d = ast_distance(na, nb)
+                dists.append(d)
+                if d < args.min_distance:
+                    below += 1
+        rows = []
+        for e, _ in nodes:
+            m = e.get("val_metrics", e.get("metrics", {}))
+            rows.append([e["factor"]["formula"], f"{m.get('ic', 0):.4f}",
+                         f"{m.get('icir', 0):.2f}", f"{m.get('sharpe', 0):.2f}",
+                         f"{m.get('max_drawdown', 0):.2f}"])
+        min_d = min(dists) if dists else float("nan")
+        body = (f"<p>factors: {len(nodes)} · pairs: {pairs} · min AST distance: {min_d:.2f} "
+                f"· below {args.min_distance}: {below}</p>"
+                + _table_html(["formula", "IC", "ICIR", "sharpe", "maxDD"], rows))
+        dest = Path(args.output) if args.output else out / "diversity_report.html"
+        dest.write_text(_html_page("Diversity report", body), encoding="utf-8")
+        print(f"report: {len(nodes)} factors, min AST distance {min_d:.2f}, "
+              f"{below}/{pairs} pairs below {args.min_distance}")
+        print(f"wrote {dest}")
+        return 0
+
+    if action == "promote":
+        bt_path = Path(args.backtest)
+        if not bt_path.exists():
+            print(f"ERROR: backtest report not found: {bt_path}", file=sys.stderr)
+            return 1
+        bt = json.loads(bt_path.read_text(encoding="utf-8"))
+        sharpe = float(bt.get("composite", {}).get("sharpe", 0.0))
+        ok = sharpe >= args.min_sharpe
+        promoted = []
+        for e in pool:
+            c = deepcopy(e)
+            c["status"] = "deployable" if ok else "candidate"
+            c["backtest_sharpe"] = sharpe
+            promoted.append(c)
+        dest = Path(args.output) if args.output else out / "factors_deployable.json"
+        write_json(
+            dest,
+            {"factors": promoted, "promote": {"min_sharpe": args.min_sharpe,
+                                              "composite_sharpe": sharpe, "deployable": ok}},
+        )
+        print(f"promote: composite sharpe {sharpe:.2f} vs floor {args.min_sharpe} -> "
+              f"{'DEPLOYABLE' if ok else 'NOT (stays candidate)'}")
+        print(f"wrote {dest}")
+        return 0 if ok else 1
+
+    if action == "flag":
+        mon_path = Path(args.monitor)
+        if not mon_path.exists():
+            print(f"ERROR: monitor report not found: {mon_path}", file=sys.stderr)
+            return 1
+        mon = json.loads(mon_path.read_text(encoding="utf-8"))
+        results = mon.get("results", mon)
+        flagged = []
+        for e in pool:
+            c = deepcopy(e)
+            r = results.get(str(e.get("factor", {}).get("formula", "")))
+            c["decay"] = r if isinstance(r, dict) else {}
+            c["status"] = "decayed" if (isinstance(r, dict) and r.get("decayed")) else c.get("status", "deployable")
+            flagged.append(c)
+        dest = Path(args.output) if args.output else out / "factors_with_decay.json"
+        write_json(dest, {"factors": flagged,
+                          "n_decayed": sum(1 for e in flagged if e.get("status") == "decayed")})
+        print(f"flag: wrote {dest} "
+              f"({sum(1 for e in flagged if e.get('status') == 'decayed')} decayed)")
+        return 0
+
+    return 1
 
 
 # ---------------------------------------------------------------------------
@@ -640,6 +1080,13 @@ def main(argv: list[str] | None = None) -> int:
     p_mine.add_argument("--end", type=str, default=None)
     p_mine.add_argument("--symbols", nargs="*", default=None,
                         help="override research.universe (e.g. full-A validation)")
+    p_mine.add_argument("--enable-feedback", dest="enable_feedback", type=bool, default=None,
+                        help="LIMIT_DOWN blueprint 方案 C: inject last-round rejection reasons "
+                             "into the mining LLM prompt (default: config factor_mining.enable_mining_feedback)")
+    p_mine.add_argument("--feedback-rounds", type=int, default=None,
+                        help="how many recent rejections to replay (default: config)")
+    p_mine.add_argument("--crisis-test", action="store_true",
+                        help="LIMIT_DOWN blueprint: enable the 2015/2018/2024 crisis drawdown gate")
     p_mine.set_defaults(func=cmd_mine)
 
     p_bt = sub.add_parser("backtest", help="backtest formulas on PIT data")
@@ -650,6 +1097,18 @@ def main(argv: list[str] | None = None) -> int:
     p_bt.add_argument("--end", type=str, default=None)
     p_bt.add_argument("--symbols", nargs="*", default=None,
                       help="override research.universe (e.g. full-A validation)")
+    p_bt.add_argument("--factor-pool", type=str, default=None,
+                      help="path to a factor-pool JSON; run a combination backtest over its formulas")
+    p_bt.add_argument("--weights", type=str, default="equal",
+                      choices=["equal", "icir", "icir_weighted", "dynamic"],
+                      help="combination weight scheme (default: equal)")
+    p_bt.add_argument("--neutralize", type=str, default=None,
+                      help="neutralization levels like industry,size — NOT yet supported; "
+                           "the composite is cross-sectionally z-scored (market-level) instead")
+    p_bt.add_argument("--trials", type=int, default=1,
+                      help="bootstrap trials for the composite backtest")
+    p_bt.add_argument("--output", type=str, default=None,
+                      help="JSON output path (default: outputs/backtest_<weights>.json)")
     p_bt.set_defaults(func=cmd_backtest)
 
     p_exp = sub.add_parser("export", help="compile a formula for the online layer")
@@ -699,7 +1158,64 @@ def main(argv: list[str] | None = None) -> int:
     p_mon.add_argument("--symbols", nargs="*", default=None,
                        help="override research.universe (e.g. full-A validation)")
     p_mon.add_argument("--end", type=str, default=None)
+    p_mon.add_argument("--watchlist", type=str, default=None,
+                       help="path to a factor-pool JSON; decay-monitor every formula in it")
+    p_mon.add_argument("--window-days", type=int, default=90,
+                       help="rolling window for recent-ICIR (default: 90)")
+    p_mon.add_argument("--threshold", type=float, default=0.30,
+                       help="recent-ICIR floor for decay flagging (default: 0.30)")
+    p_mon.add_argument("--output", type=str, default=None,
+                       help="JSON output path (default: outputs/monitor_report.json)")
     p_mon.set_defaults(func=cmd_monitor)
+
+    p_pool = sub.add_parser("pool", help="Phase 8 factor-pool management")
+    pool_sub = p_pool.add_subparsers(dest="pool_action", required=True)
+
+    pf = pool_sub.add_parser("filter", help="re-score pool on a window, keep passing factors")
+    pf.add_argument("--input", type=str, default=None,
+                    help="pool JSON (default: outputs/factors.json)")
+    pf.add_argument("--min-ic", type=float, default=0.02)
+    pf.add_argument("--min-icir", type=float, default=0.30)
+    pf.add_argument("--window", choices=["train", "val", "test", "all"], default="val")
+    pf.add_argument("--trials", type=int, default=1)
+    pf.add_argument("--seed", type=int, default=1)
+    pf.add_argument("--start", type=str, default=None)
+    pf.add_argument("--end", type=str, default=None)
+    pf.add_argument("--symbols", nargs="*", default=None)
+    pf.add_argument("--output", type=str, default=None,
+                    help="output JSON (default: outputs/factor_pool_filtered.json)")
+    pf.set_defaults(func=cmd_pool)
+
+    pdv = pool_sub.add_parser("diversify", help="greedy AST-distance diversity screening")
+    pdv.add_argument("--input", type=str, default=None)
+    pdv.add_argument("--min-distance", type=float, default=0.40)
+    pdv.add_argument("--output", type=str, default=None,
+                     help="output JSON (default: outputs/factor_pool_diverse.json)")
+    pdv.set_defaults(func=cmd_pool)
+
+    pr = pool_sub.add_parser("report", help="diversity report as HTML")
+    pr.add_argument("--input", type=str, default=None)
+    pr.add_argument("--min-distance", type=float, default=0.40)
+    pr.add_argument("--output", type=str, default=None,
+                    help="output HTML (default: outputs/diversity_report.html)")
+    pr.set_defaults(func=cmd_pool)
+
+    pp = pool_sub.add_parser("promote", help="promote pool to deployable if composite Sharpe passes")
+    pp.add_argument("--input", type=str, default=None)
+    pp.add_argument("--backtest", type=str, required=True,
+                    help="path to the combination backtest JSON")
+    pp.add_argument("--min-sharpe", type=float, default=1.0)
+    pp.add_argument("--output", type=str, default=None,
+                    help="output JSON (default: outputs/factors_deployable.json)")
+    pp.set_defaults(func=cmd_pool)
+
+    pfl = pool_sub.add_parser("flag", help="flag decayed factors from a monitor report")
+    pfl.add_argument("--input", type=str, default=None)
+    pfl.add_argument("--monitor", type=str, required=True,
+                     help="path to the monitor report JSON")
+    pfl.add_argument("--output", type=str, default=None,
+                     help="output JSON (default: outputs/factors_with_decay.json)")
+    pfl.set_defaults(func=cmd_pool)
 
     args = parser.parse_args(argv)
     try:
