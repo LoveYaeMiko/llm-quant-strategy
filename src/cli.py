@@ -55,33 +55,93 @@ def _out_dir() -> Path:
     return Path(os.environ.get("LLM_QUANT_OUTPUTS", ROOT / "outputs"))
 
 
-def _market_data(config: Config, seed: int = 1):
-    """Synthetic market, or a PIT store from the configured db url."""
-    url = config.get("data.pit_database_url")
-    if url and not url.startswith("postgresql"):
-        # sqlite backend path — load records if the db exists
-        try:
-            from .data.point_in_time_loader import SQLitePointInTimeLoader
+def _market_data(config: Config, seed: int = 1, symbols=None, bound_to_universe: bool = True):
+    """Real PIT store when data exists, else the synthetic market (offline).
 
-            loader = SQLitePointInTimeLoader(url.replace("sqlite:///", "", 1))
-            q = loader.query("2019-06-30")
-            loader.close()
-            if not q.empty:
-                return _market_from_records(q)
-        except Exception:
-            pass
-    return make_synthetic_market(seed=seed)
+    Detects data presence via ``store.snapshot("price")`` rather than a query
+    probe: under closed-interval bars (ADR-0001) every bar has expired by the
+    full-history probe date, so ``query()`` would always come back empty.
+
+    ``symbols`` overrides ``research.universe`` (Q1-B: research runs on the
+    bounded universe; ``--symbols`` is the escape hatch for full-A validation).
+    The returned bundle also carries an ``audit_store`` with price + universe
+    records so the B1-B5 checklist can see the survivorship snapshots.
+    """
+    url = config.get("data.pit_database_url")
+    if not url:
+        print("WARNING: PIT_DATABASE_URL not set — falling back to synthetic data", file=sys.stderr)
+        return make_synthetic_market(seed=seed)
+    try:
+        from .data.point_in_time_loader import from_url
+
+        store = from_url(url)
+        recs = store.snapshot("price")
+    except Exception as exc:
+        if url.startswith("postgresql"):
+            print(f"ERROR: cannot reach PIT database ({url.split('@')[-1]}): {exc}", file=sys.stderr)
+            raise SystemExit(2) from exc
+        return make_synthetic_market(seed=seed)
+    if recs is None or recs.empty:
+        return make_synthetic_market(seed=seed)
+    if bound_to_universe:
+        recs = _bound_to_universe(config, recs, store, symbols)
+    market = _market_from_records(recs)
+    _attach_audit_store(market, store, recs)
+    return market
+
+
+def _bound_to_universe(config: Config, recs: pd.DataFrame, store, symbols) -> pd.DataFrame:
+    """Keep only price records inside ``research.universe`` (Q1-B).
+
+    ``symbols`` (an explicit ``--symbols`` list) wins over the config universe;
+    an unresolvable universe degrades to the full stored panel with a warning.
+    """
+    if symbols:
+        from .data.schema.symbols import normalize_symbol
+
+        want = {normalize_symbol(s) for s in symbols}
+    else:
+        name = str(config.get("research.universe", "hs300_500"))
+        if name == "all":
+            return recs
+        try:
+            from .data.ingestion.ingestor import resolve_research_universe
+
+            want = set(resolve_research_universe(config, store))
+        except FileNotFoundError as exc:
+            print(f"WARNING: {exc} — running on the full stored universe", file=sys.stderr)
+            return recs
+    if not want:
+        return recs
+    return recs[recs["symbol"].isin(want)]
+
+
+def _attach_audit_store(market, store, price_recs: pd.DataFrame) -> None:
+    """Seed ``market.audit_store`` with price + universe records for the checklist."""
+    try:
+        uni = store.snapshot("universe")
+    except Exception:  # noqa: BLE001 — a loader without universe support is fine
+        uni = None
+    if uni is not None and not uni.empty:
+        from .data.point_in_time_loader import PointInTimeStore
+
+        audit = PointInTimeStore()
+        audit.upsert(pd.concat([price_recs, uni], ignore_index=True))
+        market.audit_store = audit
 
 
 def _market_from_records(records: pd.DataFrame):
-    """Build a usable SyntheticMarket-like bundle from PIT records."""
+    """Build a usable SyntheticMarket-like bundle from PIT price records."""
     from .data.synthetic import SyntheticMarket
 
     store = PointInTimeStore()
     store.upsert(records)
     rec = store.records.copy()
     rec["date"] = pd.to_datetime(rec["valid_from"])
-    long = rec.set_index(["date", "symbol"])[["open", "high", "low", "close", "volume"]]
+    for col in ("open", "high", "low", "close", "volume"):
+        if col not in rec.columns:
+            rec[col] = 0.0
+    long = rec.set_index(["date", "symbol"])[["open", "high", "low", "close", "volume"]].sort_index()
     close_wide = long["close"].unstack()
     fwd = close_wide.pct_change().shift(-1).stack().rename("fwd")
     return SyntheticMarket(
@@ -148,6 +208,63 @@ def _market_returns(market) -> pd.Series:
 
 
 # ---------------------------------------------------------------------------
+# walk-forward window slicing (requirements.md C1-C2)
+# ---------------------------------------------------------------------------
+
+
+def _resolve_window(config: Config, args, default: str = "train") -> tuple:
+    """Resolve ``(start, end)`` from ``--window`` / ``--start`` / ``--end``.
+
+    ``--start/--end`` win outright; otherwise the named research window
+    (``train``/``val``/``test``/``all``); ``--window all`` returns ``(None, None)``
+    meaning the full market.
+    """
+    if args.start or args.end:
+        start = args.start or config.get(f"research.{default}_start")
+        end = args.end or config.get(f"research.{default}_end")
+        return start, end
+    name = args.window
+    if name == "all":
+        return None, None
+    start = config.get(f"research.{name}_start")
+    end = config.get(f"research.{name}_end")
+    if not start:
+        raise ValueError(f"unknown research window {name!r} (train|val|test|all)")
+    return start, end
+
+
+def _slice_market(market, start, end):
+    """Rebuild the market limited to ``[start, end]`` for a walk-forward window."""
+    if not start and not end:
+        return market
+    rec = market.pit_store.records.copy()
+    rec["date"] = pd.to_datetime(rec["valid_from"])
+    if start:
+        rec = rec[rec["date"] >= pd.Timestamp(start)]
+    if end:
+        rec = rec[rec["date"] <= pd.Timestamp(end)]
+    if rec.empty:
+        print(f"WARNING: window [{start} .. {end}] is empty — using the full market", file=sys.stderr)
+        return market
+    out = _market_from_records(rec)
+    # carry the price+universe audit store through the slice so B4 still sees the
+    # survivorship snapshots inside the window
+    if market.audit_store is not None:
+        arec = market.audit_store.records.copy()
+        arec["date"] = pd.to_datetime(arec["valid_from"])
+        if start:
+            arec = arec[arec["date"] >= pd.Timestamp(start)]
+        if end:
+            arec = arec[arec["date"] <= pd.Timestamp(end)]
+        from .data.point_in_time_loader import PointInTimeStore
+
+        audit = PointInTimeStore()
+        audit.upsert(arec)
+        out.audit_store = audit
+    return out
+
+
+# ---------------------------------------------------------------------------
 # mine
 # ---------------------------------------------------------------------------
 
@@ -155,8 +272,11 @@ def _market_returns(market) -> pd.Series:
 def cmd_mine(args) -> int:
     cfg = load_config()
     p = _pipeline(cfg)
-    market = _market_data(cfg, seed=args.seed)
-    store: PointInTimeStore = market.pit_store
+    market = _market_data(cfg, seed=args.seed, symbols=args.symbols)
+    start, end = _resolve_window(cfg, args, default="train")
+    market = _slice_market(market, start, end)
+    # the checklist audits price + universe (B4), so prefer the audit store
+    store: PointInTimeStore = market.audit_store or market.pit_store
     long = market.long
     forward = market.forward_returns
     context = AgentContext(
@@ -184,7 +304,9 @@ def cmd_mine(args) -> int:
 
     out = _out_dir()
     out.mkdir(parents=True, exist_ok=True)
-    n_iter = args.iterations
+    n_iter = args.iterations if args.iterations is not None else int(
+        cfg.get("research.mining.iterations", 3)
+    )
     n_hyps = args.hypotheses
     accepted: list[dict] = []
     report_rows: list[dict] = []
@@ -281,7 +403,9 @@ def cmd_mine(args) -> int:
 
 def cmd_backtest(args) -> int:
     cfg = load_config()
-    market = _market_data(cfg, seed=args.seed)
+    market = _market_data(cfg, seed=args.seed, symbols=args.symbols)
+    start, end = _resolve_window(cfg, args, default="test")
+    market = _slice_market(market, start, end)
     forward = market.forward_returns
     from .factors.code_generator import FactorContext
 
@@ -358,7 +482,9 @@ def cmd_export(args) -> int:
 def cmd_evolve(args) -> int:
     cfg = load_config()
     p = _pipeline(cfg)
-    market = _market_data(cfg, seed=args.seed)
+    market = _market_data(cfg, seed=args.seed, symbols=args.symbols)
+    start, end = _resolve_window(cfg, args, default="train")
+    market = _slice_market(market, start, end)
     from .factors.code_generator import FactorContext
 
     fctx = FactorContext(market.long)
@@ -415,12 +541,65 @@ def cmd_evolve(args) -> int:
 
 def cmd_verify(args) -> int:
     cfg = load_config()
-    market = _market_data(cfg, seed=args.seed)
-    checks = run_all(store=market.pit_store, tracker=None, config=cfg)
+    # verify audits the whole store (not the research universe), and the
+    # checklist needs the price + universe records B4 reads
+    market = _market_data(cfg, seed=args.seed, bound_to_universe=False)
+    checks = run_all(store=market.audit_store or market.pit_store, tracker=None, config=cfg)
     print("=== blueprint verification checklist ===")
     for c in checks:
         print(f"  [{'PASS' if c.passed else 'FAIL'}] {c.name:10s} {c.detail}")
     return 0 if all(c.passed for c in checks) else 1
+
+
+# ---------------------------------------------------------------------------
+# ingest
+# ---------------------------------------------------------------------------
+
+
+def cmd_ingest(args) -> int:
+    cfg = load_config()
+    from .data.ingestion.ingestor import Ingestor
+
+    ing = Ingestor(cfg)
+    stats = ing.ingest(
+        symbols=args.symbols or None,
+        start=args.start,
+        end=args.end,
+        fundamentals=args.fundamentals,
+        news=args.news,
+        resume=args.resume,
+        limit=args.limit,
+    )
+    print(stats.summary())
+    return 1 if stats.symbols_failed else 0
+
+
+# ---------------------------------------------------------------------------
+# monitor
+# ---------------------------------------------------------------------------
+
+
+def cmd_monitor(args) -> int:
+    cfg = load_config()
+    market = _market_data(cfg, seed=args.seed, symbols=args.symbols)
+    start, end = _resolve_window(cfg, args, default="test")
+    market = _slice_market(market, start, end)
+    from .factors.code_generator import FactorContext, eval_expression
+    from .monitoring.decay_tracker import DecayTracker
+
+    fctx = FactorContext(market.long)
+    formula = args.formula or "Rank_Mul(Rank(Close), Rank(TS_Return(Close, 10)))"
+    scores = eval_expression(formula, fctx)
+    tracker = DecayTracker.from_config(cfg)
+    res = tracker.monitor(scores, market.forward_returns)
+    print(res.summary)
+    print("\nrecent windows (end | ic | icir | days | state):")
+    for w in res.windows[-8:]:
+        print(
+            f"  {w.end.date()} | {w.ic:+.4f} | {w.icir:+.2f} | {w.n_days:4d} | "
+            f"{'DECAYED' if w.decayed else 'ok'}"
+        )
+    return 1 if res.decayed else 0
 
 
 # ---------------------------------------------------------------------------
@@ -436,15 +615,25 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_mine = sub.add_parser("mine", help="run the multi-agent factor-mining loop")
-    p_mine.add_argument("--iterations", type=int, default=3)
+    p_mine.add_argument("--iterations", type=int, default=None, help="default from research.mining.iterations")
     p_mine.add_argument("--hypotheses", type=int, default=4)
     p_mine.add_argument("--trials", type=int, default=1)
     p_mine.add_argument("--seed", type=int, default=1)
+    p_mine.add_argument("--window", choices=["train", "val", "test", "all"], default="train")
+    p_mine.add_argument("--start", type=str, default=None)
+    p_mine.add_argument("--end", type=str, default=None)
+    p_mine.add_argument("--symbols", nargs="*", default=None,
+                        help="override research.universe (e.g. full-A validation)")
     p_mine.set_defaults(func=cmd_mine)
 
     p_bt = sub.add_parser("backtest", help="backtest formulas on PIT data")
     p_bt.add_argument("--formulas", nargs="*", default=[])
     p_bt.add_argument("--seed", type=int, default=1)
+    p_bt.add_argument("--window", choices=["train", "val", "test", "all"], default="test")
+    p_bt.add_argument("--start", type=str, default=None)
+    p_bt.add_argument("--end", type=str, default=None)
+    p_bt.add_argument("--symbols", nargs="*", default=None,
+                      help="override research.universe (e.g. full-A validation)")
     p_bt.set_defaults(func=cmd_backtest)
 
     p_exp = sub.add_parser("export", help="compile a formula for the online layer")
@@ -457,11 +646,36 @@ def main(argv: list[str] | None = None) -> int:
     p_ev.add_argument("--trials", type=int, default=1)
     p_ev.add_argument("--seed", type=int, default=1)
     p_ev.add_argument("--base-plan", type=str, default=None)
+    p_ev.add_argument("--window", choices=["train", "val", "test", "all"], default="train")
+    p_ev.add_argument("--start", type=str, default=None)
+    p_ev.add_argument("--end", type=str, default=None)
+    p_ev.add_argument("--symbols", nargs="*", default=None,
+                      help="override research.universe (e.g. full-A validation)")
     p_ev.set_defaults(func=cmd_evolve)
 
     p_ver = sub.add_parser("verify", help="run the blueprint verification checklist")
     p_ver.add_argument("--seed", type=int, default=1)
     p_ver.set_defaults(func=cmd_verify)
+
+    p_ing = sub.add_parser("ingest", help="ingest real data (universe → prices → optional fundamentals/news)")
+    p_ing.add_argument("--symbols", nargs="*", default=None, help="restrict price pass (default: full universe)")
+    p_ing.add_argument("--start", type=str, default=None)
+    p_ing.add_argument("--end", type=str, default=None)
+    p_ing.add_argument("--fundamentals", action="store_true", help="Q4 pilot snapshot (akshare, ~50 symbols)")
+    p_ing.add_argument("--news", action="store_true", help="Q3 watchlist news (akshare)")
+    p_ing.add_argument("--resume", action="store_true", help="only fetch bars after the newest stored bar")
+    p_ing.add_argument("--limit", type=int, default=None, help="cap the number of symbols in the price pass")
+    p_ing.set_defaults(func=cmd_ingest)
+
+    p_mon = sub.add_parser("monitor", help="score a factor's IC/ICIR decay over rolling windows")
+    p_mon.add_argument("--formula", type=str, default=None)
+    p_mon.add_argument("--seed", type=int, default=1)
+    p_mon.add_argument("--window", choices=["train", "val", "test", "all"], default="test")
+    p_mon.add_argument("--start", type=str, default=None)
+    p_mon.add_argument("--symbols", nargs="*", default=None,
+                       help="override research.universe (e.g. full-A validation)")
+    p_mon.add_argument("--end", type=str, default=None)
+    p_mon.set_defaults(func=cmd_monitor)
 
     args = parser.parse_args(argv)
     try:

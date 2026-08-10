@@ -74,10 +74,15 @@ class Config:
         return node
 
     def require(self, path: str) -> Any:
-        """Like :meth:`get` but raises for a missing key."""
+        """Like :meth:`get` but raises for a missing or empty key.
+
+        ``${ENV_VAR}`` interpolation yields ``""`` for an unset var, so a
+        "required" key can be present-but-empty — treat that as missing too
+        (otherwise a missing ALPHAFEED_API_KEY surfaces as per-batch failures).
+        """
         value = self.get(path)
-        if value is None:
-            raise KeyError(f"config key missing: {path!r}")
+        if value is None or (isinstance(value, str) and not value):
+            raise KeyError(f"config key missing or empty: {path!r}")
         return value
 
     def section(self, prefix: str) -> dict[str, Any]:

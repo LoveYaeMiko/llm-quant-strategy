@@ -31,6 +31,12 @@ dev = [
     "pytest>=7.0",
     "pytest-cov",
 ]
+data = [
+    "alphafeed>=0.1",
+    "baostock>=0.8.8",
+    "akshare>=1.16",
+    "psycopg2-binary>=2.9",
+]
 
 [project.scripts]
 llm-quant = "src.cli:main"
