@@ -8,6 +8,9 @@ Subcommands:
     export   Compile a formula into the deterministic online artifact (JSON).
     verify   Run the blueprint verification checklist (PIT / FinCAD / diversity /
              cost).
+    sentiment-ingest  Phase 9.1 live news (real-time forward, HS300).
+    report-ingest     Phase 9.1 research-report history (backfillable).
+    sentiment-factor  Phase 9.1 gate: report-title sentiment IC, 2022-2025.
 
 Every subcommand works fully offline when no ``DEEPSEEK_API_KEY`` is set (the
 agents fall back to deterministic implementations); with the key present the
@@ -799,6 +802,136 @@ def cmd_pead(args) -> int:
 
 
 # ---------------------------------------------------------------------------
+# sentiment — Phase 9.1 (news forward ingestion + research-report factor gate)
+# ---------------------------------------------------------------------------
+
+
+def cmd_sentiment_ingest(args) -> int:
+    """Real-time forward news collection for the HS300 (Phase 9.1 live channel).
+
+    AKShare news feeds have no historical pagination (verified), so this grows
+    the store forward one sweep at a time, deduped on article URL with resume
+    state. Returns non-zero only on hard failure; per-symbol fetch errors are
+    logged and skipped.
+    """
+    from .sentiment.ingestion import NewsIngestor
+
+    cfg = load_config()
+    symbols = list(args.symbols) if args.symbols else _cached_universe_json("hs300", cfg)
+    sent_cfg = cfg.get("sentiment") or {}
+    ingestor = NewsIngestor(str(sent_cfg.get("data_dir", "data/news")))
+    counts = ingestor.collect(symbols, pause=args.pause)
+    fresh = sum(counts.values())
+    print(f"sentiment-ingest: {len(symbols)} symbols, {fresh} fresh articles "
+          f"(dedup on URL), last_run={ingestor._state.get('last_run')}")
+    cov = ingestor.coverage()
+    if not cov.empty:
+        print(f"  coverage: {len(cov)} shard-days, "
+              f"{int(cov['articles'].sum())} total articles "
+              f"({cov['articles'].iloc[-1]} on {cov['date'].iloc[-1]})")
+    return 0
+
+
+def cmd_report_ingest(args) -> int:
+    """Fetch every HS300 symbol's full research-report history (backfillable).
+
+    ``stock_research_report_em(symbol)`` returns the complete per-symbol
+    history (2017→present), which is what makes the 2022-2025 sentiment gate
+    testable. One Parquet per symbol; ``--force`` re-fetches, ``--limit`` caps
+    the sweep for quick smoke runs.
+    """
+    from .sentiment.ingestion import ReportIngestor
+
+    cfg = load_config()
+    symbols = list(args.symbols) if args.symbols else _cached_universe_json("hs300", cfg)
+    if args.limit:
+        symbols = symbols[: args.limit]
+    ingestor = ReportIngestor(str((cfg.get("sentiment") or {}).get("report_dir", "data/reports")))
+    fetched = ingestor.collect(symbols, pause=args.pause, force=args.force)
+    have = ingestor.cached_symbols() & set(symbols)
+    print(f"report-ingest: {len(fetched)} symbols fetched now "
+          f"({sum(fetched.values())} rows), {len(have)}/{len(symbols)} cached total")
+    if not fetched and not have:
+        print("WARNING: no reports available — check AKShare or network", file=sys.stderr)
+        return 1
+    return 0
+
+
+def cmd_sentiment_factor(args) -> int:
+    """Phase 9.1 gate: research-report title-sentiment factor, 2022-2025 HS300.
+
+    Builds a PIT carry-forward panel (report date ≤ t, decay window) of report
+    title sentiment scored by the Chinese TriAgent (word→FinBERT_zh), then runs
+    the standard factor_eval bundle + long-short portfolio. Gate per user
+    decision: max(ic, rank_ic) >= 0.015. Report scores are cached by title.
+    """
+    from .llm_client import build_llm_backend
+    from .sentiment.bert import ChineseBertSentiment
+    from .sentiment.critic import DeepSeekCritic
+    from .sentiment.ingestion import ReportIngestor
+    from .sentiment.lexicon import ChineseFinancialLexicon
+    from .sentiment.report_factor import ensure_report_scores, run_report_gate
+    from .sentiment.triagent import TriAgentSentiment
+
+    cfg = load_config()
+    sent_cfg = cfg.get("sentiment") or {}
+    symbols = list(args.symbols) if args.symbols else _cached_universe_json("hs300", cfg)
+    report_dir = str(sent_cfg.get("report_dir", "data/reports"))
+    score_cache = str(sent_cfg.get("score_cache", "data/reports/report_sentiment.parquet"))
+
+    ingestor = ReportIngestor(report_dir)
+    cached = ingestor.cached_symbols()
+    missing = set(symbols) - cached
+    if missing:
+        print(f"ERROR: reports missing for {len(missing)} symbols "
+              f"(e.g. {sorted(missing)[:3]}...) — run `python -m src.cli report-ingest` first",
+              file=sys.stderr)
+        return 2
+    reports = ingestor.load(symbols=symbols)
+
+    backend = build_llm_backend(cfg, CostTracker())
+    agent = TriAgentSentiment(
+        lexicon=ChineseFinancialLexicon(),
+        bert=ChineseBertSentiment() if args.tier == "triagent" else None,
+        critic=DeepSeekCritic(backend=backend),
+    )
+    if args.tier == "word":
+        # Cheap lexicon-only read of the gate; no BERT load.
+        scores = ensure_report_scores(reports, agent, score_cache, tier="word")
+    else:
+        scores = ensure_report_scores(reports, agent, score_cache, tier="triagent",
+                                      workers=args.workers)
+    print(f"sentiment-factor: {len(reports)} reports, {len(scores)} unique titles scored "
+          f"(tier={args.tier}, decay={args.decay}d)")
+
+    market = _market_data(cfg, seed=args.seed, symbols=symbols)
+    start, end = _resolve_window(cfg, args, default="test")
+    market = _slice_market(market, start, end)
+
+    res = run_report_gate(reports, scores, market, symbols,
+                          decay_days=args.decay, gate=float(sent_cfg.get("ic_gate", 0.015)))
+    m = res["metrics"]
+    print(f"  rank_ic={m['rank_ic']:.4f}  ic={m['ic']:.4f}  icir={m['icir']:.3f}  "
+          f"n_days={m['n_days']}  significant={m['significant']}")
+    print(f"  portfolio sharpe={res['portfolio']['sharpe']:.2f}  "
+          f"maxdd={res['portfolio']['max_drawdown']:.3f}  t={res['portfolio']['t_stat']:.2f}")
+    print(f"\n=== sentiment gate ===  max(ic, rank_ic)={res['gate']['max_ic']:.4f} >= "
+          f"{res['gate']['ic_threshold']} -> "
+          f"{'PASS' if res['gate']['passed'] else 'FAIL'}")
+
+    from .pool import write_json
+
+    res["factor"] = "news-sentiment (research-report titles, Chinese TriAgent)"
+    res["window"] = [start, end]
+    res["n_symbols"] = len(symbols)
+    res["decay_days"] = args.decay
+    out = _out_dir()
+    write_json(out / "sentiment_factor_result.json", res)
+    print(f"artifacts: {out / 'sentiment_factor_result.json'}")
+    return 0 if res["gate"]["passed"] else 1
+
+
+# ---------------------------------------------------------------------------
 # export
 # ---------------------------------------------------------------------------
 
@@ -1227,6 +1360,42 @@ def main(argv: list[str] | None = None) -> int:
                         help="drift = classic PEAD (high SUE -> long); "
                              "reversal = earnings reversal (low SUE -> long, from 2022-2025 negative-PEAD diagnosis)")
     p_pead.set_defaults(func=cmd_pead)
+
+    p_ns = sub.add_parser("sentiment-ingest",
+                          help="Phase 9.1: real-time forward news collection (HS300)")
+    p_ns.add_argument("--symbols", nargs="*", default=None,
+                      help="override HS300 (default: data/universe/hs300.json)")
+    p_ns.add_argument("--pause", type=float, default=0.0,
+                      help="per-symbol sleep between fetches (politeness)")
+    p_ns.set_defaults(func=cmd_sentiment_ingest)
+
+    p_ri = sub.add_parser("report-ingest",
+                          help="Phase 9.1: fetch HS300 research-report history (backfillable)")
+    p_ri.add_argument("--symbols", nargs="*", default=None,
+                      help="override HS300 (default: data/universe/hs300.json)")
+    p_ri.add_argument("--limit", type=int, default=None,
+                      help="cap the number of symbols (quick smoke runs)")
+    p_ri.add_argument("--pause", type=float, default=0.2,
+                      help="per-symbol sleep between fetches")
+    p_ri.add_argument("--force", action="store_true",
+                      help="re-fetch symbols that are already cached")
+    p_ri.set_defaults(func=cmd_report_ingest)
+
+    p_sf = sub.add_parser("sentiment-factor",
+                          help="Phase 9.1 gate: report-title sentiment IC on 2022-2025 HS300")
+    p_sf.add_argument("--seed", type=int, default=1)
+    p_sf.add_argument("--window", choices=["train", "val", "test", "all"], default="test")
+    p_sf.add_argument("--start", type=str, default=None)
+    p_sf.add_argument("--end", type=str, default=None)
+    p_sf.add_argument("--symbols", nargs="*", default=None,
+                      help="override HS300 (default: data/universe/hs300.json)")
+    p_sf.add_argument("--tier", choices=["triagent", "word"], default="triagent",
+                      help="triagent = lexicon+FinBERT_zh (full); word = lexicon-only quick read")
+    p_sf.add_argument("--decay", type=int, default=10,
+                      help="report-signal carry-forward days (default: 10)")
+    p_sf.add_argument("--workers", type=int, default=1,
+                      help="parallel BERT scoring processes (CPU speedup; default: 1)")
+    p_sf.set_defaults(func=cmd_sentiment_factor)
 
     p_exp = sub.add_parser("export", help="compile a formula for the online layer")
     p_exp.add_argument("--formula", type=str, default=None)
