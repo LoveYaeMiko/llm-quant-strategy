@@ -168,3 +168,39 @@ research:
   decay:
     window_days: 90
     icir_threshold: 0.30         # aligns with factor_thresholds.yaml icir.keep_threshold
+
+# =====================================================================
+# PHASE 10 — 三层组合模拟盘 (PHASE10_BLUEPRINT §3.5)
+# Alpha 核心 (Phase 8) → 战术倾斜 (Phase 9.2 PEAD) → 风控熔断 (Phase 9.1 舆情)
+# =====================================================================
+simulation:
+  enabled: true
+  start_date: "2010-01-01"
+  end_date: "2025-12-31"
+  rebalance_frequency: "monthly"     # alpha 因子为 120/240 日慢变量，日度近似月频
+  universe: "hs300"
+
+alpha_core:
+  factors:
+    - name: "low_vol_low_turnover"
+      count: 5
+      weights: "equal"
+      rebalance: "monthly"
+  long_pct: 0.10                     # top-decile 多头持仓
+  max_position_pct: 0.05             # 单票上限（与 online_execution 一致）
+
+seasonal_tilt:
+  enabled: true
+  type: "pead_reversal"
+  amplitude: 0.20                    # ±20%
+  min_weight: 0.03                   # 权重 > 3% 才调整
+  window_days: 5
+  months: [1, 2, 4, 8, 10]           # 年报/一季报/中报/三季报窗口
+
+risk_overlay:
+  enabled: true
+  type: "sentiment_risk"
+  zscore_threshold: -2.5             # 历史 5% 分位
+  position_cut: 0.50                 # 触发即减半仓
+  freeze_days: 5                     # 保持 5 个交易日
+  min_trigger_samples: 20            # 低于该样本数不触发（防退化 std）
