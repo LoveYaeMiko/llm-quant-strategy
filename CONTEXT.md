@@ -73,3 +73,11 @@ _Avoid_: "factor died", "strategy stopped working"
 - **`data.real_data: true`**（已翻转）；`verify --mode backfill` B1–B5 全绿（2,594@2015 → 5,205@2026-08-07，230 只已退市保留）。
 - **研究循环校验门**：mine/backtest/evolve/monitor 跑窗口切片 store，只跑 4 项常开校验；`verify` 才追加 B1–B5（`real_data_audit` 参数）。
 - 里程碑标签：`phase7-data-foundation`、`phase7-real-data`。
+
+## 研究状态（2026-08-12，Phase 9 关闭 → Phase 10 启动）
+
+- **Phase 9 全部关闭**：PEAD（9.2）、研报情绪（9.1a）、文本分歧度/新颖性（9.1b）三次单因子门禁均 FAIL（rank_ic < 0.015）。统一根因：HS300 上"已披露信息"在发布时已被充分定价。详见 `PHASE9_CLOSURE.md`。
+- **资产重定位**：TriAgent 情绪缓存 → 风控熔断层；PEAD SUE 基建 → 战术倾斜层；文本因子 → 不再参与 Alpha 打分；BERT 向量缓存保留（`data/text/`）。
+- **Phase 8 因子池**（Alpha 核心，`outputs/factors.json` 5 个低波+低换手公式）：组合回测 Sharpe 1.58–1.90 / maxDD ~10.5–11%（训练窗）。
+- **Phase 10 进行中**（`blueprint/PHASE10_BLUEPRINT.md`）：三层融合（Alpha → 战术倾斜 → 风控熔断），2010–2025 全样本回测，门禁 Sharpe > 1.6 且 maxDD < 10%。
+- 里程碑标签：`phase7-data-foundation`、`phase7-real-data`、`phase9-closed`、`phase9.1-sentiment-rejected`、`phase9.1-text-backtest-complete`、`phase9.1-text-rejected`。

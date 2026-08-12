@@ -88,8 +88,10 @@ def ensure_report_scores(
         new = pd.DataFrame(rows).drop_duplicates("title").sort_values("title")
         new.to_parquet(cache_path, index=False)
     elif todo:
-        # word-only path: no BERT, no need to persist (cheap to recompute)
-        rows.extend({"title": t, "final": triagent.score_titles([t]).iloc[0]["final"],
+        # word-only path: lexicon directly, NOT triagent.score_titles (whose
+        # BERT routing would load the model via TriAgent's ``bert or ...``
+        # default even when the caller passed bert=None).
+        rows.extend({"title": t, "final": round((triagent.lexicon.score(t) + 1) / 2, 4),
                      "tier": "word"} for t in todo)
     out = pd.DataFrame(rows).drop_duplicates("title")
     return out

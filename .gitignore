@@ -35,4 +35,5 @@ data/financials/
 data/news/
 data/reports/
 data/models/
+data/text/
 data/*.log

@@ -247,7 +247,10 @@ class ReportIngestor:
         return self.data_dir / f"{symbol.replace('.', '_')}.parquet"
 
     def cached_symbols(self) -> set[str]:
-        return {p.stem.replace("_", ".") for p in self.data_dir.glob("*.parquet")}
+        # A 0-byte file is a failed write (Windows pyarrow errno-22) — not a
+        # cache; the symbol must be re-fetched.
+        return {p.stem.replace("_", ".") for p in self.data_dir.glob("*.parquet")
+                if p.stat().st_size > 0}
 
     def collect(self, symbols: list[str], pause: float = 0.2, force: bool = False) -> dict[str, int]:
         """Fetch every uncached (or forced) symbol's full report history.
@@ -319,6 +322,8 @@ class ReportIngestor:
         """Union of per-symbol report caches, filtered to symbols/dates."""
         parts = []
         for p in sorted(self.data_dir.glob("*.parquet")):
+            if p.stat().st_size == 0:
+                continue  # failed write; not a valid cache shard
             sym = p.stem.replace("_", ".")
             if symbols is not None and sym not in set(symbols):
                 continue
