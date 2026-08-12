@@ -63,17 +63,113 @@ def test_long_book_weights_drops_groupby_date_level():
 
 
 def test_alpha_core_composite_equal_weight():
+    # legacy long-only mode (short_pct=0): gross 1, all positive
     from src.factors.code_generator import FactorContext
     from src.data.synthetic import make_synthetic_market
 
     market = make_synthetic_market(symbols=10, days=120, seed=7)
     fctx = FactorContext(market.long)
-    core = AlphaCore(fctx, ["Rank(Close)", "Rank(Close)"], long_pct=0.20, max_position_pct=1.0)
+    core = AlphaCore(fctx, ["Rank(Close)", "Rank(Close)"], long_pct=0.20,
+                     short_pct=0.0, max_position_pct=1.0, neutralize=False)
     # two identical factors -> composite = the single factor z-score
     day = sorted(core.dates)[0]
     w = core.weights_on(day)
     assert w  # non-empty book
     assert sum(w.values()) == pytest.approx(1.0, abs=1e-9)
+
+
+def test_alpha_core_market_neutral_net_zero():
+    # Phase 10 default: long top decile + short bottom decile, net ~ 0, gross 1
+    from src.factors.code_generator import FactorContext
+    from src.data.synthetic import make_synthetic_market
+
+    market = make_synthetic_market(symbols=10, days=120, seed=7)
+    fctx = FactorContext(market.long)
+    core = AlphaCore(fctx, ["Rank(Close)", "Rank(Close)"], long_pct=0.20,
+                     short_pct=0.20, max_position_pct=1.0, neutralize=False)
+    day = sorted(core.dates)[0]
+    w = core.weights_on(day)
+    assert w
+    assert sum(w.values()) == pytest.approx(0.0, abs=1e-9)          # dollar-neutral
+    assert sum(abs(v) for v in w.values()) == pytest.approx(1.0, abs=1e-9)  # gross 1
+    assert any(v > 0 for v in w.values()) and any(v < 0 for v in w.values())
+
+
+# ---------------------------------------------------------------------------
+# momentum neutralization + regime-adaptive short control (paper-backed)
+# ---------------------------------------------------------------------------
+
+
+def _big_market(days=400, seed=7, drift=0.0):
+    from src.data.synthetic import make_synthetic_market
+    from src.factors.code_generator import FactorContext
+
+    market = make_synthetic_market(symbols=40, days=days, seed=seed, market_drift=drift)
+    return market, FactorContext(market.long)
+
+
+def test_neutralize_removes_momentum_exposure():
+    # composite = momentum + independent noise. Neutralization must strip the
+    # momentum component, leaving ~the noise -> residual ~0 correlation with
+    # momentum. (A composite that IS pure momentum would give a numerically-zero
+    # residual whose "correlation" is meaningless floating-point noise.)
+    from src.portfolio.alpha_core import _neutralize_composite, _momentum_panel, _zscore
+
+    market, _ = _big_market()
+    close = market.long["close"].unstack()
+    mom = _momentum_panel(close, (20, 60, 120, 252))
+    rng = np.random.default_rng(0)
+    noise = pd.Series(rng.normal(0.0, 1.0, len(mom["mom120"].dropna())),
+                      index=mom["mom120"].dropna().index)
+    z = _zscore(mom["mom120"]) + 0.5 * _zscore(noise)
+    resid = _neutralize_composite(z, close, (20, 60, 120, 252))
+    assert not resid.empty
+    joint = pd.concat([resid.rename("resid"), mom["mom120"]], axis=1).dropna()
+    corrs = []
+    for _, day in joint.groupby(level=0):
+        if len(day) >= 30:
+            corrs.append(np.corrcoef(day["resid"].rank(), day["mom120"].rank())[0, 1])
+    assert np.mean(np.abs(corrs)) < 0.2  # momentum component removed
+
+
+def test_alpha_core_neutralize_produces_book():
+    # end-to-end: 40-symbol market with neutralize=True yields a valid book
+    market, fctx = _big_market()
+    core = AlphaCore(fctx, ["Rank(Close)", "Rank(Close)"], long_pct=0.20,
+                     short_pct=0.20, max_position_pct=1.0, neutralize=True)
+    day = sorted(core.dates)[len(core.dates) // 2]
+    w = core.weights_on(day)
+    assert w
+    assert sum(abs(v) for v in w.values()) == pytest.approx(1.0, abs=1e-9)
+
+
+def test_alpha_core_regime_short_trims_short_leg_in_uptrend():
+    # strong uptrend (drift) -> 60d market trend > gate -> short leg scaled to
+    # short_scale before gross normalisation; flat market leaves it at ~0.5.
+    from src.portfolio.alpha_core import _market_trend
+
+    market, fctx = _big_market(days=300, seed=11, drift=0.002)
+    close = market.long["close"].unstack()
+    trend = _market_trend(close, 60)
+    core = AlphaCore(fctx, ["Rank(Close)", "Rank(Close)"], long_pct=0.20,
+                     short_pct=0.20, max_position_pct=1.0, neutralize=False,
+                     regime_short=True, trend_gate=0.01, short_scale=0.4)
+    late = sorted(core.dates)[-20]
+    assert trend[late] > 0.01  # regime active
+    w = core.weights_on(late)
+    short_total = -sum(v for v in w.values() if v < 0)
+    # gross-normalised book: long 1.0, short 0.4 -> short total 0.4/1.4 ≈ 0.286
+    assert short_total == pytest.approx(0.4 / 1.4, abs=0.03)
+
+    # flat market: regime inactive, short leg ~0.5
+    market2, fctx2 = _big_market(days=300, seed=13, drift=0.0)
+    core2 = AlphaCore(fctx2, ["Rank(Close)", "Rank(Close)"], long_pct=0.20,
+                      short_pct=0.20, max_position_pct=1.0, neutralize=False,
+                      regime_short=True, trend_gate=0.01, short_scale=0.4)
+    day2 = sorted(core2.dates)[-20]
+    w2 = core2.weights_on(day2)
+    short2 = -sum(v for v in w2.values() if v < 0)
+    assert short2 == pytest.approx(0.5, abs=0.03)
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +214,15 @@ def test_tilt_min_weight_guard():
     w = {"A": 0.01}  # below min_weight -> untouched
     out = tilt.apply(w, "2023-04-15")
     assert out["A"] == pytest.approx(0.01)
+
+
+def test_tilt_short_leg_direction_aware():
+    # sign-aware amplitude: short high-SUE (reverts down) adds, short low-SUE cuts
+    tilt = _tilt_monthly("2023-04-15")
+    w = {"A": -0.10, "J": -0.10}
+    out = tilt.apply(w, "2023-04-15")
+    assert out["A"] == pytest.approx(-0.10 * 1.20)  # short high-SUE -> more short
+    assert out["J"] == pytest.approx(-0.10 * 0.80)  # short low-SUE -> less short
 
 
 def test_tilt_ignores_symbols_without_sue():

@@ -187,13 +187,20 @@ alpha_core:
       weights: "equal"
       rebalance: "monthly"
   long_pct: 0.10                     # top-decile 多头持仓
+  short_pct: 0.10                    # bottom-decile 空头持仓（市场中性）
   max_position_pct: 0.05             # 单票上限（与 online_execution 一致）
+  neutralize: true                   # 动量截面中性化（MLMultiFactorBiasCorrection 处方）
+  momentum_lookbacks: [20, 60, 120, 252]
+  regime_short: true                 # AlphaCrafter γ: 强上涨趋势中收缩空腿
+  trend_days: 60                     # 等权市场趋势窗口
+  trend_gate: 0.03                   # 60日趋势 > 3% 触发
+  short_scale: 0.5                   # 触发时空腿缩至 0.5 再 gross 归一
 
 seasonal_tilt:
   enabled: true
   type: "pead_reversal"
   amplitude: 0.20                    # ±20%
-  min_weight: 0.03                   # 权重 > 3% 才调整
+  min_weight: 0.015                  # 权重 > 1.5% 才调整（市场中性粗仓约 1.7%）
   window_days: 5
   months: [1, 2, 4, 8, 10]           # 年报/一季报/中报/三季报窗口
 

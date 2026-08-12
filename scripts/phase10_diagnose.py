@@ -65,7 +65,11 @@ def main() -> int:
     market = load_hs300_market(cfg, symbols, start="2009-01-06", end="2025-12-31")
     formulas = [x.get("factor", {}).get("formula", x.get("formula"))
                 for x in json.loads((ROOT / "outputs" / "factors.json").read_text(encoding="utf-8"))]
-    alpha = AlphaCore(FactorContext(market.long), formulas, long_pct=0.10, max_position_pct=0.05)
+    _fwd_wide = market.forward_returns_tradable.unstack(fill_value=0.0)
+    _bench = _fwd_wide.reindex(columns=symbols).mean(axis=1)
+    _trend = (1 + _bench).shift(1).rolling(60).apply(lambda x: x.prod() - 1, raw=True)
+    alpha = AlphaCore(FactorContext(market.long), formulas, long_pct=0.10, max_position_pct=0.05,
+                      trend_series=_trend)
 
     pead_cfg = cfg.get("pead") or {}
     panel = ensure_profit_panel(symbols, list(range(2020, 2026)),
@@ -83,8 +87,10 @@ def main() -> int:
                               decay_days=int(sent_cfg.get("decay_days", 10)))
 
     tilt = PEADSeasonalTilt(pead, universe=symbols)
-    risk = SentimentRiskOverlay(sig, zscore_threshold=-2.5, position_cut=0.50,
-                                freeze_days=5, min_trigger_samples=20)
+
+    def _fresh_risk():
+        return SentimentRiskOverlay(sig, zscore_threshold=-2.5, position_cut=0.50,
+                                    freeze_days=5, min_trigger_samples=20)
 
     dates = [d for d in sorted(market.forward_returns.index.get_level_values(0).unique())
              if pd.Timestamp("2010-01-01") <= d <= pd.Timestamp("2025-12-31")]
@@ -93,17 +99,26 @@ def main() -> int:
 
     scenarios = {
         "baseline": (None, None),
-        "alpha_risk": (None, risk),
+        "alpha_risk": (None, _fresh_risk()),
         "alpha_tilt": (tilt, None),
-        "three_layer": (tilt, risk),
+        "three_layer": (tilt, _fresh_risk()),
     }
     ports: dict[str, pd.Series] = {}
     for name, (t, r) in scenarios.items():
         pf = ThreeLayerPortfolio(alpha, tilt=t, risk=r)
         wdf = pf.weights_frame(symbols, dates)
-        port = (wdf.reindex(columns=aligned.columns, fill_value=0.0) * aligned).sum(axis=1).sort_index()
+        # align the fwd panel to the *actual* book dates (weights.index starts at
+        # the first non-empty book). Without the index slice, `wdf * aligned`
+        # aligns on the union and the pre-book dates (2009 + warm-up 2010) come
+        # out as zero-return rows, diluting Sharpe/ann in the headline.
+        port = (wdf.reindex(columns=aligned.columns, fill_value=0.0)
+                * aligned.reindex(index=wdf.index)).sum(axis=1).sort_index()
         ports[name] = port.dropna()
     print(f"diagnose: built {len(ports)} scenarios in {time.time() - t0:.1f}s\n")
+    for name in ("alpha_risk", "three_layer"):
+        r = scenarios[name][1]
+        if r is not None:
+            print(f"  risk triggers ({name}): {len(r.trigger_log())}")
 
     # ------------------------------------------------------- headline
     print("=== HEADLINE (2010-2025) ===")
@@ -113,7 +128,8 @@ def main() -> int:
 
     # ------------------------------------------------------- 4.2 risk reduction
     print("\n=== 4.2 RISK OVERLAY — maxDD reduction in crisis windows (2022-2025 only) ===")
-    print(f"  risk triggers (2022-2025): {len(risk.trigger_log())}")
+    risk_r = scenarios["alpha_risk"][1]
+    print(f"  risk triggers (2022-2025, alpha_risk scenario): {len(risk_r.trigger_log())}")
     for cname, (cs, ce) in CRISIS.items():
         for name in ("baseline", "alpha_risk"):
             p = ports[name]
@@ -145,9 +161,11 @@ def main() -> int:
     for name in ("baseline",):
         p = ports[name]
         dd = _dd(p)
+        cum = (1 + p).cumprod()
         for i, (dt, v) in enumerate(dd.sort_values().head(4).items(), 1):
-            peak = dd[:dt].idxmax()
-            print(f"  DD#{i}: {v:.1%} trough={dt.date()} peak={peak.date()}")
+            peak = cum[:dt].idxmax()  # max cum level before the trough = the peak
+            print(f"  DD#{i}: {v:.1%} trough={dt.date()} peak={peak.date()} "
+                  f"cum@peak={cum.loc[peak]:.2f} cum@trough={cum.loc[dt]:.2f}")
         # yearly
         y = (1 + p).groupby(p.index.year).prod() - 1
         print("  yearly:", " ".join(f"{k}:{v:+.0%}" for k, v in y.items()))

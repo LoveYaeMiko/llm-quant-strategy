@@ -114,7 +114,14 @@ def main() -> int:
     formulas = _load_factor_formulas()
     print(f"alpha core: {len(formulas)} Phase 8 formulas")
     fctx = FactorContext(market.long)
-    alpha = AlphaCore(fctx, formulas, long_pct=0.10, max_position_pct=0.05)
+    # regime trend for the short-leg control: equal-weight tradable-market 60d
+    # compound return, PIT-safe — bench[d-1] is the last realised return at
+    # close d. Reproduces the probe that hit maxDD 9.2% (trend>3% short x0.5).
+    _fwd_wide = market.forward_returns_tradable.unstack(fill_value=0.0)
+    _bench = _fwd_wide.reindex(columns=symbols).mean(axis=1)
+    _trend = (1 + _bench).shift(1).rolling(60).apply(lambda x: x.prod() - 1, raw=True)
+    alpha = AlphaCore(fctx, formulas, long_pct=0.10, max_position_pct=0.05,
+                      trend_series=_trend)
     print(f"composite: {alpha.composite.notna().sum()} non-NaN cells "
           f"({time.time() - t0:.1f}s)")
 

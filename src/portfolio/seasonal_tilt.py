@@ -2,10 +2,12 @@
 
 The 2022-2025 diagnosis (``cmd_pead --direction reversal``) showed A-share HS300
 exhibits **negative** post-earnings drift: high-SUE names *underperform* after
-the announcement. The tactical tilt therefore flips the classic PEAD bet:
+the announcement. The tactical tilt therefore flips the classic PEAD bet, with
+the amplitude sign-aware of the position direction (the alpha core is
+market-neutral long-short since 2026-08-12):
 
-* high SUE (> 80th percentile) → reduce the position 20% (they revert down);
-* low SUE (< 20th percentile) → increase the position 20% (they drift up).
+* high SUE (> 80th percentile) → cut a **long**, add to a **short** (they revert down);
+* low SUE (< 20th percentile) → add to a **long**, cut a **short** (they drift up).
 
 Only positions whose |weight| ≥ ``min_weight`` are touched (the blueprint's
 "持仓权重 > 3% 的股票"), and only during earnings-season months (1, 2, 4, 8, 10 —
@@ -43,7 +45,7 @@ class PEADSeasonalTilt:
         universe: list[str],
         *,
         amplitude: float = 0.20,
-        min_weight: float = 0.03,
+        min_weight: float = 0.015,
         months: tuple[int, ...] = DEFAULT_MONTHS,
     ) -> None:
         self.pead = pead
@@ -72,8 +74,11 @@ class PEADSeasonalTilt:
             p = pct.get(symbol, np.nan)
             if not np.isfinite(p):
                 continue
-            if p > 0.8:
-                out[symbol] = w * (1.0 - self.amplitude)
-            elif p < 0.2:
-                out[symbol] = w * (1.0 + self.amplitude)
+            if p > 0.8 or p < 0.2:
+                # sign-aware amplitude: the reversal bet is "high SUE reverts
+                # down, low SUE drifts up", so it *adds* to a position whose
+                # direction agrees with the bet (long low-SUE, short high-SUE)
+                # and *cuts* one that disagrees.
+                boost = (w > 0) == (p < 0.2)
+                out[symbol] = w * (1.0 + self.amplitude if boost else 1.0 - self.amplitude)
         return out

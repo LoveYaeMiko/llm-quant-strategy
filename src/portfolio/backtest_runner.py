@@ -166,7 +166,7 @@ def run_layered_backtest(
             "n_days": int(len(ret)),
             "effective_start": str(ret.index[0].date()),
             "effective_end": str(ret.index[-1].date()),
-            "n_positions_avg": float(weights.gt(0).sum(axis=1).mean()),
+            "n_positions_avg": float(weights.abs().gt(0).sum(axis=1).mean()),
         }
     return {"metrics": metrics, "weights": weights}
 
@@ -250,7 +250,8 @@ def run_phase10_scenarios(
             "gate_passed": out[name]["gate"]["passed"],
         })
     return {"scenarios": out, "table": table, "weight_scheme": "equal_zscore",
-            "long_pct": alpha.long_pct, "max_position_pct": alpha.max_position_pct}
+            "long_pct": alpha.long_pct, "short_pct": alpha.short_pct,
+            "max_position_pct": alpha.max_position_pct}
 
 
 # ---------------------------------------------------------------------------

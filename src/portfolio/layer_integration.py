@@ -38,7 +38,14 @@ class ThreeLayerPortfolio:
 
     @staticmethod
     def _normalize(weights: dict[str, float]) -> dict[str, float]:
-        total = sum(weights.values())
+        """Gross-normalise to 1 — the invariant of the (now market-neutral) book.
+
+        With the alpha core long the top decile and short the bottom decile, the
+        signed sum is ≈ 0, so dividing by it is meaningless; dividing by the gross
+        (sum |w|) restores the target leverage after the overlays change it. For a
+        pure long-only book this reduces to the old signed-sum normalisation.
+        """
+        total = sum(abs(v) for v in weights.values())
         if total <= 0:
             return weights
         return {k: v / total for k, v in weights.items()}
