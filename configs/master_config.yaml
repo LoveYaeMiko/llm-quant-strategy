@@ -211,3 +211,52 @@ risk_overlay:
   position_cut: 0.50                 # 触发即减半仓
   freeze_days: 5                     # 保持 5 个交易日
   min_trigger_samples: 20            # 低于该样本数不触发（防退化 std）
+
+# =====================================================================
+# 模拟盘 (PaperRunner) — 账本 + 交易成本参数（§7 成本模型回校目标）
+# =====================================================================
+paper:
+  ledger_db: "outputs/paper_ledger.sqlite"
+  output_json: "outputs/paper_run.json"
+  initial_cash: 100000.0
+  slippage_bps: 2.0                  # 冲击成本（买贵卖贱，双边）
+  commission_bps: 5.0                # 券商佣金（当前固定粗估；§7 会写回真实 ~2.5）
+  min_commission: 1.0                # 最低佣金（真实 A 股为 5 元）
+  stamp_tax_sell_bps: 0.0            # 印花税 0.05% 仅卖出（真实 5.0，§7 写回）
+  transfer_fee_bps: 0.0              # 过户费 0.001% 双边（真实 0.1，§7 写回）
+  max_position_pct: 0.05             # 单票上限
+  rebalance_days: 1
+  pit_strict: true
+
+# =====================================================================
+# 影子模式 (shadow) — 不实盘下单，逐日记录目标持仓 + PnL（PAICC 每日调度）
+# =====================================================================
+shadow:
+  enabled: true
+  start_date: "2026-01-01"           # 影子观察期起点（超出回测 test_end 2025-12-31）
+  ledger_db: "outputs/shadow_ledger.sqlite"
+  refresh_data: true                 # 运行前增量 ingest 行情
+  refresh_pead: true                 # 增量 Baostock 利润表（当前年）
+  refresh_sentiment: true            # 增量 AKShare 研报（重取全部，较重）
+  status_json: "outputs/shadow_status.json"
+  report_md: "outputs/shadow_report.md"
+
+# =====================================================================
+# §7 三项回校 — PEAD 倾斜幅度 / 舆情阈值 / 交易成本模型
+# =====================================================================
+s7_calibration:
+  enabled: true
+  result_json: "outputs/s7_calibration.json"
+  report_md: "outputs/s7_calibration.md"
+  auto_apply: true                   # 自动写回 master_config.yaml
+  window_start: "2020-01-01"         # PEAD 覆盖 2020-2025；舆情覆盖 2022-2025
+  window_end: "2025-12-31"
+  amplitude_grid: [0.10, 0.15, 0.20, 0.25, 0.30]
+  zscore_grid: [-2.0, -2.5, -3.0]
+  freeze_grid: [3, 5, 7]
+  cost_model:                        # 真实 A 股成本结构
+    stamp_tax_sell_bps: 5.0          # 印花税 0.05% 仅卖出（2023-08 起）
+    transfer_fee_bps: 0.1            # 过户费 0.001% 双边
+    commission_bps: 2.5              # 券商佣金 ~0.025% 双边
+    min_commission: 5.0              # 最低 5 元
+    slippage_bps: 2.0                # 冲击成本估计（随量调整）

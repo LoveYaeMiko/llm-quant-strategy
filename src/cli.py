@@ -1331,38 +1331,30 @@ def cmd_pool(args) -> int:
 # ---------------------------------------------------------------------------
 
 
-def cmd_paper(args) -> int:
-    """Simulated paper trading — the resumable daily loop (simulated 模拟盘).
+def _build_market_for_paper(cfg, symbols, start, end, seed=1):
+    """Market for the paper/shadow/calibrate loops.
 
-    Bridges the backtest → paper-trading gap: the Phase 10 three-layer
-    portfolio is priced day-by-day through the order executor (slippage /
-    commission / cash account) with a SQLite ledger that persists cash,
-    positions and fills so the run can be resumed after a restart.
-
-    Fully offline when no PIT database is set (synthetic market + a default
-    factor); the PEAD tilt and sentiment risk overlay attach automatically when
-    their cached data is present and are otherwise skipped with a warning.
+    Real PIT store when set (else synthetic), sliced to ``[start - 360d, end]``
+    so the alpha momentum lookbacks (120/240d) are warm before the first window
+    date. ``symbols`` may be ``None`` (research universe) or an explicit list.
     """
-    cfg = load_config()
-    pcfg = cfg.section("paper")
-
-    start, end = args.start, args.end
-    if not start and not end:
-        start = cfg.get("research.test_start")
-        end = cfg.get("research.test_end")
-
-    # market (real PIT store when set, else synthetic) + 360d warmup so the
-    # alpha lookbacks (120/240d) are filled before the first window date.
-    market = _market_data(cfg, seed=args.seed, symbols=args.symbols)
+    market = _market_data(cfg, seed=seed, symbols=symbols)
     if start:
         warmup_start = (pd.Timestamp(start) - pd.Timedelta(days=360)).date().isoformat()
         market = _slice_market(market, warmup_start, end)
     elif end:
         market = _slice_market(market, None, end)
-    symbols = args.symbols or sorted(market.price_panel.columns)
+    return market
 
-    # alpha core — the Phase 8 low-vol/low-turnover pool (outputs/factors.json),
-    # or a default factor offline.
+
+def _build_paper_portfolio(cfg, market, symbols):
+    """Assemble the three-layer portfolio (alpha → PEAD tilt → sentiment risk).
+
+    Returns ``(portfolio, components)`` where ``components`` exposes the alpha
+    core, PEAD factor and sentiment panel for the §7 calibration sweeps. The PEAD
+    profit-panel years extend through the *current* year so 2026 shadow data is
+    gradually covered as quarterly reports are announced.
+    """
     from .factors.code_generator import FactorContext
     from .portfolio.alpha_core import AlphaCore
 
@@ -1375,13 +1367,25 @@ def cmd_paper(args) -> int:
         formulas = []
     if not formulas:
         formulas = ["Rank(Close)"]
+    acfg = cfg.section("alpha_core")
     fctx = FactorContext(market.long)
-    alpha = AlphaCore(fctx, formulas, long_pct=0.10, short_pct=0.10,
-                      max_position_pct=float(pcfg.get("max_position_pct", 0.05)))
+    alpha = AlphaCore(
+        fctx, formulas,
+        long_pct=float(acfg.get("long_pct", 0.10)),
+        short_pct=float(acfg.get("short_pct", 0.10)),
+        max_position_pct=float(acfg.get("max_position_pct", 0.05)),
+        neutralize=bool(acfg.get("neutralize", True)),
+        momentum_lookbacks=tuple(int(x) for x in acfg.get("momentum_lookbacks", [20, 60, 120, 252])),
+        regime_short=bool(acfg.get("regime_short", True)),
+        trend_days=int(acfg.get("trend_days", 60)),
+        trend_gate=float(acfg.get("trend_gate", 0.03)),
+        short_scale=float(acfg.get("short_scale", 0.5)),
+    )
     print(f"alpha core: {len(formulas)} factor(s), {alpha.composite.notna().sum()} non-NaN cells")
 
     # optional overlays (best-effort, real cached data only)
     tilt = risk = None
+    pead = sig = None
     # Overlays need real PEAD / report-sentiment caches keyed to real symbols —
     # when there is no PIT database the market is synthetic and every overlay
     # fetch would be a wasted (and invalid) network call, so skip them.
@@ -1392,11 +1396,14 @@ def cmd_paper(args) -> int:
             from .portfolio.seasonal_tilt import PEADSeasonalTilt
 
             pead_cfg = cfg.get("pead") or {}
-            years = [int(y) for y in range(2020, 2026)]
+            years = [int(y) for y in range(2020, pd.Timestamp.today().year + 1)]
             panel = ensure_profit_panel(symbols, years, cache_dir=str(pead_cfg.get("cache_dir", "data/financials")))
             pead = PEADFactor(panel, signal_expiry_days=int(pead_cfg.get("signal_expiry_days", 60)),
                               min_eps_history=int(pead_cfg.get("min_eps_history", 8)))
-            tilt = PEADSeasonalTilt(pead, universe=symbols)
+            tilt_cfg = cfg.get("seasonal_tilt") or {}
+            tilt = PEADSeasonalTilt(pead, universe=symbols,
+                                    amplitude=float(tilt_cfg.get("amplitude", 0.20)),
+                                    min_weight=float(tilt_cfg.get("min_weight", 0.015)))
             print(f"pead tilt: {len(pead.symbols)} symbols with quarterly EPS")
         except Exception as exc:  # noqa: BLE001 — offline / no cached profit panel
             print(f"WARNING: PEAD tilt unavailable ({exc}) — alpha-only", file=sys.stderr)
@@ -1426,24 +1433,42 @@ def cmd_paper(args) -> int:
         except Exception as exc:  # noqa: BLE001 — offline / no cached sentiment
             print(f"WARNING: risk overlay unavailable ({exc}) — no sentiment cut", file=sys.stderr)
 
-    from .paper import PaperLedger, PaperRunner
     from .portfolio.layer_integration import ThreeLayerPortfolio
 
+    portfolio = ThreeLayerPortfolio(alpha, tilt=tilt, risk=risk)
+    return portfolio, {"alpha": alpha, "pead": pead, "tilt": tilt, "risk": risk, "sentiment_panel": sig}
+
+
+def cmd_paper(args) -> int:
+    """Simulated paper trading — the resumable daily loop (simulated 模拟盘).
+
+    Bridges the backtest → paper-trading gap: the Phase 10 three-layer
+    portfolio is priced day-by-day through the order executor (slippage /
+    commission / cash account) with a SQLite ledger that persists cash,
+    positions and fills so the run can be resumed after a restart.
+
+    Fully offline when no PIT database is set (synthetic market + a default
+    factor); the PEAD tilt and sentiment risk overlay attach automatically when
+    their cached data is present and are otherwise skipped with a warning.
+    """
+    cfg = load_config()
+    pcfg = cfg.section("paper")
+
+    start, end = args.start, args.end
+    if not start and not end:
+        start = cfg.get("research.test_start")
+        end = cfg.get("research.test_end")
+
+    market = _build_market_for_paper(cfg, args.symbols, start, end, seed=args.seed)
+    symbols = args.symbols or sorted(market.price_panel.columns)
+    portfolio, _ = _build_paper_portfolio(cfg, market, symbols)
+
+    from .paper import PaperLedger, PaperRunner
+    from .paper.shadow import paper_runner_kwargs
+
     ledger = PaperLedger(args.ledger or str(pcfg.get("ledger_db", "outputs/paper_ledger.sqlite")))
-    runner = PaperRunner(
-        ThreeLayerPortfolio(alpha, tilt=tilt, risk=risk),
-        market,
-        ledger,
-        symbols=symbols,
-        cash=float(pcfg.get("initial_cash", 100_000.0)),
-        slippage_bps=float(pcfg.get("slippage_bps", 2.0)),
-        commission_bps=float(pcfg.get("commission_bps", 5.0)),
-        min_commission=float(pcfg.get("min_commission", 1.0)),
-        max_position_pct=float(pcfg.get("max_position_pct", 0.05)),
-        rebalance_days=int(pcfg.get("rebalance_days", 1)),
-        pit_strict=bool(pcfg.get("pit_strict", True)),
-        seed=args.seed,
-    )
+    runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=args.seed,
+                         **paper_runner_kwargs(cfg))
     result = runner.run(start=start, end=end)
     ledger.close()
 
@@ -1459,6 +1484,122 @@ def cmd_paper(args) -> int:
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     Path(out).write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     print(f"  wrote {out}  (ledger {ledger.db_path})")
+    return 0
+
+
+def cmd_shadow(args) -> int:
+    """影子模式 — 不实盘下单，逐日记录目标持仓与 PnL（PAICC 每日调度入口）。
+
+    Single entry point: refresh data (行情/财报/研报 完整) → build market +
+    portfolio → advance the resumable shadow ledger → emit ``shadow_status.json``
+    + ``shadow_report.md``. A second run resumes where the last stopped.
+    """
+    cfg = load_config()
+    shadow = cfg.section("shadow")
+    pcfg = cfg.section("paper")
+    start = args.start or str(shadow.get("start_date", "2026-01-01"))
+
+    from .paper.shadow import (
+        build_shadow_status,
+        paper_runner_kwargs,
+        refresh_pead,
+        refresh_price,
+        refresh_sentiment,
+        render_shadow_report,
+        resolve_shadow_universe,
+    )
+
+    symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
+
+    meta: dict = {}
+    if args.skip_refresh:
+        meta = {"note": "refresh skipped (--skip-refresh)"}
+    else:
+        if bool(shadow.get("refresh_data", True)):
+            print("shadow: refreshing price data (incremental) ...")
+            meta["price"] = refresh_price(cfg, symbols)
+        if bool(shadow.get("refresh_pead", True)):
+            print("shadow: refreshing PEAD profit (current year) ...")
+            meta["pead_fetched"] = refresh_pead(cfg, symbols)
+        if bool(shadow.get("refresh_sentiment", True)):
+            print("shadow: refreshing research reports (full re-fetch, heavy) ...")
+            meta["sentiment"] = refresh_sentiment(cfg, symbols)
+
+    # market includes 360d warmup before ``start``; run through the latest bar.
+    market = _build_market_for_paper(cfg, symbols, start, None, seed=args.seed)
+    latest = pd.Timestamp(market.price_panel.index.max()).date().isoformat()
+    end = args.end or latest
+    portfolio, overlays = _build_paper_portfolio(cfg, market, symbols)
+
+    from .paper import PaperLedger, PaperRunner
+
+    ledger = PaperLedger(str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite")))
+    runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=args.seed,
+                         **paper_runner_kwargs(cfg))
+    result = runner.run(start=start, end=end)
+
+    status = build_shadow_status(cfg, ledger, market, result, overlays, meta)
+    ledger.close()
+
+    status_path = ROOT / str(shadow.get("status_json", "outputs/shadow_status.json"))
+    report_path = ROOT / str(shadow.get("report_md", "outputs/shadow_report.md"))
+    status_path.parent.mkdir(parents=True, exist_ok=True)
+    status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    report_path.write_text(render_shadow_report(status), encoding="utf-8")
+
+    eq = status["equity"]
+    print("\n=== SHADOW MODE ===")
+    print(f"  as_of={status['last_trading_date']}  freshness={status['data_freshness_days']}d")
+    print(f"  equity={eq['latest']:,.2f}  total_ret={eq['total_return']:.2%}  "
+          f"sharpe={eq['sharpe']:.2f}  maxDD={eq['max_drawdown']:.2%}")
+    for rl in status["red_lines"]:
+        print(f"  [{rl.get('level', 'ok'):>8}] {rl.get('label', rl.get('name'))}: "
+              f"{rl['value']}  {rl['detail']}")
+    print(f"  wrote {status_path}  (ledger {ledger.db_path})")
+    return 0
+
+
+def cmd_calibrate(args) -> int:
+    """§7 三项回校 — PEAD 倾斜幅度 / 舆情阈值 / 交易成本模型."""
+    cfg = load_config()
+    s7 = cfg.section("s7_calibration")
+    window_start = args.start or str(s7.get("window_start", "2020-01-01"))
+    window_end = args.end or str(s7.get("window_end", "2025-12-31"))
+
+    from .paper.shadow import resolve_shadow_universe
+
+    symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
+    market = _build_market_for_paper(cfg, symbols, window_start, window_end, seed=args.seed)
+    _, overlays = _build_paper_portfolio(cfg, market, symbols)
+
+    from .paper import PaperLedger
+
+    ledger = PaperLedger(str(cfg.section("paper").get("ledger_db", "outputs/paper_ledger.sqlite")))
+    fills = ledger.fills()
+    ledger.close()
+
+    from . import calibration
+
+    result = calibration.calibrate_s7(
+        cfg, market, symbols, overlays["alpha"], overlays.get("pead"),
+        overlays.get("sentiment_panel"), fills, auto_apply=not args.no_apply,
+    )
+
+    result_path = ROOT / str(s7.get("result_json", "outputs/s7_calibration.json"))
+    report_path = ROOT / str(s7.get("report_md", "outputs/s7_calibration.md"))
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    report_path.write_text(calibration.render_calibration_report(result), encoding="utf-8")
+
+    print("\n=== §7 CALIBRATION ===")
+    print(f"  cost: dev={result['cost']['deviation_pct']:+.1f}%  "
+          f"rec_commission={result['cost']['recommended']['commission_bps']}bps")
+    print(f"  amplitude: {result['amplitude']['current']} -> {result['amplitude']['recommended']}")
+    print(f"  sentiment: z={result['sentiment']['recommended']['zscore_threshold']} "
+          f"freeze={result['sentiment']['recommended']['freeze_days']}")
+    if result["auto_apply"]:
+        print(f"  applied: {sorted(result['applied'].get('changed', {}))}")
+    print(f"  wrote {result_path}")
     return 0
 
 
@@ -1677,6 +1818,30 @@ def main(argv: list[str] | None = None) -> int:
     p_paper.add_argument("--output", type=str, default=None,
                          help="JSON output path (default: config paper.output_json)")
     p_paper.set_defaults(func=cmd_paper)
+
+    p_shadow = sub.add_parser("shadow", help="影子模式 — 不实盘下单，逐日记录目标持仓与 PnL")
+    p_shadow.add_argument("--start", type=str, default=None,
+                          help="影子观察期起点 (default: config shadow.start_date)")
+    p_shadow.add_argument("--end", type=str, default=None,
+                          help="结束日期 (default: 最新交易日)")
+    p_shadow.add_argument("--symbols", nargs="*", default=None,
+                          help="override HS300 (default: data/universe/hs300.json)")
+    p_shadow.add_argument("--seed", type=int, default=1)
+    p_shadow.add_argument("--skip-refresh", action="store_true",
+                          help="跳过行情/财报/研报增量刷新")
+    p_shadow.set_defaults(func=cmd_shadow)
+
+    p_cal = sub.add_parser("calibrate", help="§7 三项回校 (PEAD 幅度 / 舆情阈值 / 成本模型)")
+    p_cal.add_argument("--start", type=str, default=None,
+                       help="回校窗口起点 (default: config s7_calibration.window_start)")
+    p_cal.add_argument("--end", type=str, default=None,
+                       help="回校窗口终点 (default: config s7_calibration.window_end)")
+    p_cal.add_argument("--symbols", nargs="*", default=None,
+                       help="override HS300 (default: data/universe/hs300.json)")
+    p_cal.add_argument("--seed", type=int, default=1)
+    p_cal.add_argument("--no-apply", action="store_true",
+                       help="不自动写回 master_config.yaml")
+    p_cal.set_defaults(func=cmd_calibrate)
 
     args = parser.parse_args(argv)
     try:

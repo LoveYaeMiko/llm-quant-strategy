@@ -166,6 +166,10 @@ class PaperLedger:
         row = self._conn.execute("SELECT COUNT(*) FROM fills").fetchone()
         return int(row[0]) if row else 0
 
+    def fills(self) -> pd.DataFrame:
+        """Execution ledger as a DataFrame (the §7 cost-model calibration source)."""
+        return pd.read_sql_query("SELECT * FROM fills ORDER BY seq", self._conn)
+
     def total_commission(self) -> float:
         row = self._conn.execute("SELECT COALESCE(SUM(commission), 0) FROM fills").fetchone()
         return float(row[0]) if row else 0.0

@@ -52,6 +52,8 @@ class PaperRunner:
         slippage_bps: float = 2.0,
         commission_bps: float = 5.0,
         min_commission: float = 1.0,
+        stamp_tax_sell_bps: float = 0.0,
+        transfer_fee_bps: float = 0.0,
         max_position_pct: float = 0.05,
         blacklist: Optional[set[str]] = None,
         rebalance_days: int = 1,
@@ -66,6 +68,8 @@ class PaperRunner:
         self.slippage_bps = float(slippage_bps)
         self.commission_bps = float(commission_bps)
         self.min_commission = float(min_commission)
+        self.stamp_tax_sell_bps = float(stamp_tax_sell_bps)
+        self.transfer_fee_bps = float(transfer_fee_bps)
         self.max_position_pct = float(max_position_pct)
         self.blacklist = blacklist or set()
         self.rebalance_days = int(max(1, rebalance_days))
@@ -79,6 +83,8 @@ class PaperRunner:
             slippage_bps=self.slippage_bps,
             commission_bps=self.commission_bps,
             min_commission=self.min_commission,
+            stamp_tax_sell_bps=self.stamp_tax_sell_bps,
+            transfer_fee_bps=self.transfer_fee_bps,
             max_position_pct=self.max_position_pct,
             blacklist=self.blacklist,
             seed=self.seed,

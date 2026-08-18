@@ -58,6 +58,8 @@ class OrderExecutor:
         slippage_bps: float = 2.0,
         commission_bps: float = 5.0,
         min_commission: float = 1.0,
+        stamp_tax_sell_bps: float = 0.0,
+        transfer_fee_bps: float = 0.0,
         max_position_pct: float = 0.05,
         blacklist: Optional[set[str]] = None,
         cash: float = 100_000.0,
@@ -66,6 +68,11 @@ class OrderExecutor:
         self.slippage_bps = slippage_bps
         self.commission_bps = commission_bps
         self.min_commission = min_commission
+        # Real A-share cost structure (§7): stamp tax 0.05% sell-only, transfer
+        # fee 0.001% both sides. Default 0.0 keeps the legacy flat-commission
+        # behaviour unchanged; the shadow/calibrate path injects real values.
+        self.stamp_tax_sell_bps = stamp_tax_sell_bps
+        self.transfer_fee_bps = transfer_fee_bps
         self.max_position_pct = max_position_pct
         self.blacklist = blacklist or set()
         self.cash = cash
@@ -84,8 +91,13 @@ class OrderExecutor:
         slip = price * self.slippage_bps / 10_000.0
         return price + slip if side == "buy" else price - slip
 
-    def _fee(self, notional: float) -> float:
-        return max(self.min_commission, notional * self.commission_bps / 10_000.0)
+    def _fee(self, notional: float, side: str) -> float:
+        """Total transaction cost on a fill: commission (min-capped) + transfer
+        fee (both sides) + stamp tax (sell only). ``notional`` is unsigned. """
+        commission = max(self.min_commission, notional * self.commission_bps / 10_000.0)
+        transfer = notional * self.transfer_fee_bps / 10_000.0
+        stamp = (notional * self.stamp_tax_sell_bps / 10_000.0) if side == "sell" else 0.0
+        return commission + transfer + stamp
 
     def execute(
         self,
@@ -124,7 +136,7 @@ class OrderExecutor:
                     continue
                 side = "buy" if delta > 0 else "sell"
                 fill_price = self._quote(price, side)
-                fee = self._fee(abs(delta) * fill_price)
+                fee = self._fee(abs(delta) * fill_price, side)
                 self.cash -= delta * fill_price + fee
                 new_shares = current + delta
                 if abs(new_shares) < 1e-9:
