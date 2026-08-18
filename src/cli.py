@@ -32,6 +32,7 @@ import pandas as pd
 
 from .agents.base_agent import AgentContext
 from .agents.code_agent import CodeAgent
+from .agents.debate_agent import DebateAgent
 from .agents.dynamic_router import DynamicRouter
 from .agents.eval_agent import EvalAgent
 from .agents.risk_agent import RiskAgent
@@ -228,6 +229,7 @@ def _pipeline(config: Config):
     code_agent = CodeAgent(generator=generator, memory=memory, llm=backend, config=cfg)
     eval_agent = EvalAgent(memory=memory, llm=backend, config=cfg)
     risk_agent = RiskAgent(memory=memory, llm=backend, config=cfg, seed=0)
+    debate_agent = DebateAgent(llm=backend, config=cfg)
     router = DynamicRouter(
         {"signal": signal_agent, "code": code_agent, "eval": eval_agent, "risk": risk_agent},
         market_state="sideways",
@@ -246,6 +248,7 @@ def _pipeline(config: Config):
         "eval_agent": eval_agent,
         "risk_agent": risk_agent,
         "code_agent": code_agent,
+        "debate_agent": debate_agent,
     }
 
 
@@ -506,6 +509,18 @@ def cmd_mine(args) -> int:
                     market_returns=_market_returns(market),
                 )
             passed = risk["passed"]
+            # 辩论评审 (Bull/Bear adversarial review) — config-gated so the default
+            # acceptance behaviour is unchanged. When enabled, a factor that the
+            # bear case defeats is rejected even if the risk gate passed.
+            if passed and cfg.get("debate.require_pass", False):
+                debate = p["debate_agent"].debate(
+                    context, gf.formula, metrics, risk_report=risk
+                )
+                metrics["debate_margin"] = debate["margin"]
+                metrics["debate_verdict"] = debate["verdict"]
+                if not debate["passed"]:
+                    passed = False
+                    metrics["verdict"] = "reject_debate"
             row = {
                 "iteration": it,
                 "schema": plan.key() if plan else "",

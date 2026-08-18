@@ -28,6 +28,7 @@ from ..bias_control.context_decoder import LLMBackend
 from ..config import Config
 from ..factors.code_generator import default_formula_for
 from ..factors.memory_manager import MemoryManager
+from ..factors.residual_memory import ResidualMemory
 from ..factors.schema.validator import COMBINATION_TEMPLATES, sample_combination_template
 from ..factors.semantic_space import SchemaPlan, SemanticSpace
 from .base_agent import AgentContext, AgentResult, BaseAgent
@@ -50,10 +51,12 @@ class SignalAgent(BaseAgent):
         rejection_history_path: Optional[str] = None,
         feedback_enabled: bool = True,
         feedback_rounds: int = 3,
+        residual_memory: Optional[ResidualMemory] = None,
     ) -> None:
         super().__init__(llm=llm, config=config)
         self.space = space or SemanticSpace()
         self.memory = memory or MemoryManager()
+        self.residual_memory = residual_memory
         self.n_hypotheses = n_hypotheses
         self.feedback_enabled = bool(feedback_enabled)
         self.feedback_rounds = max(1, int(feedback_rounds))
@@ -123,6 +126,40 @@ class SignalAgent(BaseAgent):
         ]
         return "\n".join(lines)
 
+    def _build_positive_feedback(self) -> str:
+        """Replay proven-good regions so the writer steers *toward* them.
+
+        ``_build_rejection_feedback`` covers the negative half of the loop (what
+        to avoid); this closes the positive half — the accepted pool's best
+        schemas and the residual memory's highest-confidence winning edit motifs
+        (AlphaMemo). Without it the writer only ever flees failure and never
+        converges on what demonstrably works.
+        """
+        lines = ["【历史有效方向（值得继续挖掘的语义区域）】"]
+        top = self.memory.top_performers(k=5, metric="rank_ic")
+        if top:
+            lines.append("**已接受的高 IC 因子：**")
+            for t in top:
+                schema = t.schema or {}
+                q = ", ".join(schema.get("qualities", []))
+                ev = schema.get("event", "?")
+                lines.append(
+                    f"  - `{t.formula}` (event={ev}, qualities={q}) "
+                    f"rank_ic={float(t.metrics.get('rank_ic', 0.0)):.3f}"
+                )
+        if self.residual_memory is not None:
+            cells = self.residual_memory.top_cells(k=5)
+            if cells:
+                lines.append("**被证明能提升 IC 的编辑方向：**")
+                for c in cells:
+                    lines.append(
+                        f"  - {c['category']} 下 `{c['motif']}` 平均提升 "
+                        f"{c['mean_residual']:+.3f}（置信 {c['confidence']}）"
+                    )
+        if not top and not (self.residual_memory is not None and self.residual_memory.top_cells(1)):
+            return "【首次运行】暂无正向记忆。"
+        return "\n".join(lines)
+
     # -- generation ---------------------------------------------------------
 
     def _llm_proposed_plans(self, context: AgentContext, n: int) -> list[SchemaPlan]:
@@ -138,6 +175,7 @@ class SignalAgent(BaseAgent):
         )
         if self.feedback_enabled:
             prompt += "\n\n" + self._build_rejection_feedback()
+            prompt += "\n\n" + self._build_positive_feedback()
         text = self._complete(prompt, context, temperature=0.8, max_tokens=2048)
         text = _CODE_FENCE.sub("", text).strip()
         try:

@@ -50,6 +50,61 @@ def mean_ic(signal: pd.Series, forward_returns: pd.Series, method: str = "spearm
     return float(daily_ic(signal, forward_returns, method).mean())
 
 
+def neighborhood_plateau(
+    candidate_ics: Sequence[float],
+    plateau_band: float = 0.30,
+    min_support_fraction: float = 0.40,
+) -> tuple[bool, float]:
+    """A3 — is the argmax a plateau or a lone spike?
+
+    Rejecting argmax (EP004): the highest IC is only trustworthy if its
+    neighbours are also high. A single spike with low neighbours is noise, not
+    alpha. Returns ``(is_plateau, support_fraction)`` where support is the
+    fraction of candidates within ``plateau_band`` of the max.
+    """
+    ics = [float(x) for x in candidate_ics if x is not None and pd.notna(x)]
+    if not ics:
+        return False, 0.0
+    best = max(ics)
+    if best <= 0:
+        return False, 0.0
+    support = sum(1.0 for x in ics if x >= best * (1.0 - plateau_band)) / len(ics)
+    return bool(support >= min_support_fraction), float(support)
+
+
+def in_out_ic_correlation(
+    score_panels: Sequence[pd.Series],
+    forward_returns: pd.Series,
+    method: str = "spearman",
+    split: float = 0.5,
+    min_days: int = 10,
+) -> Optional[float]:
+    """A3 — Pearson r between in-sample and out-sample IC across a neighbourhood.
+
+    EP004's early-overfit signal: rank candidates by in-sample IC and by
+    out-sample IC, then measure how well the ranking carries over. r near 0 (or
+    negative) means the argmax is chasing noise. Returns ``None`` with <3 valid
+    candidates (too few to estimate a correlation).
+    """
+    ins: list[float] = []
+    outs: list[float] = []
+    for scores in score_panels:
+        ic = daily_ic(scores, forward_returns, method).dropna()
+        if len(ic) < min_days:
+            continue
+        half = int(len(ic) * split)
+        if half < 1 or len(ic) - half < 1:
+            continue
+        ins.append(float(ic.iloc[:half].mean()))
+        outs.append(float(ic.iloc[half:].mean()))
+    if len(ins) < 3:
+        return None
+    if np.std(ins) == 0.0 or np.std(outs) == 0.0:
+        return None  # degenerate (all-identical) neighbourhood — correlation undefined
+    r = float(np.corrcoef(ins, outs)[0, 1])
+    return None if np.isnan(r) else r
+
+
 def icir(ic_series: pd.Series, periods_per_year: int = 252) -> float:
     """ICIR = mean(IC) / std(IC), annualised by sqrt(periods)."""
     ic = ic_series.dropna()

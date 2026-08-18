@@ -28,6 +28,7 @@ from .agents.risk_agent import RiskAgent
 from .backtest import metrics as M
 from .factors.code_generator import CodeGenerator, default_formula_for
 from .factors.memory_manager import MemoryManager
+from .factors.residual_memory import ResidualMemory, edit_motif
 from .factors.semantic_space import SchemaPlan, SemanticSpace
 
 ScoresFn = Callable[[str], pd.Series]  # formula -> factor scores (long panel)
@@ -56,6 +57,7 @@ class EvoQuant:
         risk_agent: Optional[RiskAgent] = None,
         llm=None,
         config=None,
+        residual_memory: Optional[ResidualMemory] = None,
     ) -> None:
         self.space = space or SemanticSpace()
         self.generator = generator or CodeGenerator()
@@ -63,6 +65,7 @@ class EvoQuant:
         self.risk = risk_agent or RiskAgent(llm=llm, config=config)
         self.llm = llm
         self.config = config
+        self.residual_memory = residual_memory or ResidualMemory()
 
     # -- 1. diagnose --------------------------------------------------------
 
@@ -118,12 +121,18 @@ class EvoQuant:
             candidates.insert(0, SchemaPlan(plan.event, plan.context, ("Momentum",), plan.direction, plan.output))
         if "noisy" in joined or "information ratio" in joined:
             candidates.insert(0, SchemaPlan(plan.event, plan.context, ("Low Volatility",), plan.direction, plan.output))
-        # dedupe preserving order
+        # dedupe preserving order; veto edit motifs the residual memory has
+        # already proven to fail repeatedly for this category (memory loop).
+        category = self.residual_memory.category_of(plan)
+        vetoed = self.residual_memory.vetoed_motifs(category)
         seen, out = set(), []
         for c in candidates:
-            if c.key() not in seen:
-                seen.add(c.key())
-                out.append(c)
+            if c.key() in seen:
+                continue
+            if edit_motif(plan, c) in vetoed:
+                continue
+            seen.add(c.key())
+            out.append(c)
         return out[:max(k, 6)]
 
     # -- 3 + 4. validate & distil -------------------------------------------
@@ -154,11 +163,13 @@ class EvoQuant:
         best: Optional[dict] = None
         best_score = -float("inf")
         candidate_records: list[dict] = []
+        scores_list: list[pd.Series] = []
         for idx, cand in enumerate(candidates):
             formula = default_formula_for(cand)
             try:
                 scores = scores_fn(formula)
                 metrics = M.factor_eval(scores, forward, n_trials=n_trials)
+                scores_list.append(scores)
             except Exception as exc:  # an edit that does not evaluate is rejected
                 candidate_records.append(
                     {"plan": cand.to_dict(), "formula": formula, "error": str(exc)}
@@ -170,13 +181,52 @@ class EvoQuant:
             )
             record = {"plan": cand.to_dict(), "formula": formula, "metrics": metrics, "risk_passed": risk["passed"]}
             candidate_records.append(record)
+            # memory loop (记忆回路): record this edit's residual vs the parent so
+            # the search learns which *semantic edits* help and which repeatedly
+            # fail (AlphaMemo residual memory), not just which flat formulas.
+            self.residual_memory.update(
+                category=self.residual_memory.category_of(plan),
+                motif=edit_motif(plan, cand),
+                child_quality=float(metrics.get("rank_ic", 0.0)),
+                parent_quality=float(base_metrics.get("rank_ic", 0.0)),
+                success=risk["passed"],
+            )
             score = metrics.get("rank_ic", -1.0) if risk["passed"] else -2.0
             if score > best_score:
                 best_score = score
                 best = record
 
+        # A3 neighbourhood selection — plateau + in/out IC correlation. Always
+        # *recorded* so the caller can audit; the argmax *rejection* only fires
+        # when config.neighborhood.reject_argmax is on (off by default, so a lone
+        # candidate or a caller that wants plain argmax is unaffected).
+        nb = self.config.section("neighborhood") if self.config else {}
+        ics = [r["metrics"].get("rank_ic") for r in candidate_records if "metrics" in r]
+        is_plateau, support = M.neighborhood_plateau(ics)
+        r_inout = M.in_out_ic_correlation(scores_list, forward)
+        if (
+            best is not None
+            and bool(nb.get("reject_argmax"))
+            and len(ics) >= 3
+            and support < float(nb.get("min_support_fraction", 0.40))
+        ):
+            best = None  # a lone spike — reject the argmax (A3)
+        if (
+            best is not None
+            and bool(nb.get("reject_argmax"))
+            and r_inout is not None
+            and r_inout < float(nb.get("in_out_ic_min_r", -0.20))
+        ):
+            best = None  # ranking does not generalise out-of-sample (A3)
+
         result = EvoResult(diagnosis=diagnosis, candidates=candidate_records, accepted=best)
-        result.metrics = {"base_rank_ic": base_metrics.get("rank_ic", 0.0), "best_rank_ic": best_score}
+        result.metrics = {
+            "base_rank_ic": base_metrics.get("rank_ic", 0.0),
+            "best_rank_ic": best_score,
+            "plateau_support": support,
+            "is_plateau": is_plateau,
+            "in_out_ic_r": r_inout,
+        }
 
         if best is not None:
             # distil the winning experience back into structured memory

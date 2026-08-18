@@ -35,6 +35,24 @@ multiple_hypothesis:
                                 # luck baseline → reject as snooping noise. N is the
                                 # effective independent trial count (family-blocked).
 
+debate:
+  # 辩论评审 (TradingAgents Bull/Bear 对抗 + AgenticAITA)：候选因子必须经得起
+  # 空方质疑，而非只过 risk gate。多空各列证据，judge 取净得分 (margin=bull−bear)。
+  # 默认关闭 require_pass（保持既有接受行为）；开启后 margin < min_margin 的因子
+  # 判为 reject_debate。
+  require_pass: false
+  min_margin: 0                  # bull 净胜 >= 此值才判过（0 = 平局也算过）
+
+neighborhood:
+  # A3 (EP004): 因子不只看「IC 最高那个」，还要看邻近变体是否也高（高原而非
+  # 尖峰），并记录 in/out-sample IC 相关性 r 作为过拟合早期信号。默认关闭
+  # argmax 拒绝（保持纯 argmax 的既有行为）；开启后只有当候选邻域呈高原且
+  # in/out IC 排名可外推时才接受 argmax 选出的因子。
+  reject_argmax: false
+  plateau_band: 0.30              # 与最高 IC 相差 < 30% 视为「同高原」
+  min_support_fraction: 0.40      # 至少 40% 邻近变体落在高原上
+  in_out_ic_min_r: -0.20          # in/out IC 相关性低于此值判为过拟合（排名不可外推）
+
 tail_spread:
   # A4 (EP004): rank-IC is corrupted by mid-book noise; the *traded* top/bottom-
   # decile long-short spread is the true tradeability criterion. A positive IC
