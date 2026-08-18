@@ -14,6 +14,7 @@ from src.factors.code_generator import (
     ast_subtrees,
     bump_lookbacks,
     canonical,
+    causality_check,
     default_formula_for,
     eval_expression,
     extract_lookbacks,
@@ -115,6 +116,33 @@ def test_within_lookback_bounds():
 def test_default_formula_for_deterministic():
     plan = SchemaPlan(event="Earnings Surprise", context="Bull Market", qualities=("Momentum",), direction="long", output="score")
     assert default_formula_for(plan) == default_formula_for(plan)
+
+
+# -- A2: full-vs-truncated causality check (防未来函数) -------------------------
+
+
+def test_causality_check_clean_for_pit_safe_formulas(fctx):
+    assert causality_check("TS_Mean(Close, 5)", fctx.data)["clean"] is True
+    assert causality_check(
+        "Rank_Mul(Rank(Close), Rank(TS_Return(Close, 10)))", fctx.data
+    )["clean"] is True
+
+
+def test_causality_check_detects_future_function(monkeypatch, fctx):
+    import src.factors.code_generator as CG
+
+    def _full_sample_center(s, ctx=None):
+        # value at t depends on the FULL-sample per-symbol mean → future leak
+        return s - s.groupby(level=CG.SYMBOL).transform("mean")
+
+    monkeypatch.setitem(
+        CG.OPERATOR_LIBRARY,
+        "leak_center",
+        CG.Operator("leak_center", 1, _full_sample_center, "full-sample centring", "Test"),
+    )
+    res = causality_check("leak_center(Close)", fctx.data)
+    assert res["clean"] is False
+    assert len(res["violations"]) > 0
 
 
 # -- LIMIT_DOWN blueprint 方案 D: 60-day lookback floor -----------------------

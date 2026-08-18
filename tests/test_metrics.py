@@ -81,3 +81,49 @@ def test_factor_eval_empty():
     fe = M.factor_eval(empty, empty)
     assert fe["n_days"] == 0
     assert fe["significant"] is False
+
+
+# -- Deflated Sharpe (Bailey & López de Prado) -------------------------------
+
+
+def _returns(seed=0, mean=0.002, std=0.01, n=500):
+    rng = np.random.default_rng(seed)
+    return pd.Series(rng.normal(mean, std, n))
+
+
+def test_expected_max_sharpe_monotonic():
+    # more trials OR wider trial variance both raise the luck baseline
+    assert M.expected_max_sharpe(10, 0.5) < M.expected_max_sharpe(1000, 0.5)
+    assert M.expected_max_sharpe(100, 0.1) < M.expected_max_sharpe(100, 1.0)
+    assert M.expected_max_sharpe(1, 1.0) == 0.0  # no trials -> no correction
+
+
+def test_deflated_sharpe_significant_vs_insignificant():
+    strong = _returns(seed=0, mean=0.002, std=0.01)  # ann Sharpe ≈ 3.2
+    weak = _returns(seed=1, mean=0.0003, std=0.01)   # ann Sharpe ≈ 0.5
+    tight = [1.0, 1.05, 0.95, 1.02]
+    hi = M.deflated_sharpe_ratio(
+        strong, n_trials=4, trial_sharpe_variance=float(np.var(tight, ddof=1))
+    )
+    lo = M.deflated_sharpe_ratio(weak, n_trials=1000, trial_sharpe_variance=0.64)
+    assert hi["deflated_sharpe"] is not None and hi["deflated_sharpe"] > 0.9
+    assert lo["deflated_sharpe"] is not None and lo["deflated_sharpe"] < 0.5
+
+
+def test_deflated_sharpe_returns_none_when_undefined():
+    rng = np.random.default_rng(0)
+    short = pd.Series(rng.normal(0, 0.01, 10))  # too few days
+    flat = pd.Series(np.zeros(100))             # no variance
+    assert M.deflated_sharpe_ratio(short, 100, 0.5)["deflated_sharpe"] is None
+    assert M.deflated_sharpe_ratio(flat, 100, 0.5)["deflated_sharpe"] is None
+
+
+def test_factor_eval_tail_spread_and_deflated():
+    sig, fwd = _panel()
+    fe = M.factor_eval(sig, fwd, n_trials=1)
+    # tail spread surfaced; DSR absent without a trial set
+    assert "tail_spread" in fe and fe["tail_spread"] > 0.0
+    assert fe["deflated_sharpe"] is None
+    fe2 = M.factor_eval(sig, fwd, n_trials=4, trial_sharpes=[1.0, 1.1, 0.9, 1.05])
+    assert fe2["deflated_sharpe"] is not None
+    assert 0.0 <= fe2["deflated_sharpe"] <= 1.0

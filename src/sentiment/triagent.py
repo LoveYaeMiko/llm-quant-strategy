@@ -27,6 +27,7 @@ import pandas as pd
 
 from .bert import ChineseBertSentiment
 from .critic import DeepSeekCritic
+from .events import TimelineEvent, render_html
 from .ingestion import NewsIngestor
 from .lexicon import ChineseFinancialLexicon
 
@@ -99,6 +100,7 @@ class TriAgentSentiment:
         lexicon_threshold: float = 0.3,
         bert_threshold: float = 0.25,
         critic_min_articles: int = 3,
+        trace: bool = False,
     ) -> None:
         self.ingestor = ingestor or NewsIngestor()
         self.lexicon = lexicon or ChineseFinancialLexicon()
@@ -107,6 +109,16 @@ class TriAgentSentiment:
         self.lexicon_threshold = lexicon_threshold
         self.bert_threshold = bert_threshold
         self.critic_min_articles = critic_min_articles
+        self.trace_enabled = trace
+        self.last_events: list[TimelineEvent] = []
+
+    # ------------------------------------------------------------- trace (C1)
+    def trace_html(self, title: Optional[str] = None) -> str:
+        """Render the last decision path as a single self-contained HTML file."""
+        return render_html(self.last_events, title=title or "TriAgent 决策回放")
+
+    def trace_events(self) -> list[TimelineEvent]:
+        return self.last_events
 
     # ------------------------------------------------------------------ tiers
     def _tier_word(self, texts: list[str]) -> list[float]:
@@ -123,31 +135,84 @@ class TriAgentSentiment:
         """``(sentiment [0,1], tier_used)`` for one symbol on one date.
 
         The tier string is returned alongside so tests and reports can audit
-        which layers actually fired (cost control).
+        which layers actually fired (cost control). When ``trace_enabled`` the
+        full escalation path is recorded into ``last_events`` for HTML replay.
         """
+        events: list[TimelineEvent] = []
+        ts = str(date)
         items = self.ingestor.get_news(symbol, date)
         texts = [it.to_text() for it in items]
         if not texts:
+            self.last_events = events
             return 0.5, "none"
+
+        if self.trace_enabled:
+            events.append(TimelineEvent(
+                ts, "word", "lexicon",
+                f"{symbol} 检索到 {len(texts)} 条新闻", "note",
+                {"symbol": symbol, "n_articles": len(texts)},
+            ))
 
         lex_scores = self._tier_word(texts)
         mean_lex = float(np.mean(lex_scores))
+        if self.trace_enabled:
+            events.append(TimelineEvent(
+                ts, "word", "lexicon",
+                f"词表得分均值 {mean_lex:+.3f}（阈值 ±{self.lexicon_threshold}）",
+                "score", {"mean": round(mean_lex, 4), "scores": [round(s, 3) for s in lex_scores]},
+            ))
 
         if abs(mean_lex) >= self.lexicon_threshold:
-            return _mean01(lex_scores), "word"
+            final = _mean01(lex_scores)
+            if self.trace_enabled:
+                events.append(TimelineEvent(
+                    ts, "decision", "triagent",
+                    f"词表已决断 → {final:.3f}", "decision",
+                    {"tier": "word", "final": round(final, 4)},
+                ))
+            self.last_events = events
+            return final, "word"
 
         bert_scores = self._tier_bert(texts)
         disp = float(np.std(bert_scores))
-        if disp > self.bert_threshold and len(texts) >= self.critic_min_articles:
-            critic_score = self._tier_critic(symbol, texts, bert_scores)
-            final = (
-                0.5 * critic_score
-                + 0.3 * _mean01(bert_scores)
-                + 0.2 * _mean01(lex_scores)
-            )
-            return float(np.clip(final, 0.0, 1.0)), "critic"
+        if self.trace_enabled:
+            events.append(TimelineEvent(
+                ts, "bert", "bert",
+                f"BERT 重评分，分歧度 σ={disp:.3f}（阈值 {self.bert_threshold}）",
+                "score", {"std": round(disp, 4)},
+            ))
 
-        return _mean01(bert_scores), "bert"
+        if disp > self.bert_threshold and len(texts) >= self.critic_min_articles:
+            if self.trace_enabled:
+                events.append(TimelineEvent(
+                    ts, "critic", "critic",
+                    f"高分岐 → 升级 critic（{len(texts)} 篇 ≥ {self.critic_min_articles}）",
+                    "escalate", {},
+                ))
+            critic_score = self._tier_critic(symbol, texts, bert_scores)
+            final = float(np.clip(
+                0.5 * critic_score + 0.3 * _mean01(bert_scores) + 0.2 * _mean01(lex_scores),
+                0.0, 1.0,
+            ))
+            if self.trace_enabled:
+                events.append(TimelineEvent(
+                    ts, "decision", "triagent",
+                    f"加权融合 0.5·critic + 0.3·bert + 0.2·lex → {final:.3f}",
+                    "decision",
+                    {"tier": "critic", "critic": round(critic_score, 4), "final": round(final, 4)},
+                ))
+            self.last_events = events
+            return final, "critic"
+
+        final = _mean01(bert_scores)
+        if self.trace_enabled:
+            events.append(TimelineEvent(
+                ts, "decision", "triagent",
+                f"BERT 均值 → {final:.3f}", "decision",
+                {"tier": "bert", "final": round(final, 4)},
+            ))
+        self.last_events = events
+        return final, "bert"
 
     # ---------------------------------------------------------- report titles
     def score_titles(self, titles: list[str]) -> pd.DataFrame:

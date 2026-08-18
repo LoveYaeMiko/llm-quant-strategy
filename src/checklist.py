@@ -28,7 +28,7 @@ from .config import Config
 from .cost_tracker import CostTracker
 from .data.ingestion.convert import PRICE as PRICE_RECORD, UNIVERSE as UNIVERSE_RECORD
 from .data.point_in_time_loader import PointInTimeStore
-from .factors.code_generator import CodeGenerator, ast_distance, parse_expression
+from .factors.code_generator import CodeGenerator, ast_distance, causality_check, parse_expression
 
 
 @dataclass
@@ -136,6 +136,43 @@ def diversity_check(formulas: list[str], min_distance: float = 0.25) -> CheckRes
         passed=min_d >= min_distance,
         detail=f"min pairwise AST distance = {min_d:.2f} (floor {min_distance})",
         meta={"min_distance": float(min_d), "n_formulas": len(nodes)},
+    )
+
+
+# ---------------------------------------------------------------------------
+# 3b. Causality check (full vs truncated — 防未来函数)
+# ---------------------------------------------------------------------------
+
+
+def factor_causality_check(
+    formulas: list[str],
+    data: pd.DataFrame,
+    *,
+    n_probe_dates: int = 10,
+    tolerance: float = 1e-9,
+) -> CheckResult:
+    """A2: every accepted formula's value at ``t`` must be identical whether the
+    panel is full or truncated to ``t``. Any mismatch is a future-data leak.
+    """
+    checked = 0
+    failures: list[str] = []
+    for f in formulas:
+        try:
+            res = causality_check(f, data, n_probe_dates=n_probe_dates, tolerance=tolerance)
+        except Exception as exc:  # noqa: BLE001 — an unparsable formula fails the gate
+            failures.append(f"{f}: error {exc}")
+            continue
+        checked += 1
+        if not res["clean"]:
+            failures.append(f"{f}: {len(res['violations'])} probe dates differ")
+    return CheckResult(
+        name="causality",
+        passed=checked > 0 and not failures,
+        detail=(
+            f"causality clean across {checked} formulas"
+            if not failures else f"{len(failures)}/{checked} formulas read future data"
+        ),
+        meta={"n_formulas": checked, "failures": failures[:10]},
     )
 
 
@@ -321,6 +358,7 @@ def run_all(
     config: Optional[Config] = None,
     freshness_as_of: Optional[str] = None,
     real_data_audit: bool = False,
+    factor_data: Optional[pd.DataFrame] = None,
 ) -> list[CheckResult]:
     formulas = formulas or [
         "Rank_Mul(Rank(Close), Rank(TS_Return(Close, 10)))",
@@ -333,6 +371,8 @@ def run_all(
         diversity_check(formulas, min_distance=min_d),
         cost_check(tracker),
     ]
+    if factor_data is not None:
+        checks.append(factor_causality_check(formulas, factor_data))
     if store is not None:
         ts = str(config.get("pit.validation_timestamp", "2019-06-28")) if config else "2019-06-28"
         forbidden = str(config.get("pit.forbidden_future_date", "2019-07-01")) if config else "2019-07-01"
@@ -375,6 +415,7 @@ __all__ = [
     "pit_check",
     "fincad_check",
     "diversity_check",
+    "factor_causality_check",
     "cost_check",
     "no_future_leak_check",
     "adjustment_consistency_check",

@@ -36,7 +36,13 @@ import numpy as np
 import pandas as pd
 
 from .backtest.engine import BacktestConfig, PointInTimeBacktest
-from .backtest.metrics import daily_ic, factor_eval, icir
+from .backtest.metrics import (
+    daily_ic,
+    deflated_sharpe_ratio,
+    factor_eval,
+    icir,
+    tail_long_short_returns,
+)
 from .factors.code_generator import CodeGenerator, ast_distance, eval_expression
 from .monitoring.decay_tracker import DecayTracker
 
@@ -59,12 +65,30 @@ def evaluate_pool(
     a passing factor downstream.
     """
     out: dict[str, dict] = {}
+    scores_by_f: dict[str, pd.Series] = {}
     for f in formulas:
         try:
             scores = eval_expression(f, fctx)
+            scores_by_f[f] = scores
             out[f] = factor_eval(scores, forward_returns, n_trials=n_trials)
         except Exception as exc:  # noqa: BLE001 — a bad formula must not kill the pool
             out[f] = {"error": str(exc)}
+    # Deflated Sharpe (Bailey & López de Prado): the "best of N" luck correction.
+    # Trial-Sharpe variance comes from every *valid* formula scored this pass;
+    # ``n_trials`` is the effective independent count (post family-blocking), so
+    # the correction targets snooping without over-penalising real factors.
+    trial_sharpes = [
+        float(m["sharpe"])
+        for f, m in out.items()
+        if f in scores_by_f and isinstance(m, dict) and m.get("sharpe") is not None
+    ]
+    if n_trials > 1 and len(trial_sharpes) >= 2:
+        var = float(np.var(trial_sharpes, ddof=1))
+        for f, scores in scores_by_f.items():
+            ls_ret = tail_long_short_returns(scores, forward_returns)
+            if ls_ret.empty:
+                continue
+            out[f].update(deflated_sharpe_ratio(ls_ret, n_trials, var))
     return out
 
 

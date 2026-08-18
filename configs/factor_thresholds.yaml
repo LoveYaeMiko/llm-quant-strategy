@@ -30,6 +30,17 @@ multiple_hypothesis:
   alpha: 0.05
   bonferroni: true              # FINSABER compliance: correct for 100s of trials
   min_t_stats: 3.0
+  min_deflated_sharpe: 0.90     # Deflated Sharpe (Bailey & López de Prado): below
+                                # this the factor does NOT beat the max-Sharpe-by-
+                                # luck baseline → reject as snooping noise. N is the
+                                # effective independent trial count (family-blocked).
+
+tail_spread:
+  # A4 (EP004): rank-IC is corrupted by mid-book noise; the *traded* top/bottom-
+  # decile long-short spread is the true tradeability criterion. A positive IC
+  # with a negative annualised tail spread is a non-tradeable level effect.
+  reject_level_effect: true
+  min_annualized: 0.0
 
 diversity:
   # 2026-08-10 lowered 0.40 -> 0.25 (validation remedy): under template
@@ -47,3 +58,9 @@ pit:
 
 online:
   export_ic_threshold: 0.04     # a factor passing this is distilled to online/
+
+notify:
+  # C2: structured daily digest + webhook notification. The webhook URL carries
+  # a token — keep it in .env and reference it here, never commit the raw URL.
+  webhook_url: "${NOTIFY_WEBHOOK_URL}"
+  send_on_accept: true           # only push when at least one factor was accepted

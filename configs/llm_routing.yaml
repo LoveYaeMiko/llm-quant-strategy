@@ -10,10 +10,19 @@
 
 routing:
   api:
+    provider: deepseek                 # B1: registry key in llm_client.PROVIDERS
     base_url: ${DEEPSEEK_BASE_URL}      # OpenAI-compatible endpoint
     api_key: ${DEEPSEEK_API_KEY}
     default_model: ${DEEPSEEK_MODEL}    # deepseek-v4-flash
     timeout_seconds: 60
+  quick:
+    # B2 cheap tier — intermediate reasoning (schema / code generation).
+    model: "deepseek-v4-flash"
+  deep:
+    # B2 expensive tier — synthesis / judgment (critic, diagnosis). Swap this
+    # one line for a stronger DeepSeek model when the budget allows it; the
+    # router picks it up with no code change.
+    model: "deepseek-v4-flash"
   generator:
     model: "deepseek-v4-flash"          # cheap — schema / hypothesis generation
     role: "schema_generation"

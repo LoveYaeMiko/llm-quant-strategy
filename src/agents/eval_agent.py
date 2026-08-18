@@ -10,7 +10,7 @@ that gate is the difference between a $20/mo pipeline and a $5,000/mo one.
 from __future__ import annotations
 
 from collections import deque
-from typing import Optional
+from typing import Optional, Sequence
 
 from ..backtest import metrics as M
 from ..backtest.engine import BacktestConfig, PointInTimeBacktest
@@ -103,6 +103,7 @@ class EvalAgent(BaseAgent):
         *,
         forward_tradable=None,
         benchmark=None,
+        trial_sharpes: Optional[Sequence[float]] = None,
     ) -> dict:
         # LIMIT_DOWN blueprint 方案 B: the backtest's Sharpe / max-drawdown run on
         # price-limit-lock-masked forward returns (untradeable -10% continuations
@@ -113,7 +114,7 @@ class EvalAgent(BaseAgent):
         # (``sharpe.max_drawdown_limit``) is used instead.
         tradable = forward_tradable if forward_tradable is not None else forward
         bt = self.backtester.run(scores, tradable, benchmark=benchmark)
-        fe = M.factor_eval(scores, forward, n_trials=n_trials)
+        fe = M.factor_eval(scores, forward, n_trials=n_trials, trial_sharpes=trial_sharpes)
         metrics: dict = {**fe, **bt.metrics}
         if self.config is not None and (self.config.get("risk_management.crisis_test") or {}).get("enabled", False):
             metrics["crisis"] = self._crisis_metrics(
@@ -215,10 +216,25 @@ class EvalAgent(BaseAgent):
                 crisis_value = metrics.get("crisis_max_drawdown", 0.0)
             if crisis_value > crisis_limit:
                 return "reject_crisis"
+        # A4 (EP004): level-effect guard — positive IC but a *negative* traded
+        # tail long-short spread means mid-book noise, not a tradeable signal.
+        ts_cfg = (cfg.get("tail_spread") if cfg else {}) or {}
+        tail_spread = metrics.get("tail_spread")
+        if ts_cfg.get("reject_level_effect", True) and tail_spread is not None:
+            if metrics.get("rank_ic", 0.0) > 0 and float(tail_spread) < float(
+                ts_cfg.get("min_annualized", 0.0)
+            ):
+                return "reject_level_effect"
         if n_trials > 1 and not metrics.get("significant", False):
             # FINSABER: significance after multiple-hypothesis correction
             if metrics.get("rank_ic", 0.0) < good_ic:
                 return "reject_snooped"
+        # A1 (Deflated Sharpe): "best of N" luck correction — a factor that does
+        # not beat the max-Sharpe-by-luck baseline is likely snooping noise.
+        dsr = metrics.get("deflated_sharpe")
+        if n_trials > 1 and dsr is not None:
+            if float(dsr) < float(mh.get("min_deflated_sharpe", 0.90)):
+                return "reject_deflated"
         rank_ic = metrics.get("rank_ic", 0.0)
         icir_v = metrics.get("icir", 0.0)
         if rank_ic >= good_ic:
@@ -239,10 +255,12 @@ class EvalAgent(BaseAgent):
         *,
         forward_tradable=None,
         benchmark=None,
+        trial_sharpes: Optional[Sequence[float]] = None,
     ) -> AgentResult:
         metrics = self.evaluate(
             context, scores, forward, n_trials=n_trials,
             forward_tradable=forward_tradable, benchmark=benchmark,
+            trial_sharpes=trial_sharpes,
         )
         return AgentResult(
             agent=self.name,

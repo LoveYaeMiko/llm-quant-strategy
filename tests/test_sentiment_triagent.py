@@ -163,3 +163,57 @@ def test_ensure_report_scores_cache_dedupes(tmp_path):
     s2 = ensure_report_scores(reports, agent, cache, tier="triagent", workers=1)
     assert agent.calls == 1
     assert s2["final"].between(0.0, 1.0).all()
+
+
+# ---------------------------------------------------------------------------
+# C1 — timeline events + single-file HTML replay
+# ---------------------------------------------------------------------------
+
+
+def test_trace_records_escalation_path_and_html():
+    critic = _FakeCritic()
+    agent = TriAgentSentiment(
+        ingestor=_FakeIngestor({("600519.SH", "2026-08-11"): [
+            _make_news_item(t) for t in
+            ("今日窄幅震荡", "盘中大幅异动", "尾盘快速拉升", "市场情绪谨慎")
+        ]}),
+        lexicon=_FakeLexicon(), bert=_FakeBert(), critic=critic,
+        trace=True,
+    )
+    s, tier = agent.compute_emotion("600519.SH", "2026-08-11")
+    assert tier == "critic"
+    events = agent.trace_events()
+    assert [e.phase for e in events] == ["word", "word", "bert", "critic", "decision"]
+    html = agent.trace_html()
+    assert html.startswith("<!doctype html>")
+    assert "600519.SH" in html
+    assert "加权融合" in html
+
+
+def test_trace_disabled_by_default_leaves_no_events():
+    agent = TriAgentSentiment(
+        ingestor=_FakeIngestor({("600519.SH", "2026-08-11"): [_make_news_item("业绩增长超预期")]}),
+        lexicon=_FakeLexicon(), bert=_FakeBert(), critic=_FakeCritic(),
+    )
+    agent.compute_emotion("600519.SH", "2026-08-11")
+    assert agent.trace_events() == []
+
+
+def test_render_html_escapes_content():
+    from src.sentiment.events import TimelineEvent, render_html
+
+    ev = TimelineEvent("2024-01-01", "note", "x", "<script>alert(1)</script>", "note", {})
+    out = render_html([ev])
+    assert "<script>alert(1)</script>" not in out
+    assert "&lt;script&gt;" in out
+
+
+def test_events_to_json_serializable():
+    import json
+
+    from src.sentiment.events import TimelineEvent, events_to_json
+
+    ev = TimelineEvent("2024-01-01", "decision", "triagent", "ok", "decision", {"final": 0.7})
+    data = json.loads(events_to_json([ev]))
+    assert data[0]["phase"] == "decision"
+    assert data[0]["meta"]["final"] == 0.7

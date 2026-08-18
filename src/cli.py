@@ -51,6 +51,7 @@ from .factors.memory_manager import MemoryManager
 from .factors.semantic_space import SchemaPlan, SemanticSpace
 from .llm_client import build_llm_backend
 from .online.signal_calculator import compile_factor
+from .reporting import build_digest, build_notifier
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -579,6 +580,7 @@ def cmd_mine(args) -> int:
         store=store,
         tracker=p["costs"],
         config=cfg,
+        factor_data=long,
     )
     p["auditor"].set_checklist(
         record, **{c.name: c.passed for c in checks},
@@ -596,6 +598,19 @@ def cmd_mine(args) -> int:
     for c in checks:
         print(f"  [{'PASS' if c.passed else 'FAIL'}] {c.name:10s} {c.detail}")
     print(f"\ncost: {p['costs'].snapshot()}")
+
+    # ---- C2: structured daily digest + webhook notification -----------------
+    digest = build_digest(
+        run_id=run_id,
+        accepted=accepted,
+        checklist=checks,
+        cost_snapshot=p["costs"].snapshot(),
+    )
+    digest_path = out / f"digest_{run_id}.md"
+    digest_path.write_text(digest, encoding="utf-8")
+    sent = build_notifier(cfg).send_digest(digest)
+    print(f"\ndigest: {digest_path} (webhook {'sent' if sent else 'not configured'})")
+
     print(f"artifacts: {out / 'memory.json'}, {out / f'audit_{run_id}.json'}, {out / 'factors.json'}")
     return 0 if all(c.passed for c in checks) else 1
 
@@ -889,7 +904,9 @@ def cmd_sentiment_factor(args) -> int:
         return 2
     reports = ingestor.load(symbols=symbols)
 
-    backend = build_llm_backend(cfg, CostTracker())
+    # B2: the critic is the synthesis/judgment node → deep tier; the generator
+    # and code paths (built in _pipeline) stay on the cheap quick tier.
+    backend = build_llm_backend(cfg, CostTracker(), tier="deep")
     agent = TriAgentSentiment(
         lexicon=ChineseFinancialLexicon(),
         bert=ChineseBertSentiment() if args.tier == "triagent" else None,

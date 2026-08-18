@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -462,6 +462,70 @@ def eval_expression(formula: str, ctx: FactorContext) -> pd.Series:
     node = parse_expression(formula)
     validate(node)
     return evaluate(node, ctx)
+
+
+def _probe_dates(dates: Sequence, n: int) -> list:
+    dates = list(dates)
+    if len(dates) <= n:
+        return dates
+    idx = np.linspace(0, len(dates) - 1, int(n)).round().astype(int)
+    return [dates[i] for i in sorted(set(idx.tolist()))]
+
+
+def causality_check(
+    formula: str,
+    data: pd.DataFrame,
+    *,
+    n_probe_dates: int = 10,
+    tolerance: float = 1e-9,
+) -> dict:
+    """Full-vs-truncated causality check — prove a formula reads no future data.
+
+    For each probe date ``t`` the formula is evaluated on the full panel and on a
+    panel truncated to ``t``; the value at ``t`` must be identical in both. A
+    mismatch means the value at ``t`` depends on rows after ``t`` — a look-ahead
+    function (e.g. full-sample centring instead of a trailing rolling window).
+
+    The built-in operator library is causal by construction, so this is a
+    regression guard: it turns a silent future-function regression into a hard
+    gate rather than a discovered-after-deploy incident.
+    """
+    full = eval_expression(formula, FactorContext(data))
+    if not isinstance(full, pd.Series):
+        # a pure literal has no time dependence at all — trivially causal
+        return {"clean": True, "violations": [], "n_probe_dates": 0}
+    dates = sorted(data.index.get_level_values(DATE).unique())
+    probe = _probe_dates(dates, n_probe_dates)
+    violations: list[tuple[str, int, float]] = []
+    for t in probe:
+        sub = data[data.index.get_level_values(DATE) <= t]
+        if sub.empty:
+            continue
+        try:
+            trunc = eval_expression(formula, FactorContext(sub))
+        except Exception:
+            # too little history for this formula at this date — not a leak
+            continue
+        f = full.xs(t, level=DATE)
+        g = trunc.xs(t, level=DATE)
+        common = f.index.intersection(g.index)
+        if common.empty:
+            continue
+        a = f.loc[common].astype(float)
+        b = g.loc[common].astype(float)
+        one_nan = a.isna() ^ b.isna()          # exactly one side missing
+        diff = (a - b).abs()
+        numeric_bad = diff > tolerance          # NaN > tol is False
+        bad = one_nan | numeric_bad
+        n_bad = int(bad.sum())
+        if n_bad:
+            worst = float(diff[numeric_bad].max()) if int(numeric_bad.sum()) else float("nan")
+            violations.append((str(t.date()), n_bad, worst))
+    return {
+        "clean": not violations,
+        "violations": violations,
+        "n_probe_dates": len(probe),
+    }
 
 
 # ---------------------------------------------------------------------------
