@@ -72,6 +72,11 @@ class OrderExecutor:
         self.positions: dict[str, float] = {}
         self.rng = np.random.default_rng(seed)  # deterministic per seed
 
+    def restore(self, cash: float, positions: dict[str, float]) -> None:
+        """Resume from a persisted account state (paper-trading ledger)."""
+        self.cash = float(cash)
+        self.positions = {k: float(v) for k, v in positions.items()}
+
     # -- order book ----------------------------------------------------------
 
     def _quote(self, price: float, side: str) -> float:
@@ -121,7 +126,11 @@ class OrderExecutor:
                 fill_price = self._quote(price, side)
                 fee = self._fee(abs(delta) * fill_price)
                 self.cash -= delta * fill_price + fee
-                self.positions[symbol] = current + delta
+                new_shares = current + delta
+                if abs(new_shares) < 1e-9:
+                    self.positions.pop(symbol, None)  # fully closed — drop the name
+                else:
+                    self.positions[symbol] = new_shares
                 result.fills.append(
                     Fill(
                         date=str(date),

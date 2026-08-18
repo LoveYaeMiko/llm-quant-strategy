@@ -82,3 +82,16 @@ notify:
   # a token — keep it in .env and reference it here, never commit the raw URL.
   webhook_url: "${NOTIFY_WEBHOOK_URL}"
   send_on_accept: true           # only push when at least one factor was accepted
+
+paper:
+  # 模拟盘长期测试 (simulated paper trading)：把 Phase 10 三层组合接上日度循环，
+  # 逐日调仓/成交/盯市并持久化持仓与资金。账本为 SQLite，进程重启后可续跑。
+  ledger_db: "outputs/paper_ledger.sqlite"
+  initial_cash: 100000.0
+  rebalance_days: 1              # 1 = 日度调仓（Phase 10 回测口径）；>1 = 每隔 N 个交易日
+  slippage_bps: 2.0
+  commission_bps: 5.0
+  min_commission: 1.0
+  max_position_pct: 0.05
+  pit_strict: true               # 成交价/成交日期不得越界（成交侧 PIT 硬守卫）
+  output_json: "outputs/paper_run.json"

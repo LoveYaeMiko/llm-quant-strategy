@@ -1331,6 +1331,137 @@ def cmd_pool(args) -> int:
 # ---------------------------------------------------------------------------
 
 
+def cmd_paper(args) -> int:
+    """Simulated paper trading — the resumable daily loop (simulated 模拟盘).
+
+    Bridges the backtest → paper-trading gap: the Phase 10 three-layer
+    portfolio is priced day-by-day through the order executor (slippage /
+    commission / cash account) with a SQLite ledger that persists cash,
+    positions and fills so the run can be resumed after a restart.
+
+    Fully offline when no PIT database is set (synthetic market + a default
+    factor); the PEAD tilt and sentiment risk overlay attach automatically when
+    their cached data is present and are otherwise skipped with a warning.
+    """
+    cfg = load_config()
+    pcfg = cfg.section("paper")
+
+    start, end = args.start, args.end
+    if not start and not end:
+        start = cfg.get("research.test_start")
+        end = cfg.get("research.test_end")
+
+    # market (real PIT store when set, else synthetic) + 360d warmup so the
+    # alpha lookbacks (120/240d) are filled before the first window date.
+    market = _market_data(cfg, seed=args.seed, symbols=args.symbols)
+    if start:
+        warmup_start = (pd.Timestamp(start) - pd.Timedelta(days=360)).date().isoformat()
+        market = _slice_market(market, warmup_start, end)
+    elif end:
+        market = _slice_market(market, None, end)
+    symbols = args.symbols or sorted(market.price_panel.columns)
+
+    # alpha core — the Phase 8 low-vol/low-turnover pool (outputs/factors.json),
+    # or a default factor offline.
+    from .factors.code_generator import FactorContext
+    from .portfolio.alpha_core import AlphaCore
+
+    pool_file = _out_dir() / "factors.json"
+    if pool_file.exists():
+        with open(pool_file, "r", encoding="utf-8") as fh:
+            formulas = [a.get("factor", {}).get("formula", a.get("formula")) for a in json.load(fh)]
+        formulas = [f for f in formulas if isinstance(f, str) and f.strip()]
+    else:
+        formulas = []
+    if not formulas:
+        formulas = ["Rank(Close)"]
+    fctx = FactorContext(market.long)
+    alpha = AlphaCore(fctx, formulas, long_pct=0.10, short_pct=0.10,
+                      max_position_pct=float(pcfg.get("max_position_pct", 0.05)))
+    print(f"alpha core: {len(formulas)} factor(s), {alpha.composite.notna().sum()} non-NaN cells")
+
+    # optional overlays (best-effort, real cached data only)
+    tilt = risk = None
+    # Overlays need real PEAD / report-sentiment caches keyed to real symbols —
+    # when there is no PIT database the market is synthetic and every overlay
+    # fetch would be a wasted (and invalid) network call, so skip them.
+    if cfg.get("data.pit_database_url"):
+        try:
+            from .data.financials import ensure_profit_panel
+            from .factors.pead import PEADFactor
+            from .portfolio.seasonal_tilt import PEADSeasonalTilt
+
+            pead_cfg = cfg.get("pead") or {}
+            years = [int(y) for y in range(2020, 2026)]
+            panel = ensure_profit_panel(symbols, years, cache_dir=str(pead_cfg.get("cache_dir", "data/financials")))
+            pead = PEADFactor(panel, signal_expiry_days=int(pead_cfg.get("signal_expiry_days", 60)),
+                              min_eps_history=int(pead_cfg.get("min_eps_history", 8)))
+            tilt = PEADSeasonalTilt(pead, universe=symbols)
+            print(f"pead tilt: {len(pead.symbols)} symbols with quarterly EPS")
+        except Exception as exc:  # noqa: BLE001 — offline / no cached profit panel
+            print(f"WARNING: PEAD tilt unavailable ({exc}) — alpha-only", file=sys.stderr)
+
+        try:
+            from .portfolio.risk_overlay import SentimentRiskOverlay
+            from .sentiment.ingestion import ReportIngestor
+            from .sentiment.triagent import build_report_signal
+
+            sent_cfg = cfg.get("sentiment") or {}
+            report_dir = str(sent_cfg.get("report_dir", "data/reports"))
+            score_cache = str(sent_cfg.get("score_cache", "data/reports/report_sentiment.parquet"))
+            decay = int(sent_cfg.get("decay_days", 10))
+            ingestor = ReportIngestor(report_dir)
+            have = set(symbols) & set(ingestor.cached_symbols())
+            if have:
+                reports = ingestor.load(symbols=sorted(have))
+                scores = pd.read_parquet(score_cache)
+                td = sorted(market.forward_returns.index.get_level_values(0).unique())
+                sig = build_report_signal(reports, scores, td, sorted(have), decay_days=decay)
+                rk = {k: v for k, v in (cfg.get("risk_overlay") or {}).items()
+                      if k in {"zscore_threshold", "position_cut", "freeze_days", "min_trigger_samples"}}
+                risk = SentimentRiskOverlay(sig, **rk)
+                print(f"risk overlay: {int(sig.notna().sum())} sentiment cells")
+            else:
+                print("WARNING: no cached reports — risk overlay is a no-op", file=sys.stderr)
+        except Exception as exc:  # noqa: BLE001 — offline / no cached sentiment
+            print(f"WARNING: risk overlay unavailable ({exc}) — no sentiment cut", file=sys.stderr)
+
+    from .paper import PaperLedger, PaperRunner
+    from .portfolio.layer_integration import ThreeLayerPortfolio
+
+    ledger = PaperLedger(args.ledger or str(pcfg.get("ledger_db", "outputs/paper_ledger.sqlite")))
+    runner = PaperRunner(
+        ThreeLayerPortfolio(alpha, tilt=tilt, risk=risk),
+        market,
+        ledger,
+        symbols=symbols,
+        cash=float(pcfg.get("initial_cash", 100_000.0)),
+        slippage_bps=float(pcfg.get("slippage_bps", 2.0)),
+        commission_bps=float(pcfg.get("commission_bps", 5.0)),
+        min_commission=float(pcfg.get("min_commission", 1.0)),
+        max_position_pct=float(pcfg.get("max_position_pct", 0.05)),
+        rebalance_days=int(pcfg.get("rebalance_days", 1)),
+        pit_strict=bool(pcfg.get("pit_strict", True)),
+        seed=args.seed,
+    )
+    result = runner.run(start=start, end=end)
+    ledger.close()
+
+    m = result.get("metrics", {})
+    print("\n=== PAPER TRADING ===")
+    print(f"  days={m.get('n_days', 0)}  fills={m.get('n_fills', 0)}  "
+          f"commission={m.get('total_commission', 0)}")
+    print(f"  total_ret={m.get('total_return', 0):.1%}  ann_ret={m.get('annualized_return', 0):.1%}  "
+          f"sharpe={m.get('sharpe', 0):.2f}  maxDD={m.get('max_drawdown', 0):.1%}")
+    print(f"  final_equity={m.get('final_equity', 0):,.2f}  final_cash={m.get('final_cash', 0):,.2f}")
+
+    out = args.output or str(pcfg.get("output_json", "outputs/paper_run.json"))
+    Path(out).parent.mkdir(parents=True, exist_ok=True)
+    Path(out).write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    print(f"  wrote {out}  (ledger {ledger.db_path})")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="llm-quant",
@@ -1534,6 +1665,18 @@ def main(argv: list[str] | None = None) -> int:
     pfl.add_argument("--output", type=str, default=None,
                      help="output JSON (default: outputs/factors_with_decay.json)")
     pfl.set_defaults(func=cmd_pool)
+
+    p_paper = sub.add_parser("paper", help="simulated paper trading — resumable daily loop over the three-layer portfolio")
+    p_paper.add_argument("--start", type=str, default=None)
+    p_paper.add_argument("--end", type=str, default=None)
+    p_paper.add_argument("--symbols", nargs="*", default=None,
+                         help="override research.universe (e.g. explicit HS300 names)")
+    p_paper.add_argument("--seed", type=int, default=1)
+    p_paper.add_argument("--ledger", type=str, default=None,
+                         help="SQLite ledger path (default: config paper.ledger_db)")
+    p_paper.add_argument("--output", type=str, default=None,
+                         help="JSON output path (default: config paper.output_json)")
+    p_paper.set_defaults(func=cmd_paper)
 
     args = parser.parse_args(argv)
     try:
