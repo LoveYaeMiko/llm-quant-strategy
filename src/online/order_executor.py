@@ -115,6 +115,8 @@ class OrderExecutor:
         """
         result = OrderResult(positions=self.positions)
         equity = equity if equity is not None else self.cash
+        if not np.isfinite(equity) or equity <= 0:
+            equity = self.cash
 
         for date in targets.index:
             row = targets.loc[date].dropna()
@@ -159,6 +161,16 @@ class OrderExecutor:
         return result
 
     def settle(self, prices: pd.Series) -> float:
-        """Mark the book to market at ``prices`` and return total equity."""
-        mv = sum(self.positions.get(s, 0.0) * float(prices.get(s, 0.0)) for s in self.positions)
+        """Mark the book to market at ``prices`` and return total equity.
+
+        A suspended name has no close on ``prices`` (the PIT panel keeps
+        ``fill_method=None`` gaps) — skip it rather than letting a NaN propagate
+        into cash via ``self.cash + NaN`` (SQLite then stores NaN as NULL and
+        trips the ``daily_state.cash NOT NULL`` guard on ``record_day``).
+        """
+        mv = 0.0
+        for s, shares in self.positions.items():
+            px = prices.get(s, np.nan)
+            if np.isfinite(px):
+                mv += shares * float(px)
         return self.cash + mv

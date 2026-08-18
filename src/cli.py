@@ -1574,7 +1574,11 @@ def cmd_calibrate(args) -> int:
 
     from .paper import PaperLedger
 
-    ledger = PaperLedger(str(cfg.section("paper").get("ledger_db", "outputs/paper_ledger.sqlite")))
+    # Cost calibration recomputes the *accumulated* shadow fills (the real
+    # point-in-time data the daily shadow run appends to ``shadow.ledger_db``),
+    # not the separate ``paper`` backtest ledger — the latter is never populated
+    # by the shadow/calibrate loop and would leave the deviation report at 0.
+    ledger = PaperLedger(str(cfg.section("shadow").get("ledger_db", "outputs/shadow_ledger.sqlite")))
     fills = ledger.fills()
     ledger.close()
 

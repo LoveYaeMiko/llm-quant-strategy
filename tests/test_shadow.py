@@ -105,9 +105,12 @@ def test_real_cost_model():
 def test_paper_runner_kwargs():
     kw = paper_runner_kwargs(load_config())
     assert kw["cash"] == 100000.0
-    assert kw["commission_bps"] == 5.0
-    assert kw["stamp_tax_sell_bps"] == 0.0
-    assert kw["transfer_fee_bps"] == 0.0
+    # §7 calibration writes the real A-share cost structure back into the
+    # ``paper`` section (see test_real_cost_model), so these are now 2.5 / 5.0
+    # / 0.1 rather than the pre-calibration flat defaults.
+    assert kw["commission_bps"] == 2.5
+    assert kw["stamp_tax_sell_bps"] == 5.0
+    assert kw["transfer_fee_bps"] == 0.1
     assert kw["max_position_pct"] == 0.05
     assert kw["pit_strict"] is True
 

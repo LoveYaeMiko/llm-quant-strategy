@@ -182,11 +182,10 @@ class PostgresPointInTimeLoader:
         sql += " ORDER BY valid_from"
         with self._conn.cursor() as cur:
             cur.execute(sql, params)
-            rows = [
+            return _rows_to_frame(
                 {"symbol": s, "valid_from": vf, "valid_to": vt, "payload": p}
-                for s, vf, vt, p in cur.fetchall()
-            ]
-        return _rows_to_frame(rows)
+                for s, vf, vt, p in cur
+            )
 
     def symbols(self, record_type: Optional[str] = None) -> list[str]:
         sql = "SELECT DISTINCT symbol FROM pit_records"

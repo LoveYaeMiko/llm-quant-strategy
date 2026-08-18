@@ -73,18 +73,29 @@ def _rows_to_frame(rows: Iterable[dict], fields: Optional[Iterable[str]] = None)
 
     Always materializes ``valid_to`` (NaT for open-ended rows) and coerce-casts
     timestamps, so in-memory and DB backends return identical query shapes.
+
+    Built column-wise in a single pass (no per-row dict list) so a full-history
+    ``snapshot`` can stream the ~12M-row price panel without the ~18 GiB spike
+    that previously OOM'd the daily shadow run. A key first seen on a later row
+    back-fills ``None`` for the earlier rows, preserving the union-of-keys
+    semantics of the old ``pd.DataFrame(list_of_dicts)`` construction.
     """
-    rows = list(rows)
-    if not rows:
-        return pd.DataFrame()
-    out = []
+    columns: dict[str, list] = {}
+    n = 0
     for row in rows:
         rec = json.loads(row["payload"])
         rec[SYMBOL] = row["symbol"]
         rec[VALID_FROM] = _as_ts(row["valid_from"])
         rec[VALID_TO] = pd.NaT if row["valid_to"] is None else _as_ts(row["valid_to"])
-        out.append(rec)
-    df = pd.DataFrame(out)
+        for key in rec:
+            if key not in columns:
+                columns[key] = [None] * n
+        for key in columns:
+            columns[key].append(rec.get(key))
+        n += 1
+    if not columns:
+        return pd.DataFrame()
+    df = pd.DataFrame(columns)
     if fields is not None:
         want = [SYMBOL] + [c for c in fields if c in df.columns and c not in _META_COLUMNS]
         df = df[list(dict.fromkeys(want))]
