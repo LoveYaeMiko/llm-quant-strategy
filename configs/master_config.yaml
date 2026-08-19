@@ -240,6 +240,8 @@ shadow:
   refresh_sentiment: true            # 增量 AKShare 研报（重取全部，较重）
   status_json: "outputs/shadow_status.json"
   report_md: "outputs/shadow_report.md"
+  refresh_benchmark: true             # 运行前抓取 HS300 指数基准（失败保留旧缓存）
+  benchmark_cache: "data/benchmark/hs300_index.csv"
 
 # =====================================================================
 # §7 三项回校 — PEAD 倾斜幅度 / 舆情阈值 / 交易成本模型

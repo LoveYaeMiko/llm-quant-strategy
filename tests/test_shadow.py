@@ -9,6 +9,9 @@ integral-float formatting).
 
 from __future__ import annotations
 
+import sys
+import types
+
 import pandas as pd
 import pytest
 
@@ -18,9 +21,14 @@ from src.data.synthetic import make_synthetic_market
 from src.online.order_executor import Fill
 from src.paper.ledger import PaperLedger
 from src.paper.shadow import (
+    _drawdown_series,
+    _fmt_date,
     _threshold_level,
     build_shadow_status,
     compute_cost_deviation,
+    enrich_positions,
+    fetch_benchmark_index,
+    load_benchmark_index,
     paper_runner_kwargs,
     real_cost_model,
 )
@@ -177,3 +185,143 @@ def test_apply_to_config(tmp_path):
         "paper.min_commission": {"old": "1.0", "new": "5"},
     }
     assert "seasonal_tilt" in res["unchanged"]
+
+
+# ---------------------------------------------------------------------------
+# positions — moving average cost basis (regression for the trade-price bug)
+# ---------------------------------------------------------------------------
+
+
+def _fills_frame(rows: list[dict]) -> pd.DataFrame:
+    """Minimal ``ledger.fills()``-shaped frame (signed shares, sell negative)."""
+    base = {"seq": 1, "side": "buy", "commission": 0.0, "notional": 0.0}
+    out = []
+    for i, r in enumerate(rows):
+        row = {**base, **r}
+        row["seq"] = i + 1
+        out.append(row)
+    return pd.DataFrame(out)
+
+
+def test_enrich_positions_sell_keeps_avg_cost():
+    # buy 100 @ 10, sell 40 @ 12 -> remaining 60 avg stays 10 (not pulled by px)
+    fills = _fills_frame([
+        {"date": "2024-01-02", "symbol": "A01", "side": "buy", "shares": 100.0, "price": 10.0},
+        {"date": "2024-01-03", "symbol": "A01", "side": "sell", "shares": -40.0, "price": 12.0},
+    ])
+    out = enrich_positions(fills, {"A01": 60.0})
+    assert out["A01"]["entry_price"] == pytest.approx(10.0)
+    assert out["A01"]["pnl_basis"] == pytest.approx(600.0)
+
+
+def test_enrich_positions_reopen_uses_new_price():
+    # buy 100 @ 10, sell 100 @ 12, buy 100 @ 15 -> entry 15 (not 13)
+    fills = _fills_frame([
+        {"date": "2024-01-02", "symbol": "A01", "side": "buy", "shares": 100.0, "price": 10.0},
+        {"date": "2024-01-03", "symbol": "A01", "side": "sell", "shares": -100.0, "price": 12.0},
+        {"date": "2024-01-04", "symbol": "A01", "side": "buy", "shares": 100.0, "price": 15.0},
+    ])
+    out = enrich_positions(fills, {"A01": 100.0})
+    assert out["A01"]["entry_price"] == pytest.approx(15.0)
+
+
+def test_enrich_positions_short_cover_keeps_avg_cost():
+    # open short 100 @ 10 (sell -100), cover 50 @ 12 -> remaining short avg 10
+    fills = _fills_frame([
+        {"date": "2024-01-02", "symbol": "A01", "side": "sell", "shares": -100.0, "price": 10.0},
+        {"date": "2024-01-03", "symbol": "A01", "side": "buy", "shares": 50.0, "price": 12.0},
+    ])
+    out = enrich_positions(fills, {"A01": -50.0})
+    assert out["A01"]["entry_price"] == pytest.approx(10.0)
+    assert out["A01"]["pnl_basis"] == pytest.approx(500.0)
+
+
+def test_enrich_positions_short_reversal():
+    # short 100 @ 10, then buy 150 @ 12 -> flips to long 50 opened at 12
+    fills = _fills_frame([
+        {"date": "2024-01-02", "symbol": "A01", "side": "sell", "shares": -100.0, "price": 10.0},
+        {"date": "2024-01-03", "symbol": "A01", "side": "buy", "shares": 150.0, "price": 12.0},
+    ])
+    out = enrich_positions(fills, {"A01": 50.0})
+    assert out["A01"]["entry_price"] == pytest.approx(12.0)
+
+
+# ---------------------------------------------------------------------------
+# drawdown / date helpers / benchmark
+# ---------------------------------------------------------------------------
+
+
+def test_drawdown_series():
+    eq = pd.Series([100.0, 110.0, 99.0, 121.0], index=["d1", "d2", "d3", "d4"])
+    dd = _drawdown_series(eq)
+    assert dd.loc["d1"] == 0.0
+    assert dd.loc["d2"] == 0.0
+    assert dd.loc["d3"] == pytest.approx(99.0 / 110.0 - 1.0)
+    assert dd.loc["d4"] == 0.0
+
+
+def test_fmt_date():
+    assert _fmt_date("20240101") == "2024-01-01"
+    assert _fmt_date("2024-01-02") == "2024-01-02"
+    assert _fmt_date(None) is None
+    assert _fmt_date("") is None
+
+
+def test_fetch_benchmark_index_parses_and_filters(monkeypatch):
+    fake = types.ModuleType("akshare")
+    fake.stock_zh_index_daily = lambda symbol: pd.DataFrame({
+        "date": ["2023-12-29", "2024-01-02", "2024-01-03"],
+        "close": [3500.0, 3600.0, 3700.0],
+    })
+    monkeypatch.setitem(sys.modules, "akshare", fake)
+    s = fetch_benchmark_index(load_config(), start_date="20240101", end_date="20240103")
+    assert list(s.index) == ["2024-01-02", "2024-01-03"]
+    assert list(s.values) == [3600.0, 3700.0]
+
+
+def test_fetch_benchmark_index_returns_none_on_failure(monkeypatch):
+    fake = types.ModuleType("akshare")
+    def _boom(symbol):
+        raise RuntimeError("network down")
+    fake.stock_zh_index_daily = _boom
+    monkeypatch.setitem(sys.modules, "akshare", fake)
+    assert fetch_benchmark_index(load_config()) is None
+
+
+def test_load_benchmark_index_roundtrip(tmp_path, monkeypatch):
+    cache = tmp_path / "hs300.csv"
+    monkeypatch.setattr("src.paper.shadow._benchmark_cache", lambda cfg: cache)
+    assert load_benchmark_index(load_config()) is None  # missing -> None
+    cache.write_text(",close\n2024-01-02,3600.0\n2024-01-03,3700.0\n", encoding="utf-8")
+    s = load_benchmark_index(load_config())
+    assert list(s.index) == ["2024-01-02", "2024-01-03"]
+    assert list(s.values) == [3600.0, 3700.0]
+
+
+# ---------------------------------------------------------------------------
+# curves — equity / benchmark / excess emitted from build_shadow_status
+# ---------------------------------------------------------------------------
+
+
+def test_build_shadow_status_emits_curves(tmp_path):
+    cfg = load_config()
+    initial_cash = float(cfg.section("paper").get("initial_cash", 100_000.0))
+    market = make_synthetic_market(symbols=3, days=5, seed=0)
+    syms = sorted(market.price_panel.columns)
+    dates = sorted(market.price_panel.index)
+    d0, d1 = str(dates[0].date()), str(dates[1].date())
+    led = PaperLedger(tmp_path / "curves.sqlite")
+    led.record_day(d0, cash=90_000.0, equity=initial_cash, positions={syms[0]: 100.0},
+                   fills=[], gross_exposure=1000.0)
+    led.record_day(d1, cash=90_000.0, equity=initial_cash * 1.02, positions={syms[0]: 100.0},
+                   fills=[], gross_exposure=1000.0)
+    bench = pd.Series([1.0, 1.01], index=[d0, d1])
+    status = build_shadow_status(cfg, led, market, {"metrics": {}}, {"pead": None}, {},
+                                 benchmark=bench)
+    led.close()
+    assert len(status["equity_curve"]) == 2
+    assert len(status["benchmark"]) == 2
+    assert len(status["excess_curve"]) == 2
+    assert status["benchmark"][0]["equity"] == pytest.approx(initial_cash)
+    # excess = port_nav − bench_nav = (1.02) − (1.01/1.0)
+    assert status["excess_curve"][1]["excess"] == pytest.approx(0.02 - 0.01, abs=1e-6)

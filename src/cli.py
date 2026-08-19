@@ -1501,7 +1501,9 @@ def cmd_shadow(args) -> int:
 
     from .paper.shadow import (
         build_shadow_status,
+        load_benchmark_index,
         paper_runner_kwargs,
+        refresh_benchmark,
         refresh_pead,
         refresh_price,
         refresh_sentiment,
@@ -1524,6 +1526,9 @@ def cmd_shadow(args) -> int:
         if bool(shadow.get("refresh_sentiment", True)):
             print("shadow: refreshing research reports (full re-fetch, heavy) ...")
             meta["sentiment"] = refresh_sentiment(cfg, symbols)
+        if bool(shadow.get("refresh_benchmark", True)):
+            print("shadow: refreshing HS300 benchmark index ...")
+            meta["benchmark"] = refresh_benchmark(cfg)
 
     # market includes 360d warmup before ``start``; run through the latest bar.
     market = _build_market_for_paper(cfg, symbols, start, None, seed=args.seed)
@@ -1538,7 +1543,8 @@ def cmd_shadow(args) -> int:
                          **paper_runner_kwargs(cfg))
     result = runner.run(start=start, end=end)
 
-    status = build_shadow_status(cfg, ledger, market, result, overlays, meta)
+    benchmark = load_benchmark_index(cfg)
+    status = build_shadow_status(cfg, ledger, market, result, overlays, meta, benchmark=benchmark)
     ledger.close()
 
     status_path = ROOT / str(shadow.get("status_json", "outputs/shadow_status.json"))

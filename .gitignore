@@ -24,6 +24,9 @@ __pycache__/
 # 成分股快照（可重新 ingest 生成）；静态成分股名单 hs300.json/zz500.json 保留入库
 data/universe/universe_*.csv
 
+# HS300 基准缓存（每日 refresh_benchmark 覆盖生成，不进版本库）
+data/benchmark/
+
 # 构建/测试产物（未来可能的依赖与覆盖率文件）
 node_modules/
 .venv/

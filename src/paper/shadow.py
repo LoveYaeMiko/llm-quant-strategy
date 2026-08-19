@@ -150,6 +150,90 @@ def refresh_sentiment(cfg, symbols: list[str]) -> dict[str, int]:
 
 
 # --------------------------------------------------------------------------- #
+# benchmark (HS300 index, 000300.SH)
+# --------------------------------------------------------------------------- #
+def _benchmark_cache(cfg) -> Path:
+    return Path(str(cfg.section("shadow").get("benchmark_cache", "data/benchmark/hs300_index.csv")))
+
+
+def fetch_benchmark_index(
+    cfg,
+    start_date: str = "20150101",
+    end_date: str | None = None,
+) -> pd.Series | None:
+    """HS300 index (000300.SH / ``sh000300``) daily close → ``date → close`` Series.
+
+    Fetched via AKShare's Sina feed (``stock_zh_index_daily``) rather than the
+    Eastmoney endpoint: this machine's Python TLS stack gets ``RemoteDisconnected``
+    from ``*.eastmoney.com`` API hosts (curl works, requests/urllib3 do not), while
+    the Sina feed is reachable. Network-dependent and best-effort — any failure
+    returns ``None`` so the shadow run never breaks on a down feed.
+    """
+    try:
+        import akshare as ak
+    except ImportError:
+        logger.warning("akshare not installed; HS300 benchmark unavailable")
+        return None
+    try:
+        df = ak.stock_zh_index_daily(symbol="sh000300")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("HS300 index fetch failed: %s", exc)
+        return None
+    if df is None or df.empty:
+        return None
+    date_col = "date" if "date" in df.columns else df.columns[0]
+    close_col = "close" if "close" in df.columns else df.columns[1]
+    s = pd.Series(
+        df[close_col].to_numpy(dtype=float),
+        index=pd.to_datetime(df[date_col], errors="coerce").dt.strftime("%Y-%m-%d").tolist(),
+    )
+    s = s.dropna().sort_index()
+    lo = _fmt_date(start_date)
+    if lo:
+        s = s[s.index >= lo]
+    hi = _fmt_date(end_date)
+    if hi:
+        s = s[s.index <= hi]
+    return s
+
+
+def _fmt_date(d: str | None) -> str | None:
+    """Normalize an 8-digit ``YYYYMMDD`` (or ISO) date to ``YYYY-MM-DD``."""
+    if not d:
+        return None
+    d = str(d)
+    if len(d) == 8 and d.isdigit():
+        return f"{d[:4]}-{d[4:6]}-{d[6:8]}"
+    return d
+
+
+def refresh_benchmark(cfg) -> dict[str, Any]:
+    """Fetch HS300 index and overwrite the cached CSV (idempotent)."""
+    s = fetch_benchmark_index(cfg)
+    if s is None or s.empty:
+        return {"error": "HS300 index fetch failed (kept previous cache if any)"}
+    path = _benchmark_cache(cfg)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    s.rename("close").to_csv(path, encoding="utf-8")
+    return {"path": str(path), "rows": int(len(s))}
+
+
+def load_benchmark_index(cfg) -> pd.Series | None:
+    """Read the cached HS300 index CSV (``date → close``), or ``None``."""
+    path = _benchmark_cache(cfg)
+    if not path.is_file():
+        return None
+    try:
+        df = pd.read_csv(path, index_col=0)
+        s = df.iloc[:, 0] if df.shape[1] else pd.Series(dtype=float)
+        s.index = s.index.astype(str)
+        return s.astype(float).sort_index()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("failed to load benchmark cache %s: %s", path, exc)
+        return None
+
+
+# --------------------------------------------------------------------------- #
 # red lines
 # --------------------------------------------------------------------------- #
 def _real_fee(notional: float, side: str, cost: dict[str, float]) -> float:
@@ -199,6 +283,76 @@ def _threshold_level(value: float, threshold: float, critical: float) -> str:
     return "ok"
 
 
+def _drawdown_series(equity: pd.Series) -> pd.Series:
+    """Running drawdown (``equity / cummax − 1``) for a daily equity series."""
+    peak = equity.cummax()
+    return equity / peak - 1.0
+
+
+def enrich_positions(
+    fills: pd.DataFrame,
+    positions: dict[str, float],
+) -> dict[str, dict[str, Any]]:
+    """Per-symbol cost basis via moving average cost over the execution ledger.
+
+    ``ledger.fills()`` already carries the sign in ``shares`` (sells negative,
+    buys positive). Fills in the direction of the open position add ``qty * px``
+    to basis; fills that *reduce* the position remove ``closed_qty * avg_cost``
+    (not the trade price), so ``entry_price = basis / shares`` is the running
+    average cost — correct for both long and short. Returns
+    ``{symbol: {entry_price, pnl_basis, first_date}}``.
+    """
+    if fills is None or fills.empty:
+        return {}
+    basis: dict[str, float] = {}
+    signed_shares: dict[str, float] = {}
+    first_date: dict[str, str] = {}
+    for r in fills.itertuples(index=False):
+        sym = str(r.symbol)
+        qty = float(r.shares)
+        px = float(r.price)
+        first_date.setdefault(sym, str(r.date))
+        s = signed_shares.get(sym, 0.0)
+        b = basis.get(sym, 0.0)
+        if s == 0.0:
+            # Open a fresh position at the trade price.
+            signed_shares[sym] = qty
+            basis[sym] = qty * px
+            continue
+        avg = b / s  # positive: b and s always share a sign
+        if (qty > 0) == (s > 0):
+            # Same direction: add to the position at the trade price.
+            signed_shares[sym] = s + qty
+            basis[sym] = b + qty * px
+        else:
+            # Reducing/reversing: remove closed shares at current avg cost.
+            closing = min(abs(qty), abs(s))
+            sign = 1.0 if s > 0 else -1.0
+            new_b = b - sign * closing * avg
+            new_s = s + qty
+            remaining = abs(qty) - closing
+            if remaining > 0:
+                # Reversed through flat into the opposite side at trade price.
+                open_sign = 1.0 if qty > 0 else -1.0
+                new_s = open_sign * remaining
+                new_b = open_sign * remaining * px
+            signed_shares[sym] = new_s
+            basis[sym] = new_b
+
+    out: dict[str, dict[str, Any]] = {}
+    for sym, shares in positions.items():
+        if shares == 0.0:
+            continue
+        b = basis.get(sym, 0.0)
+        entry = b / shares
+        out[sym] = {
+            "entry_price": round(float(entry), 4),
+            "pnl_basis": round(float(abs(b)), 2),
+            "first_date": first_date.get(sym),
+        }
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # status + report
 # --------------------------------------------------------------------------- #
@@ -209,6 +363,7 @@ def build_shadow_status(
     result: dict[str, Any],
     overlays: dict[str, Any],
     meta: dict[str, Any],
+    benchmark: pd.Series | None = None,
 ) -> dict[str, Any]:
     """Build the ``outputs/shadow_status.json`` payload PAICC consumes."""
     last_date, cash, positions = ledger.latest_state()
@@ -237,9 +392,10 @@ def build_shadow_status(
         "transfer_fee_bps": float(pcfg.get("transfer_fee_bps", 0.0)),
     }
 
-    # positions (shares -> weights) at the latest recorded day
+    # positions (shares -> weights + cost basis) at the latest recorded day
     positions_out: list[dict[str, Any]] = []
     latest_equity = float(eq.iloc[-1]) if len(eq) else float(pcfg.get("initial_cash", 100_000.0))
+    enriched = enrich_positions(ledger.fills(), positions)
     if last_date is not None and positions:
         try:
             close = market.price_panel.loc[pd.Timestamp(last_date)]
@@ -250,12 +406,55 @@ def build_shadow_status(
             if not np.isfinite(px) or px <= 0:
                 continue
             weight = shares * px / latest_equity if latest_equity else 0.0
+            info = enriched.get(sym, {})
+            entry = info.get("entry_price")
+            basis = info.get("pnl_basis", 0.0)
+            pnl = (px - entry) * shares if entry is not None else None
+            pnl_pct = (pnl / basis) if (pnl is not None and basis > 0) else None
+            days_held = None
+            first_date = info.get("first_date")
+            if first_date is not None and last_date is not None:
+                days_held = (pd.Timestamp(last_date) - pd.Timestamp(first_date)).days
             positions_out.append(
                 {"symbol": sym, "shares": round(float(shares), 0),
                  "weight": round(float(weight), 6),
-                 "side": "long" if shares > 0 else "short"}
+                 "side": "long" if shares > 0 else "short",
+                 "entry_price": entry,
+                 "last_price": round(float(px), 4),
+                 "pnl": round(float(pnl), 2) if pnl is not None else None,
+                 "pnl_pct": round(float(pnl_pct), 6) if pnl_pct is not None else None,
+                 "days_held": days_held}
             )
     positions_out.sort(key=lambda p: -abs(p["weight"]))
+
+    # --- daily equity / benchmark / excess curves ----------------------------
+    initial_cash = float(pcfg.get("initial_cash", 100_000.0))
+    equity_curve_out: list[dict[str, Any]] = []
+    benchmark_out: list[dict[str, Any]] = []
+    excess_out: list[dict[str, Any]] = []
+    if len(eq):
+        dd = _drawdown_series(eq)
+        equity_curve_out = [
+            {"date": str(d), "equity": round(float(v), 2),
+             "drawdown": round(float(dd.loc[d]), 6)}
+            for d, v in eq.items()
+        ]
+        if benchmark is not None and not benchmark.empty and eq.iloc[0] > 0:
+            bench = benchmark.reindex(eq.index).ffill().dropna()
+            if not bench.empty and bench.iloc[0] > 0:
+                port_nav = eq / eq.iloc[0]      # both normalized to 1.0 at shadow start
+                bench_nav = bench / bench.iloc[0]
+                bench_dd = _drawdown_series(bench_nav * initial_cash)
+                for d in bench.index:
+                    benchmark_out.append({
+                        "date": str(d),
+                        "equity": round(float(bench_nav.loc[d] * initial_cash), 2),
+                        "drawdown": round(float(bench_dd.loc[d]), 6),
+                    })
+                    excess_out.append({
+                        "date": str(d),
+                        "excess": round(float(port_nav.loc[d] - bench_nav.loc[d]), 6),
+                    })
 
     # --- four canonical red lines -------------------------------------------
     fills_df = ledger.fills()
@@ -340,6 +539,9 @@ def build_shadow_status(
             "total_commission": metrics.get("total_commission", 0.0),
         },
         "positions": positions_out[:30],  # Top-30 by |weight| for the dashboard
+        "equity_curve": equity_curve_out,
+        "benchmark": benchmark_out,
+        "excess_curve": excess_out,
         "s7_params": s7_params,
         "refreshed": meta,
         "red_lines": red_lines,
