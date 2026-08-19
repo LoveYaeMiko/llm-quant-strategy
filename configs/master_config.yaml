@@ -190,6 +190,8 @@ alpha_core:
   short_pct: 0.10                    # bottom-decile 空头持仓（市场中性）
   max_position_pct: 0.05             # 单票上限（与 online_execution 一致）
   neutralize: true                   # 动量截面中性化（MLMultiFactorBiasCorrection 处方）
+  beta_neutralize: true              # 叠加市场 beta 中性化（低波动因子结构性短 beta → 净 beta 泄漏）
+  beta_lookback: 252                 # beta 估计窗口（滚动协方差/方差）
   momentum_lookbacks: [20, 60, 120, 252]
   regime_short: true                 # AlphaCrafter γ: 强上涨趋势中收缩空腿
   trend_days: 60                     # 等权市场趋势窗口
@@ -225,7 +227,7 @@ paper:
   stamp_tax_sell_bps: 5            # 印花税 0.05% 仅卖出（真实 5.0，§7 写回）
   transfer_fee_bps: 0.1              # 过户费 0.001% 双边（真实 0.1，§7 写回）
   max_position_pct: 0.05             # 单票上限
-  rebalance_days: 1
+  rebalance_days: 20                 # 对齐 alpha 月频信号（约 20 交易日/月），砍掉日度重估导致的换手
   pit_strict: true
 
 # =====================================================================

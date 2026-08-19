@@ -158,6 +158,30 @@ def test_runner_resume_mid_way(tmp_path):
     assert n_first < n_total
 
 
+def test_runner_resume_metrics_use_full_curve(tmp_path):
+    # regression: on a resumed run the metrics were computed from the *incremental*
+    # returns dict (only the days after the resume point), so n_days collapsed to
+    # ~1 and total_return to ~0 while equity had actually moved. ``ret`` must be
+    # derived from the full equity curve so a resumed run reports the same metrics
+    # as a single continuous run.
+    market = _market()
+    syms = _symbols(market)
+    dates = sorted(market.price_panel.index)
+    mid = dates[len(dates) // 2]
+
+    m_full = _runner(_FakePortfolio(syms), market, tmp_path / "full.sqlite").run()["metrics"]
+
+    db = tmp_path / "l.sqlite"
+    r1 = _runner(_FakePortfolio(syms), market, db)
+    r1.run(end=mid)
+    r1.ledger.close()
+    m_resumed = _runner(_FakePortfolio(syms), market, db).run()["metrics"]
+
+    assert m_resumed["n_days"] == m_full["n_days"] == market.n_days - 1
+    assert m_resumed["total_return"] == pytest.approx(m_full["total_return"])
+    assert m_resumed["final_equity"] == pytest.approx(m_full["final_equity"])
+
+
 def test_runner_sells_dropped_names(tmp_path):
     market = _market(days=40, seed=1)
     syms = _symbols(market)

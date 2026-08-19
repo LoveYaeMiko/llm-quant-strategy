@@ -61,24 +61,50 @@ def _momentum_panel(close_wide: pd.DataFrame, lookbacks) -> pd.DataFrame:
     return pd.concat(cols.values(), axis=1)
 
 
+def _beta_panel(close_wide: pd.DataFrame, lookback: int = 252) -> pd.Series:
+    """(date, symbol) rolling market beta vs the equal-weight cross-section.
+
+    beta[symbol, d] = cov(r_symbol, r_mkt) / var(r_mkt) over the trailing
+    ``lookback`` days, where r_mkt is the daily cross-sectional mean return.
+    PIT-safe: only closes at or before ``d`` enter the window. This is the
+    exposure a low-vol book picks up structurally — long low-vol (low beta),
+    short high-vol (high beta) — which the momentum projection does NOT remove
+    (momentum and beta are distinct exposures).
+    """
+    ret_wide = close_wide.pct_change(fill_method=None)
+    mkt = ret_wide.mean(axis=1)
+    mkt_var = mkt.rolling(lookback).var()
+    cov = ret_wide.rolling(lookback).cov(mkt)
+    return cov.div(mkt_var, axis=0).stack().rename("beta")
+
+
 def _neutralize_composite(
-    composite: pd.Series, close_wide: pd.DataFrame, lookbacks
+    composite: pd.Series, close_wide: pd.DataFrame, lookbacks,
+    beta_neutralize: bool = False, beta_lookback: int = 252,
 ) -> pd.Series:
-    """Per-date cross-sectional OLS of the composite on momentum; keep residuals.
+    """Per-date cross-sectional OLS of the composite on momentum (and optionally
+    market beta); keep residuals.
 
     The projection removes the composite's structural exposure to recent
-    returns (the momentum squeeze on the low-vol short leg), preserving only
-    the alpha orthogonal to momentum. Returns a ``(date, symbol)`` Series
-    aligned to ``composite``'s index; early dates (momentum warm-up) are
-    dropped, and dates with fewer than ``min_samples`` names are skipped.
+    returns (the momentum squeeze on the low-vol short leg), and — with
+    ``beta_neutralize`` — the market-beta exposure (low-vol = low beta long /
+    high beta short → a large negative net beta that bleeds on up-days).
+    Preserving only the alpha orthogonal to these exposures makes the resulting
+    dollar-neutral book beta-neutral as well. Returns a ``(date, symbol)``
+    Series aligned to ``composite``'s index; early dates (warm-up) are dropped,
+    and dates with fewer than ``min_samples`` names are skipped.
     """
     mom = _momentum_panel(close_wide, lookbacks)
+    feats = list(mom.columns)
+    if beta_neutralize:
+        mom = pd.concat([mom, _beta_panel(close_wide, beta_lookback)], axis=1)
+        feats.append("beta")
     joint = pd.concat([composite.rename("comp"), mom], axis=1).dropna()
     rows: list[tuple[tuple, float]] = []
     for d, day in joint.groupby(level=0):
         if len(day) < 30:
             continue
-        X = day[mom.columns].to_numpy(dtype=float)
+        X = day[feats].to_numpy(dtype=float)
         X = np.column_stack([np.ones(len(X)), X])
         y = day["comp"].to_numpy(dtype=float)
         beta, *_ = np.linalg.lstsq(X, y, rcond=None)
@@ -168,6 +194,8 @@ class AlphaCore:
         max_position_pct: float = 0.05,
         neutralize: bool = True,
         momentum_lookbacks: tuple[int, ...] = (20, 60, 120, 252),
+        beta_neutralize: bool = False,
+        beta_lookback: int = 252,
         regime_short: bool = True,
         trend_days: int = 60,
         trend_gate: float = 0.03,
@@ -180,6 +208,8 @@ class AlphaCore:
         self.max_position_pct = float(max_position_pct)
         self.neutralize = bool(neutralize)
         self.momentum_lookbacks = tuple(momentum_lookbacks)
+        self.beta_neutralize = bool(beta_neutralize)
+        self.beta_lookback = int(beta_lookback)
         self.regime_short = bool(regime_short)
         self.trend_days = int(trend_days)
         self.trend_gate = float(trend_gate)
@@ -192,7 +222,10 @@ class AlphaCore:
         )
         close_wide = fctx.data["close"].unstack()
         if self.neutralize:
-            composite = _neutralize_composite(composite, close_wide, self.momentum_lookbacks)
+            composite = _neutralize_composite(
+                composite, close_wide, self.momentum_lookbacks,
+                beta_neutralize=self.beta_neutralize, beta_lookback=self.beta_lookback,
+            )
         self.composite = composite
         # Callers with the tradable-forward panel inject the exact validated trend
         # (limit-locked masked daily mean returns compounded) — reproducing the

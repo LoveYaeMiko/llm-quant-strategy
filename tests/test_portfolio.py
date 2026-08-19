@@ -132,6 +132,30 @@ def test_neutralize_removes_momentum_exposure():
     assert np.mean(np.abs(corrs)) < 0.2  # momentum component removed
 
 
+def test_neutralize_removes_beta_exposure():
+    # A low-vol composite is structurally negative-beta (low-vol = low beta).
+    # Momentum-only neutralization does NOT remove this (beta != momentum), so a
+    # dollar-neutral long/short book leaks market beta. beta_neutralize adds the
+    # market-beta regressor and must strip the beta component from the residual.
+    from src.portfolio.alpha_core import _beta_panel, _neutralize_composite, _zscore
+
+    market, _ = _big_market(days=500, seed=3)
+    close = market.long["close"].unstack()
+    beta = _beta_panel(close, 252)
+    rng = np.random.default_rng(0)
+    noise = pd.Series(rng.normal(0.0, 1.0, len(beta.dropna())),
+                      index=beta.dropna().index)
+    z = -_zscore(beta) + 0.5 * _zscore(noise)   # score negatively correlated with beta
+    resid = _neutralize_composite(z, close, (20, 60, 120, 252), beta_neutralize=True)
+    assert not resid.empty
+    joint = pd.concat([resid.rename("resid"), beta.rename("beta")], axis=1).dropna()
+    corrs = []
+    for _, day in joint.groupby(level=0):
+        if len(day) >= 30:
+            corrs.append(np.corrcoef(day["resid"].rank(), day["beta"].rank())[0, 1])
+    assert np.mean(np.abs(corrs)) < 0.3  # beta component removed
+
+
 def test_alpha_core_neutralize_produces_book():
     # end-to-end: 40-symbol market with neutralize=True yields a valid book
     market, fctx = _big_market()

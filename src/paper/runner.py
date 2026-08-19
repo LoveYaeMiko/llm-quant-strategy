@@ -131,22 +131,15 @@ class PaperRunner:
             ex.restore(saved_cash or self.cash, saved_positions)
 
         start_idx = 0
-        prev_equity: Optional[float] = None
         if resumed:
             last_ts = pd.Timestamp(last_date)
             start_idx = next((i for i, d in enumerate(dates) if d > last_ts), len(dates))
-            eq = self.ledger.equity_curve()
-            prev_equity = float(eq.iloc[-1]) if len(eq) else None
-
-        returns: dict[pd.Timestamp, float] = {}
         for i in range(start_idx, len(dates)):
             d = dates[i]
             close = prices.loc[d]
             # realised return over [d-1, d): yesterday's book marked at today's
             # close — before any rebalance, so no future price is touched.
             mtm = ex.settle(close)
-            if prev_equity is not None and prev_equity > 0:
-                returns[d] = mtm / prev_equity - 1.0
 
             fills: list[Fill] = []
             if (i - start_idx) % self.rebalance_days == 0:
@@ -165,10 +158,9 @@ class PaperRunner:
             end_equity = ex.settle(close)
             gross = sum(abs(sh) * float(close.get(s, 0.0)) for s, sh in ex.positions.items())
             self.ledger.record_day(d, ex.cash, end_equity, dict(ex.positions), fills, gross)
-            prev_equity = end_equity
 
         eq = self.ledger.equity_curve()
-        ret = pd.Series(returns).sort_index()
+        ret = eq.pct_change().dropna() if len(eq) > 1 else pd.Series(dtype=float)
         return {
             "metrics": self._metrics(eq, ret),
             "equity": {str(pd.Timestamp(k).date()): float(v) for k, v in eq.items()},

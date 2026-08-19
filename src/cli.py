@@ -1376,6 +1376,8 @@ def _build_paper_portfolio(cfg, market, symbols):
         max_position_pct=float(acfg.get("max_position_pct", 0.05)),
         neutralize=bool(acfg.get("neutralize", True)),
         momentum_lookbacks=tuple(int(x) for x in acfg.get("momentum_lookbacks", [20, 60, 120, 252])),
+        beta_neutralize=bool(acfg.get("beta_neutralize", False)),
+        beta_lookback=int(acfg.get("beta_lookback", 252)),
         regime_short=bool(acfg.get("regime_short", True)),
         trend_days=int(acfg.get("trend_days", 60)),
         trend_gate=float(acfg.get("trend_gate", 0.03)),
