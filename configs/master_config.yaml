@@ -201,7 +201,7 @@ alpha_core:
 seasonal_tilt:
   enabled: true
   type: "pead_reversal"
-  amplitude: 0.3                    # ±20%
+  amplitude: 0.3                    # 倾斜幅度（§7 回校自动写回，注释不随值变动）
   min_weight: 0.015                  # 权重 > 1.5% 才调整（市场中性粗仓约 1.7%）
   window_days: 5
   months: [1, 2, 4, 8, 10]           # 年报/一季报/中报/三季报窗口
@@ -211,7 +211,7 @@ risk_overlay:
   type: "sentiment_risk"
   zscore_threshold: -2             # 历史 5% 分位
   position_cut: 0.50                 # 触发即减半仓
-  freeze_days: 7                     # 保持 5 个交易日
+  freeze_days: 7                     # 触发后保持的交易日数（§7 回校自动写回）
   min_trigger_samples: 20            # 低于该样本数不触发（防退化 std）
 
 # =====================================================================
@@ -246,6 +246,17 @@ shadow:
   benchmark_cache: "data/benchmark/hs300_index.csv"
 
 # =====================================================================
+# 红线监控阈值 (red_lines) — 影子盘逐日输出的四条红线 + PAICC 量化面板展示。
+# 原硬编码于 src/paper/shadow.py 的 10/20 阈值移入配置，改阈值无需改代码。
+# =====================================================================
+red_lines:
+  cost_deviation_threshold: 10.0      # 成本模型累计偏差 (%) 警告线
+  cost_deviation_critical: 20.0       # 成本模型累计偏差 (%) 严重线
+  short_leg_threshold: 10.0           # 多空敞口失衡 (%) 警告线
+  short_leg_critical: 20.0            # 多空敞口失衡 (%) 严重线
+  # regime_switch 的阈值由 alpha_core.trend_gate 决定（不在此重复，避免双源不一致）
+
+# =====================================================================
 # 自动闭环 (autopilot) — 影子盘 → 风险闸门(kill-switch) → 周期回校/衰减监控/(可选)重挖
 #
 # 每日一次 `python cli.py autopilot` 即可：推进影子账本 → 评估风险闸门 → 持久化档位
@@ -270,9 +281,9 @@ autopilot:
     cooldown_days: 5                  # 进入某档后的最小持续天数（防抖）
   # --- 周期任务 ---
   auto_calibrate: true                # 周期性 §7 回校并自动写回配置
-  calibrate_interval_days: 20         # 每 ~20 交易日回校一次
+  calibrate_interval_days: 20         # 每 ~20 个工作日回校一次（工作日近似，不含节假日）
   auto_monitor: true                  # 周期性因子衰减监控（写回 factor_decayed）
-  remine_interval_days: 60            # 每 ~60 交易日检查一次因子衰减
+  remine_interval_days: 60            # 每 ~60 个工作日检查一次因子衰减（工作日近似）
   decay_window_days: 90               # ICIR 滚动窗口（对齐 research.decay.window_days）
   decay_icir_threshold: 0.30          # 衰减 ICIR 地板（对齐 factor_thresholds icir.keep）
   auto_remine: false                  # 衰减后自动重挖（LLM 成本高，默认关；启用才跑 mine）
@@ -290,9 +301,11 @@ s7_calibration:
   auto_apply: true                   # 自动写回 master_config.yaml
   window_start: "2020-01-01"         # PEAD 覆盖 2020-2025；舆情覆盖 2022-2025
   window_end: "2025-12-31"
-  amplitude_grid: [0.10, 0.15, 0.20, 0.25, 0.30]
-  zscore_grid: [-2.0, -2.5, -3.0]
-  freeze_grid: [3, 5, 7]
+  # 网格已向两侧扩边（2026-08-20 回校发现最优值落在旧网格边界，属边界过拟合，
+  # 需更大范围确认真实最优而非「爬到网格边缘」）。
+  amplitude_grid: [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40]
+  zscore_grid: [-1.0, -1.5, -2.0, -2.5, -3.0]
+  freeze_grid: [3, 5, 7, 9, 11]
   cost_model:                        # 真实 A 股成本结构
     stamp_tax_sell_bps: 5.0          # 印花税 0.05% 仅卖出（2023-08 起）
     transfer_fee_bps: 0.1            # 过户费 0.001% 双边

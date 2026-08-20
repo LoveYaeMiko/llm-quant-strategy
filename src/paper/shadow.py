@@ -374,6 +374,7 @@ def build_shadow_status(
     s7 = cfg.section("s7_calibration")
     rcfg = cfg.section("risk_overlay")
     tcfg = cfg.section("seasonal_tilt")
+    rlc = cfg.section("red_lines")
 
     # data freshness: days since the newest stored price bar
     latest_price = pd.Timestamp(market.price_panel.index.max())
@@ -483,14 +484,20 @@ def build_shadow_status(
     pead_ok = pead is not None and len(getattr(pead, "symbols", []) or []) > 0
     pead_anomaly = (not pead_ok) and bool(cfg.get("pead", {}).get("enabled", True))
 
+    # red-line thresholds from config (was hardcoded 10/20 — now tunable)
+    cost_threshold = float(rlc.get("cost_deviation_threshold", 10.0))
+    cost_critical = float(rlc.get("cost_deviation_critical", 20.0))
+    short_threshold = float(rlc.get("short_leg_threshold", 10.0))
+    short_critical = float(rlc.get("short_leg_critical", 20.0))
+
     red_lines: list[dict[str, Any]] = [
         {
             "name": "cost_deviation",
             "label": "成本模型偏差",
             "value": cost_dev["deviation_pct"],
-            "level": _threshold_level(abs(cost_dev["deviation_pct"]), 10.0, 20.0),
-            "threshold": 10.0,
-            "critical": 20.0,
+            "level": _threshold_level(abs(cost_dev["deviation_pct"]), cost_threshold, cost_critical),
+            "threshold": cost_threshold,
+            "critical": cost_critical,
             "detail": (f"固定成本 {cost_dev['current_total']:.2f} vs 真实 {cost_dev['real_total']:.2f} "
                        f"(累计偏差 {cost_dev['deviation_pct']:+.1f}%)"),
         },
@@ -498,9 +505,9 @@ def build_shadow_status(
             "name": "short_leg_deviation",
             "label": "多空敞口失衡",
             "value": round(short_dev, 2),
-            "level": _threshold_level(short_dev, 10.0, 20.0),
-            "threshold": 10.0,
-            "critical": 20.0,
+            "level": _threshold_level(short_dev, short_threshold, short_critical),
+            "threshold": short_threshold,
+            "critical": short_critical,
             "detail": f"多头/空头总敞口失衡 {short_dev:.1f}%",
         },
         {
@@ -508,6 +515,8 @@ def build_shadow_status(
             "label": "趋势切换",
             "value": round(trend_pct, 2),
             "level": "warning" if regime_triggered else "ok",
+            "threshold": round(trend_gate * 100.0, 2),
+            "critical": round(trend_gate * 100.0, 2),
             "detail": (f"60日等权市场趋势 {trend_pct:+.2f}% (门限 {trend_gate * 100:.0f}%)"
                        + (" → 空腿收缩已触发" if regime_triggered else "，未触发")),
         },

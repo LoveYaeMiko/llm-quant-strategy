@@ -222,7 +222,16 @@ def evaluate_risk_gate(
         elif derisk:
             # still elevated; never step *down* below de_risk while a breach persists
             new_mode = MODE_DE_RISK if cur_level < mode_level(MODE_DE_RISK) else current.mode
-            reasons.append(f"currentDD {current_dd:.1%} / trail {trail:.1%} → DE_RISK")
+            # Name only the trigger(s) that actually fired — a factor-decay-only
+            # de-risk must not read as a drawdown/trailing-return breach.
+            triggers: list[str] = []
+            if current_dd >= dd_de_risk:
+                triggers.append(f"currentDD {current_dd:.1%}")
+            if trail <= trail_de_risk:
+                triggers.append(f"trail {trail:.1%}")
+            if factor_decay:
+                triggers.append("factor decay")
+            reasons.append(" + ".join(triggers) + " → DE_RISK")
         elif cur_level > 0:
             # no breach — one-level de-escalation from de_risk (recovery + cooldown)
             recovered = (

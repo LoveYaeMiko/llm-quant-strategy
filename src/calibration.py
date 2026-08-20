@@ -143,12 +143,16 @@ def calibrate_amplitude(
         })
 
     best = max(results, key=lambda r: r["sharpe"]) if results else None
+    at_edge = bool(best) and grid and (
+        best["amplitude"] == float(grid[0]) or best["amplitude"] == float(grid[-1])
+    )
     return {
         "current": current,
         "grid": [float(x) for x in grid],
         "results": results,
         "best": best,
         "recommended": float(best["amplitude"]) if best else current,
+        "grid_edge": at_edge,
     }
 
 
@@ -192,6 +196,10 @@ def calibrate_sentiment(
             })
 
     best = max(results, key=lambda r: r["sharpe"]) if results else None
+    at_edge = bool(best) and (
+        (zscore_grid and best["zscore_threshold"] in (float(zscore_grid[0]), float(zscore_grid[-1])))
+        or (freeze_grid and best["freeze_days"] in (int(freeze_grid[0]), int(freeze_grid[-1])))
+    )
     return {
         "current": current,
         "zscore_grid": [float(x) for x in zscore_grid],
@@ -200,6 +208,7 @@ def calibrate_sentiment(
         "best": best,
         "recommended": {"zscore_threshold": float(best["zscore_threshold"]),
                         "freeze_days": int(best["freeze_days"])} if best else dict(current),
+        "grid_edge": at_edge,
     }
 
 
@@ -384,6 +393,9 @@ def render_calibration_report(result: dict[str, Any]) -> str:
         lines.append(f"> {amp_note}")
     else:
         lines.append(f"- 当前幅度: {amp.get('current')} → 推荐: **{amp.get('recommended')}**")
+        if amp.get("grid_edge"):
+            lines.append("")
+            lines.append("> ⚠️ 最优值落在网格边界，属边界过拟合 — 请扩宽 amplitude_grid 确认真实最优，当前推荐值可能未收敛。")
         lines.append("")
         lines.append("| 幅度 | Sharpe | 最大回撤 | 累计收益 |")
         lines.append("| --- | --- | --- | --- |")
@@ -399,6 +411,9 @@ def render_calibration_report(result: dict[str, Any]) -> str:
         rec = sent.get("recommended", {})
         lines.append(f"- 当前: z={sent.get('current', {}).get('zscore_threshold')}, freeze={sent.get('current', {}).get('freeze_days')} → "
                      f"推荐: **z={rec.get('zscore_threshold')}, freeze={rec.get('freeze_days')}**")
+        if sent.get("grid_edge"):
+            lines.append("")
+            lines.append("> ⚠️ 最优值落在网格边界，属边界过拟合 — 请扩宽 zscore_grid / freeze_grid 确认真实最优，当前推荐值可能未收敛。")
         lines.append("")
         lines.append("| z | freeze | Sharpe | 最大回撤 | 累计收益 |")
         lines.append("| --- | --- | --- | --- | --- |")

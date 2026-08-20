@@ -1666,12 +1666,15 @@ def cmd_calibrate(args) -> int:
 # autopilot — the end-to-end adaptive closed loop
 # ---------------------------------------------------------------------------
 def _days_since_iso(iso_date, now: pd.Timestamp) -> float:
-    """Business days (A-share trading-day proxy) since ``iso_date``.
+    """Business days (weekdays) since ``iso_date``.
 
     The cadence knobs (``calibrate_interval_days`` / ``remine_interval_days``)
-    are documented in trading days, so count business days rather than calendar
-    days — an approximate calendar would fire the periodic tasks ~40% early.
-    A missing date returns ``inf`` so a first run schedules the task now.
+    are documented in business days, so count weekdays rather than calendar days
+    — an approximate calendar would fire the periodic tasks ~40% early. This is
+    a weekday approximation (it does not subtract A-share holidays, which the
+    codebase models nowhere); for a ~20/60-day cadence the holiday drift is a
+    few days and immaterial. A missing date returns ``inf`` so a first run
+    schedules the task now.
     """
     if not iso_date:
         return float("inf")
@@ -1939,11 +1942,13 @@ def cmd_autopilot(args) -> int:
     decision = evaluate_risk_gate(
         status, state, dict(acfg.get("risk_gate", {}) or {}), now=pd.Timestamp(today)
     )
+    # Persist the freshest reasons every run — a hold must not leave the last
+    # change's stale reason in the state file (the panel/email read state.reason).
+    state.reason = " | ".join(decision.reasons)
     if decision.changed:
         state.mode = decision.mode
         state.gross_scale = decision.gross_scale
         state.since_date = today
-        state.reason = " | ".join(decision.reasons)
         _emit_alert(cfg, {
             "ts": today,
             "event": "mode_change",
