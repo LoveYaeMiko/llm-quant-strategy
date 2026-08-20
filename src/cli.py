@@ -1546,7 +1546,9 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
 
     from .paper import PaperLedger, PaperRunner
 
-    ledger_path = str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite"))
+    # ledger/status/report all anchor to ROOT (not the process CWD) so the daily
+    # scheduler, a bare `shadow` run and the autopilot read the *same* ledger.
+    ledger_path = str(ROOT / str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite")))
     ledger = PaperLedger(ledger_path)
     runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=seed,
                          **paper_runner_kwargs(cfg))
@@ -1582,7 +1584,7 @@ def cmd_shadow(args) -> int:
 
     symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
 
-    state = ControlState.load(str(cfg.get("autopilot.state_file", "outputs/autopilot_state.json")))
+    state = ControlState.load(str(ROOT / str(cfg.get("autopilot.state_file", "outputs/autopilot_state.json"))))
     status, ledger_path = _shadow_cycle(
         cfg, symbols, start, args.end, args.seed, args.skip_refresh,
         control_scale=state.gross_scale,
@@ -1616,7 +1618,7 @@ def _calibrate_cycle(cfg, symbols, window_start, window_end, seed, auto_apply):
 
     from .paper import PaperLedger
 
-    ledger = PaperLedger(str(cfg.section("shadow").get("ledger_db", "outputs/shadow_ledger.sqlite")))
+    ledger = PaperLedger(str(ROOT / str(cfg.section("shadow").get("ledger_db", "outputs/shadow_ledger.sqlite"))))
     fills = ledger.fills()
     ledger.close()
 
@@ -1664,10 +1666,19 @@ def cmd_calibrate(args) -> int:
 # autopilot — the end-to-end adaptive closed loop
 # ---------------------------------------------------------------------------
 def _days_since_iso(iso_date, now: pd.Timestamp) -> float:
+    """Business days (A-share trading-day proxy) since ``iso_date``.
+
+    The cadence knobs (``calibrate_interval_days`` / ``remine_interval_days``)
+    are documented in trading days, so count business days rather than calendar
+    days — an approximate calendar would fire the periodic tasks ~40% early.
+    A missing date returns ``inf`` so a first run schedules the task now.
+    """
     if not iso_date:
         return float("inf")
     try:
-        return float((now.normalize() - pd.Timestamp(iso_date).normalize()).days)
+        start = pd.Timestamp(iso_date).normalize()
+        end = now.normalize()
+        return float(max(0, len(pd.bdate_range(start, end)) - 1))
     except (ValueError, TypeError):
         return float("inf")
 
@@ -1701,11 +1712,14 @@ def _monitor_decay(cfg, symbols, *, window_days=90, icir_threshold=0.30) -> dict
 def _remine_and_promote(cfg, symbols, *, min_sharpe=1.0) -> dict:
     """Opt-in auto re-mine: mine replacements, gate them, keep only if they pass.
 
-    Runs the full mining loop in a *subprocess* (isolated memory + LLM cost),
-    backtests the new pool's composite on the test window, and keeps it only if
-    the composite Sharpe clears ``min_sharpe``. Any failure — empty pool, gate
-    failure, subprocess error — restores the previous ``factors.json`` so the live
-    alpha is never silently clobbered by a worse or empty pool.
+    Runs the full mining loop in a *subprocess* (isolated memory + LLM cost) on
+    the deployed universe, backtests the new pool's **equal-weight** composite on
+    the test window (the same composite the live :class:`AlphaCore` deploys — not
+    the ICIR-weighted ``pool promote`` composite, which a fresh mine can't score
+    because it has no ``val_metrics`` yet), and keeps it only if the composite
+    Sharpe clears ``min_sharpe``. Any failure — empty pool, gate failure,
+    subprocess error — restores the previous ``factors.json`` so the live alpha is
+    never silently clobbered by a worse or empty pool.
     """
     out = _out_dir()
     pool_file = out / "factors.json"
@@ -1717,9 +1731,11 @@ def _remine_and_promote(cfg, symbols, *, min_sharpe=1.0) -> dict:
 
     shutil.copy2(pool_file, backup)
     try:
+        mine_cmd = [sys.executable, "-m", "src.cli", "mine", "--window", "train"]
+        if symbols:
+            mine_cmd += ["--symbols", *symbols]
         proc = subprocess.run(
-            [sys.executable, "-m", "src.cli", "mine", "--window", "train"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            mine_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         if proc.returncode != 0:
             shutil.copy2(backup, pool_file)
@@ -1733,12 +1749,12 @@ def _remine_and_promote(cfg, symbols, *, min_sharpe=1.0) -> dict:
             return {"ran": True, "accepted": False, "note": "mine accepted 0 factors — pool restored"}
         bt_proc = subprocess.run(
             [sys.executable, "-m", "src.cli", "backtest", "--factor-pool",
-             str(pool_file), "--weights", "icir", "--window", "test"],
+             str(pool_file), "--weights", "equal", "--window", "test"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         sharpe = 0.0
         if bt_proc.returncode == 0:
-            bt_path = out / "backtest_icir.json"
+            bt_path = out / "backtest_equal.json"
             if bt_path.exists():
                 try:
                     sharpe = float(json.loads(bt_path.read_text(encoding="utf-8"))
@@ -1748,12 +1764,41 @@ def _remine_and_promote(cfg, symbols, *, min_sharpe=1.0) -> dict:
         if sharpe < min_sharpe:
             shutil.copy2(backup, pool_file)
             return {"ran": True, "accepted": False, "n_factors": len(new_pool),
-                    "note": f"new composite sharpe {sharpe:.2f} < floor {min_sharpe} — pool restored"}
+                    "note": f"new equal-weight composite sharpe {sharpe:.2f} < floor {min_sharpe} — pool restored"}
         return {"ran": True, "accepted": True, "n_factors": len(new_pool),
                 "sharpe": sharpe, "note": f"promoted (sharpe {sharpe:.2f} >= {min_sharpe})"}
     except Exception as exc:  # noqa: BLE001 — never leave the live pool clobbered
         shutil.copy2(backup, pool_file)
         return {"ran": True, "accepted": False, "note": f"error: {exc}"}
+
+
+def _emit_alert(cfg, event: dict) -> None:
+    """Append a machine-readable autopilot event and (optionally) POST it.
+
+    Alerting is best-effort — a failed webhook or a full disk must never kill
+    the daily loop. The JSONL file gives PAICC / cron a stable local trigger
+    even when no webhook is configured.
+    """
+    alerts_path = ROOT / str(cfg.get("autopilot.alerts_file", "outputs/autopilot_alerts.jsonl"))
+    try:
+        alerts_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(alerts_path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(event, ensure_ascii=False, default=str) + "\n")
+    except OSError as exc:  # noqa: BLE001
+        print(f"WARNING: alert log write failed ({exc})", file=sys.stderr)
+    webhook = cfg.get("autopilot.alert_webhook")
+    if webhook:
+        try:
+            import urllib.request
+
+            req = urllib.request.Request(
+                webhook,
+                data=json.dumps(event, ensure_ascii=False).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as exc:  # noqa: BLE001
+            print(f"WARNING: alert webhook failed ({exc})", file=sys.stderr)
 
 
 def _render_autopilot_report(status, decision, state, extra) -> str:
@@ -1767,29 +1812,38 @@ def _render_autopilot_report(status, decision, state, extra) -> str:
         "## 风险闸门 (kill-switch)",
         "",
         f"- 当前档位: **{state.mode}**（总敞口 ×{state.gross_scale:g}）",
+        f"- 档位变化: {'是' if decision.changed else '否'}",
         f"- 最新净值: {eq.get('latest', 0):,.2f}　累计收益: {eq.get('total_return', 0):.2%}　最大回撤: {eq.get('max_drawdown', 0):.2%}",
+        f"- 因子衰减: {'是（保持在 de_risk 之上）' if state.factor_decayed else '否'}",
     ]
     for r in decision.reasons:
         lines.append(f"  - {r}")
     lines += ["", "## 周期任务", ""]
     for k, v in extra.items():
         lines.append(f"- **{k}**: {v}")
+    lines += ["", "## 最近一次周期时间戳", ""]
+    lines.append(f"- 上次评估: {state.last_evaluated}")
+    lines.append(f"- 上次回校: {state.last_calibrate}")
+    lines.append(f"- 上次监控: {state.last_monitor}")
     return "\n".join(lines) + "\n"
 
 
 def cmd_autopilot(args) -> int:
-    """自动闭环 — shadow → 风险闸门 → 周期回校 → 因子衰减监控 → (可选)重挖。
+    """自动闭环 — shadow → 周期任务(回校/衰减监控/重挖) → 风险闸门 → 持久化。
 
     The single daily entry point that makes the shadow self-adjusting:
 
     1. advance the shadow ledger (honouring the last kill-switch decision);
-    2. evaluate the risk gate on the fresh status → normal / de_risk / halt;
-    3. persist the decision so the *next* run (and a bare ``shadow`` run) honours it;
-    4. on a cadence, re-run §7 calibration (auto-apply) and score factor decay;
-    5. (opt-in) re-mine factors and promote only if the new pool clears the floor.
+    2. on a cadence, re-run §7 calibration (auto-apply) and score factor decay
+       (optionally re-mining), so the gate below sees the *freshest* decay flag;
+    3. evaluate the risk gate → normal / de_risk / halt;
+    4. persist the decision so the *next* run (and a bare ``shadow`` run) honours it.
 
     Live order execution is deliberately NOT part of this loop — the shadow never
     places real orders; the closed loop only adjusts the paper book and config.
+
+    Returns non-zero when a periodic task failed (so the scheduler can surface
+    it), even though the kill-switch itself never crashes the run.
     """
     cfg = load_config()
     acfg = cfg.section("autopilot")
@@ -1802,7 +1856,7 @@ def cmd_autopilot(args) -> int:
     from .paper.shadow import resolve_shadow_universe
 
     symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
-    state_file = str(acfg.get("state_file", "outputs/autopilot_state.json"))
+    state_file = str(ROOT / str(acfg.get("state_file", "outputs/autopilot_state.json")))
     state = ControlState.load(state_file)
     today = pd.Timestamp.today().date().isoformat()
 
@@ -1813,19 +1867,10 @@ def cmd_autopilot(args) -> int:
         control_scale=state.gross_scale,
     )
 
-    # 2. risk gate
-    decision = evaluate_risk_gate(
-        status, state, dict(acfg.get("risk_gate", {}) or {}), now=pd.Timestamp(today)
-    )
-    if decision.changed:
-        state.mode = decision.mode
-        state.gross_scale = decision.gross_scale
-        state.since_date = today
-        state.reason = " | ".join(decision.reasons)
-    state.last_evaluated = today
-
-    # 4. periodic tasks
-    extra: dict[str, str] = {"kill_switch": f"{state.mode} (×{state.gross_scale:g})"}
+    # 2. periodic tasks — run *before* the gate so a freshly-detected factor
+    # decay de-risks on this evaluation instead of one run later.
+    extra: dict[str, str] = {}
+    had_failure = False
 
     # (a) §7 re-calibration
     if not args.no_calibrate and bool(acfg.get("auto_calibrate", True)):
@@ -1845,6 +1890,7 @@ def cmd_autopilot(args) -> int:
                 applied = sorted(result.get("applied", {}).get("changed", {}))
                 extra["calibrate"] = f"done (applied {applied or 'none'})"
             except Exception as exc:  # noqa: BLE001 — a failed sweep must not kill the loop
+                had_failure = True
                 extra["calibrate"] = f"FAILED: {exc}"
         else:
             extra["calibrate"] = "not due"
@@ -1868,16 +1914,48 @@ def cmd_autopilot(args) -> int:
                 if n_decayed and bool(acfg.get("auto_remine", False)):
                     rem = _remine_and_promote(cfg, symbols,
                                               min_sharpe=float(acfg.get("min_sharpe", 1.0)))
-                    state.last_mine = today
                     extra["remine"] = rem.get("note", "ran")
+                    if rem.get("accepted"):
+                        # the decayed pool was replaced — clear the flag so the gate
+                        # (and the next monitor pass) re-score the *new* pool rather
+                        # than pinning de-risk on a pool that no longer exists.
+                        state.factor_decayed = False
+                        extra["monitor"] += " (pool replaced — decay flag cleared)"
+                else:
+                    extra["remine"] = "not triggered"
             except Exception as exc:  # noqa: BLE001
+                had_failure = True
                 extra["monitor"] = f"FAILED: {exc}"
+                extra["remine"] = "not run"
         else:
             extra["monitor"] = "not due"
+            extra["remine"] = "not due"
     else:
         extra["monitor"] = "disabled"
+        extra["remine"] = "disabled"
 
-    # persist
+    # 3. risk gate (sees the freshest factor_decayed / drawdown)
+    old_mode, old_scale = state.mode, state.gross_scale
+    decision = evaluate_risk_gate(
+        status, state, dict(acfg.get("risk_gate", {}) or {}), now=pd.Timestamp(today)
+    )
+    if decision.changed:
+        state.mode = decision.mode
+        state.gross_scale = decision.gross_scale
+        state.since_date = today
+        state.reason = " | ".join(decision.reasons)
+        _emit_alert(cfg, {
+            "ts": today,
+            "event": "mode_change",
+            "from": {"mode": old_mode, "gross_scale": old_scale},
+            "to": {"mode": decision.mode, "gross_scale": decision.gross_scale},
+            "reasons": decision.reasons,
+        })
+    state.last_evaluated = today
+    extra["kill_switch"] = f"{state.mode} (×{state.gross_scale:g})"
+    state.extra = dict(extra)
+
+    # 4. persist + report
     state.save(state_file)
     report_path = ROOT / str(acfg.get("report_md", "outputs/autopilot_report.md"))
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1890,7 +1968,7 @@ def cmd_autopilot(args) -> int:
     for k, v in extra.items():
         print(f"  {k}: {v}")
     print(f"  wrote {report_path}  (state {state_file})")
-    return 0
+    return 1 if had_failure else 0
 
 
 def main(argv: list[str] | None = None) -> int:

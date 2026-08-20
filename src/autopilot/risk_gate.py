@@ -103,17 +103,37 @@ def _consecutive_loss_days(eq: pd.Series) -> int:
 
 
 def _days_since(since_date: Optional[str], now: pd.Timestamp) -> float:
+    """Calendar days since ``since_date``.
+
+    A missing/unparseable ``since_date`` returns ``0.0`` (cooldown *not*
+    satisfied) rather than ``inf`` — the cooldown is a safety latch, so failing
+    open would let a half-written state de-escalate the book on the same run it
+    was (re)loaded.
+    """
     if not since_date:
-        return float("inf")
+        return 0.0
     try:
         return float((now.normalize() - pd.Timestamp(since_date).normalize()).days)
     except (ValueError, TypeError):
-        return float("inf")
+        return 0.0
 
 
 # --------------------------------------------------------------------------- #
 # decision
 # --------------------------------------------------------------------------- #
+def _scale(mode: str, de_risk_scale: float) -> float:
+    """Canonical gross multiplier for a mode.
+
+    Assumes ``mode`` is a valid ``ControlState.mode`` — guaranteed upstream by
+    :meth:`ControlState.from_dict`'s fail-closed sanitisation.
+    """
+    return {
+        MODE_NORMAL: 1.0,
+        MODE_DE_RISK: de_risk_scale,
+        MODE_HALT: 0.0,
+    }[mode]
+
+
 def evaluate_risk_gate(
     status: dict,
     current: ControlState,
@@ -145,62 +165,84 @@ def evaluate_risk_gate(
     consec = _consecutive_loss_days(eq)
 
     reasons: list[str] = []
+    # A decayed deployed factor pool is itself a reason to de-risk: the alpha is
+    # losing predictive power, so at minimum halve the gross until a re-mine
+    # (auto or manual) replaces the pool. This only raises the floor — never
+    # lowers it. Evaluated *before* the min-history guard so a thin live curve
+    # (the decay signal comes from the frozen test window, not the live curve)
+    # cannot dodge it.
+    factor_decay = bool(getattr(current, "factor_decayed", False))
+    if factor_decay:
+        reasons.append("deployed factor pool decayed → hold at least DE_RISK")
+
     # Not enough live history — refuse to react to a handful of noisy days.
     if len(eq) < min_history:
+        if factor_decay:
+            new_mode = (
+                MODE_DE_RISK
+                if mode_level(current.mode) < mode_level(MODE_DE_RISK)
+                else current.mode
+            )
+            new_scale = _scale(new_mode, de_risk_scale)
+            changed = new_mode != current.mode or abs(new_scale - current.gross_scale) > 1e-9
+            reasons.append(
+                f"history {len(eq)}d < min {min_history}d — de-risked on factor decay"
+            )
+            return RiskDecision(new_mode, new_scale, changed, reasons)
         reasons.append(
             f"history {len(eq)}d < min {min_history}d — hold {current.mode} "
             f"(no kill-switch on a thin curve)"
         )
         return RiskDecision(current.mode, current.gross_scale, False, reasons)
 
-    halt = current_dd >= dd_halt or trail <= trail_halt or consec >= loss_halt
-    derisk = current_dd >= dd_de_risk or trail <= trail_de_risk
-
-    # A decayed deployed factor pool is itself a reason to de-risk: the alpha is
-    # losing predictive power, so at minimum halve the gross until the next
-    # monitor pass re-scores it (this only raises the floor — never lowers it).
-    if bool(getattr(current, "factor_decayed", False)):
-        derisk = True
-        reasons.append("deployed factor pool decayed → hold at least DE_RISK")
-
     cur_level = mode_level(current.mode)
     new_mode = current.mode
 
-    if halt:
-        new_mode = MODE_HALT
-        reasons.append(
-            f"currentDD {current_dd:.1%} / trail {trail:.1%} / consec {consec}d → HALT"
-        )
-    elif derisk:
-        # still elevated; never step *down* below de_risk while a breach persists
-        new_mode = MODE_DE_RISK if cur_level < mode_level(MODE_DE_RISK) else current.mode
-        reasons.append(f"currentDD {current_dd:.1%} / trail {trail:.1%} → DE_RISK")
-    elif cur_level > 0:
-        # no breach — consider one-level de-escalation (needs recovery + cooldown)
-        recovered = (
-            current_dd < dd_de_risk * hysteresis
-            and trail > trail_de_risk * hysteresis
-            and consec == 0
-        )
+    # A flat (halt) book cannot reclaim its frozen peak, so the live drawdown is
+    # no longer a meaningful *escalation* signal — it would re-assert HALT forever
+    # and strand the book. Once halted, only step DOWN to DE_RISK when the trailing
+    # window stabilises and the cooldown elapses, letting the book resume at half
+    # gross and re-measure drawdown from there.
+    if current.mode == MODE_HALT:
+        recovered = trail > trail_de_risk * hysteresis
         cooled = _days_since(current.since_date, now) >= cooldown
         if recovered and cooled:
-            new_mode = MODE_NORMAL if current.mode == MODE_DE_RISK else MODE_DE_RISK
-            reasons.append(
-                f"recovered (DD {current_dd:.1%}, trail {trail:+.1%}) + cooled → {new_mode}"
-            )
+            new_mode = MODE_DE_RISK
+            reasons.append(f"halt recovery (trail {trail:+.1%}) + cooled → DE_RISK")
         else:
-            reasons.append(
-                f"holding {current.mode} (recovered={recovered}, cooled={cooled})"
-            )
+            reasons.append(f"holding halt (recovered={recovered}, cooled={cooled})")
     else:
-        reasons.append(f"no breach (DD {current_dd:.1%}, trail {trail:+.1%}) → normal")
+        halt = current_dd >= dd_halt or trail <= trail_halt or consec >= loss_halt
+        derisk = current_dd >= dd_de_risk or trail <= trail_de_risk or factor_decay
+        if halt:
+            new_mode = MODE_HALT
+            reasons.append(
+                f"currentDD {current_dd:.1%} / trail {trail:.1%} / consec {consec}d → HALT"
+            )
+        elif derisk:
+            # still elevated; never step *down* below de_risk while a breach persists
+            new_mode = MODE_DE_RISK if cur_level < mode_level(MODE_DE_RISK) else current.mode
+            reasons.append(f"currentDD {current_dd:.1%} / trail {trail:.1%} → DE_RISK")
+        elif cur_level > 0:
+            # no breach — one-level de-escalation from de_risk (recovery + cooldown)
+            recovered = (
+                current_dd < dd_de_risk * hysteresis
+                and trail > trail_de_risk * hysteresis
+            )
+            cooled = _days_since(current.since_date, now) >= cooldown
+            if recovered and cooled:
+                new_mode = MODE_NORMAL
+                reasons.append(
+                    f"recovered (DD {current_dd:.1%}, trail {trail:+.1%}) + cooled → NORMAL"
+                )
+            else:
+                reasons.append(
+                    f"holding {current.mode} (recovered={recovered}, cooled={cooled})"
+                )
+        else:
+            reasons.append(f"no breach (DD {current_dd:.1%}, trail {trail:+.1%}) → normal")
 
-    new_scale = {
-        MODE_NORMAL: 1.0,
-        MODE_DE_RISK: de_risk_scale,
-        MODE_HALT: 0.0,
-    }[new_mode]
-
+    new_scale = _scale(new_mode, de_risk_scale)
     changed = new_mode != current.mode or abs(new_scale - current.gross_scale) > 1e-9
     return RiskDecision(new_mode, new_scale, changed, reasons)
 

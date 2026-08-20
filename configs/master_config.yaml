@@ -201,7 +201,7 @@ alpha_core:
 seasonal_tilt:
   enabled: true
   type: "pead_reversal"
-  amplitude: 0.1                    # ±20%
+  amplitude: 0.3                    # ±20%
   min_weight: 0.015                  # 权重 > 1.5% 才调整（市场中性粗仓约 1.7%）
   window_days: 5
   months: [1, 2, 4, 8, 10]           # 年报/一季报/中报/三季报窗口
@@ -211,7 +211,7 @@ risk_overlay:
   type: "sentiment_risk"
   zscore_threshold: -2             # 历史 5% 分位
   position_cut: 0.50                 # 触发即减半仓
-  freeze_days: 5                     # 保持 5 个交易日
+  freeze_days: 7                     # 保持 5 个交易日
   min_trigger_samples: 20            # 低于该样本数不触发（防退化 std）
 
 # =====================================================================
@@ -266,7 +266,7 @@ autopilot:
     trailing_return_halt: -0.15       # 60日收益 <= -15% -> 走平
     consecutive_loss_days_halt: 20    # 连续亏损 >= 20 日 -> 走平
     de_risk_scale: 0.5                # 收缩时的总敞口倍数
-    recovery_hysteresis: 0.5          # 回撤/收益恢复到触发阈值的 0.5 倍以下才解除
+    recovery_hysteresis: 0.5          # 恢复比例：回撤/收益须回到触发阈值的 0.5 倍以内才解除（越大越易解除）
     cooldown_days: 5                  # 进入某档后的最小持续天数（防抖）
   # --- 周期任务 ---
   auto_calibrate: true                # 周期性 §7 回校并自动写回配置
@@ -276,7 +276,9 @@ autopilot:
   decay_window_days: 90               # ICIR 滚动窗口（对齐 research.decay.window_days）
   decay_icir_threshold: 0.30          # 衰减 ICIR 地板（对齐 factor_thresholds icir.keep）
   auto_remine: false                  # 衰减后自动重挖（LLM 成本高，默认关；启用才跑 mine）
-  min_sharpe: 1.0                     # 重挖后 promote 的 Sharpe 门限（与 pool promote 一致，不降低）
+  min_sharpe: 1.0                     # 重挖后 promote 的 Sharpe 门限（等权复合，与 alpha_core 一致，不降低）
+  alerts_file: "outputs/autopilot_alerts.jsonl"  # 档位变化的机器可读告警日志（PAICC/cron 可监听）
+  alert_webhook: ""                   # 可选：档位变化时 POST 该 URL（空则不发送）
 
 # =====================================================================
 # §7 三项回校 — PEAD 倾斜幅度 / 舆情阈值 / 交易成本模型

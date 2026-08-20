@@ -145,10 +145,17 @@ class PaperRunner:
             if (i - start_idx) % self.rebalance_days == 0:
                 weights = self.portfolio.compute_weights(self.symbols, d)
                 if weights:
-                    # explicit 0.0 for names not in the book so the executor
-                    # *sells* dropped names rather than leaving them held forever.
+                    # Explicit 0.0 for any name not in the book — both symbols
+                    # dropped by the optimizer and positions still held from a
+                    # shrunken universe (e.g. a halt target that only covers the
+                    # current universe) — so the executor *sells* them rather
+                    # than leaving them held forever.
+                    held = set(ex.positions)
+                    universe = list(
+                        dict.fromkeys([*self.symbols, *sorted(held - set(self.symbols))])
+                    )
                     targets = pd.DataFrame(
-                        [{s: weights.get(s, 0.0) for s in self.symbols}], index=[d]
+                        [{s: weights.get(s, 0.0) for s in universe}], index=[d]
                     )
                     res = ex.execute(targets, prices.loc[[d]], equity=mtm)
                     fills = res.fills
