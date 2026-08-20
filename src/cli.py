@@ -1347,13 +1347,19 @@ def _build_market_for_paper(cfg, symbols, start, end, seed=1):
     return market
 
 
-def _build_paper_portfolio(cfg, market, symbols):
+def _build_paper_portfolio(cfg, market, symbols, control_scale=None):
     """Assemble the three-layer portfolio (alpha → PEAD tilt → sentiment risk).
 
     Returns ``(portfolio, components)`` where ``components`` exposes the alpha
     core, PEAD factor and sentiment panel for the §7 calibration sweeps. The PEAD
     profit-panel years extend through the *current* year so 2026 shadow data is
     gradually covered as quarterly reports are announced.
+
+    ``control_scale`` (optional) wraps the book in a
+    :class:`~src.autopilot.control.ControlScaledPortfolio` so the autopilot
+    kill-switch can halve (de-risk) or flatten (halt) the gross exposure. The
+    shadow/autopilot paths pass the live control-state multiplier; ``paper`` and
+    ``calibrate`` leave it ``None`` to evaluate the un-de-risked strategy.
     """
     from .factors.code_generator import FactorContext
     from .portfolio.alpha_core import AlphaCore
@@ -1438,6 +1444,11 @@ def _build_paper_portfolio(cfg, market, symbols):
     from .portfolio.layer_integration import ThreeLayerPortfolio
 
     portfolio = ThreeLayerPortfolio(alpha, tilt=tilt, risk=risk)
+    if control_scale is not None:
+        from .autopilot.control import ControlScaledPortfolio
+
+        scale = float(control_scale)
+        portfolio = ControlScaledPortfolio(portfolio, lambda scale=scale: scale)
     return portfolio, {"alpha": alpha, "pead": pead, "tilt": tilt, "risk": risk, "sentiment_panel": sig}
 
 
@@ -1489,17 +1500,15 @@ def cmd_paper(args) -> int:
     return 0
 
 
-def cmd_shadow(args) -> int:
-    """影子模式 — 不实盘下单，逐日记录目标持仓与 PnL（PAICC 每日调度入口）。
+def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None):
+    """Run one shadow cycle: refresh → build market+portfolio → advance the
+    resumable ledger → emit ``shadow_status.json`` + ``shadow_report.md``.
 
-    Single entry point: refresh data (行情/财报/研报 完整) → build market +
-    portfolio → advance the resumable shadow ledger → emit ``shadow_status.json``
-    + ``shadow_report.md``. A second run resumes where the last stopped.
+    Shared by :func:`cmd_shadow` and the autopilot orchestrator. ``control_scale``
+    (optional) wraps the book in the kill-switch multiplier; when ``None`` the
+    un-de-risked book is built. Returns ``(status, ledger_path)``.
     """
-    cfg = load_config()
     shadow = cfg.section("shadow")
-    pcfg = cfg.section("paper")
-    start = args.start or str(shadow.get("start_date", "2026-01-01"))
 
     from .paper.shadow import (
         build_shadow_status,
@@ -1510,13 +1519,10 @@ def cmd_shadow(args) -> int:
         refresh_price,
         refresh_sentiment,
         render_shadow_report,
-        resolve_shadow_universe,
     )
 
-    symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
-
     meta: dict = {}
-    if args.skip_refresh:
+    if skip_refresh:
         meta = {"note": "refresh skipped (--skip-refresh)"}
     else:
         if bool(shadow.get("refresh_data", True)):
@@ -1533,15 +1539,16 @@ def cmd_shadow(args) -> int:
             meta["benchmark"] = refresh_benchmark(cfg)
 
     # market includes 360d warmup before ``start``; run through the latest bar.
-    market = _build_market_for_paper(cfg, symbols, start, None, seed=args.seed)
+    market = _build_market_for_paper(cfg, symbols, start, None, seed=seed)
     latest = pd.Timestamp(market.price_panel.index.max()).date().isoformat()
-    end = args.end or latest
-    portfolio, overlays = _build_paper_portfolio(cfg, market, symbols)
+    end = end or latest
+    portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
 
     from .paper import PaperLedger, PaperRunner
 
-    ledger = PaperLedger(str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite")))
-    runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=args.seed,
+    ledger_path = str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite"))
+    ledger = PaperLedger(ledger_path)
+    runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=seed,
                          **paper_runner_kwargs(cfg))
     result = runner.run(start=start, end=end)
 
@@ -1554,17 +1561,78 @@ def cmd_shadow(args) -> int:
     status_path.parent.mkdir(parents=True, exist_ok=True)
     status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     report_path.write_text(render_shadow_report(status), encoding="utf-8")
+    return status, ledger_path
+
+
+def cmd_shadow(args) -> int:
+    """影子模式 — 不实盘下单，逐日记录目标持仓与 PnL（PAICC 每日调度入口）。
+
+    Single entry point: refresh data (行情/财报/研报 完整) → build market +
+    portfolio → advance the resumable shadow ledger → emit ``shadow_status.json``
+    + ``shadow_report.md``. A second run resumes where the last stopped. The book
+    honours the autopilot control state, so a previously-flagged de-risk/halt
+    persists across daily runs.
+    """
+    cfg = load_config()
+    shadow = cfg.section("shadow")
+    start = args.start or str(shadow.get("start_date", "2026-01-01"))
+
+    from .autopilot.state import ControlState
+    from .paper.shadow import resolve_shadow_universe
+
+    symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
+
+    state = ControlState.load(str(cfg.get("autopilot.state_file", "outputs/autopilot_state.json")))
+    status, ledger_path = _shadow_cycle(
+        cfg, symbols, start, args.end, args.seed, args.skip_refresh,
+        control_scale=state.gross_scale,
+    )
 
     eq = status["equity"]
     print("\n=== SHADOW MODE ===")
     print(f"  as_of={status['last_trading_date']}  freshness={status['data_freshness_days']}d")
+    print(f"  control={state.mode} (gross x{state.gross_scale:g})")
     print(f"  equity={eq['latest']:,.2f}  total_ret={eq['total_return']:.2%}  "
           f"sharpe={eq['sharpe']:.2f}  maxDD={eq['max_drawdown']:.2%}")
     for rl in status["red_lines"]:
         print(f"  [{rl.get('level', 'ok'):>8}] {rl.get('label', rl.get('name'))}: "
               f"{rl['value']}  {rl['detail']}")
-    print(f"  wrote {status_path}  (ledger {ledger.db_path})")
+    print(f"  wrote {ROOT / str(shadow.get('status_json', 'outputs/shadow_status.json'))}  (ledger {ledger_path})")
     return 0
+
+
+def _calibrate_cycle(cfg, symbols, window_start, window_end, seed, auto_apply):
+    """Run one §7 re-calibration sweep and write results/report.
+
+    Shared by :func:`cmd_calibrate` and the autopilot orchestrator. The cost
+    calibration recomputes the *accumulated* shadow fills (the real point-in-time
+    data the daily shadow run appends to ``shadow.ledger_db``), not the separate
+    ``paper`` backtest ledger. Returns the calibration result dict.
+    """
+    s7 = cfg.section("s7_calibration")
+
+    market = _build_market_for_paper(cfg, symbols, window_start, window_end, seed=seed)
+    _, overlays = _build_paper_portfolio(cfg, market, symbols)
+
+    from .paper import PaperLedger
+
+    ledger = PaperLedger(str(cfg.section("shadow").get("ledger_db", "outputs/shadow_ledger.sqlite")))
+    fills = ledger.fills()
+    ledger.close()
+
+    from . import calibration
+
+    result = calibration.calibrate_s7(
+        cfg, market, symbols, overlays["alpha"], overlays.get("pead"),
+        overlays.get("sentiment_panel"), fills, auto_apply=auto_apply,
+    )
+
+    result_path = ROOT / str(s7.get("result_json", "outputs/s7_calibration.json"))
+    report_path = ROOT / str(s7.get("report_md", "outputs/s7_calibration.md"))
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    report_path.write_text(calibration.render_calibration_report(result), encoding="utf-8")
+    return result
 
 
 def cmd_calibrate(args) -> int:
@@ -1577,31 +1645,8 @@ def cmd_calibrate(args) -> int:
     from .paper.shadow import resolve_shadow_universe
 
     symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
-    market = _build_market_for_paper(cfg, symbols, window_start, window_end, seed=args.seed)
-    _, overlays = _build_paper_portfolio(cfg, market, symbols)
-
-    from .paper import PaperLedger
-
-    # Cost calibration recomputes the *accumulated* shadow fills (the real
-    # point-in-time data the daily shadow run appends to ``shadow.ledger_db``),
-    # not the separate ``paper`` backtest ledger — the latter is never populated
-    # by the shadow/calibrate loop and would leave the deviation report at 0.
-    ledger = PaperLedger(str(cfg.section("shadow").get("ledger_db", "outputs/shadow_ledger.sqlite")))
-    fills = ledger.fills()
-    ledger.close()
-
-    from . import calibration
-
-    result = calibration.calibrate_s7(
-        cfg, market, symbols, overlays["alpha"], overlays.get("pead"),
-        overlays.get("sentiment_panel"), fills, auto_apply=not args.no_apply,
-    )
-
-    result_path = ROOT / str(s7.get("result_json", "outputs/s7_calibration.json"))
-    report_path = ROOT / str(s7.get("report_md", "outputs/s7_calibration.md"))
-    result_path.parent.mkdir(parents=True, exist_ok=True)
-    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
-    report_path.write_text(calibration.render_calibration_report(result), encoding="utf-8")
+    result = _calibrate_cycle(cfg, symbols, window_start, window_end, args.seed,
+                              auto_apply=not args.no_apply)
 
     print("\n=== §7 CALIBRATION ===")
     print(f"  cost: dev={result['cost']['deviation_pct']:+.1f}%  "
@@ -1611,7 +1656,240 @@ def cmd_calibrate(args) -> int:
           f"freeze={result['sentiment']['recommended']['freeze_days']}")
     if result["auto_apply"]:
         print(f"  applied: {sorted(result['applied'].get('changed', {}))}")
-    print(f"  wrote {result_path}")
+    print(f"  wrote {ROOT / str(s7.get('result_json', 'outputs/s7_calibration.json'))}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# autopilot — the end-to-end adaptive closed loop
+# ---------------------------------------------------------------------------
+def _days_since_iso(iso_date, now: pd.Timestamp) -> float:
+    if not iso_date:
+        return float("inf")
+    try:
+        return float((now.normalize() - pd.Timestamp(iso_date).normalize()).days)
+    except (ValueError, TypeError):
+        return float("inf")
+
+
+def _monitor_decay(cfg, symbols, *, window_days=90, icir_threshold=0.30) -> dict:
+    """Rolling-window ICIR decay for the deployed factor pool on the test window.
+
+    The live 2026 shadow curve is too short for a rolling ICIR, so decay is scored
+    on the most recent research window (``research.test_*``) — a leading indicator
+    of whether the deployed alpha is still working. Returns ``{formula: {…}}`` or
+    ``{}`` when there is no pool to score.
+    """
+    pool_file = _out_dir() / "factors.json"
+    if not pool_file.exists():
+        return {}
+    from .factors.code_generator import FactorContext
+    from .pool import load_pool, monitor_watchlist
+
+    market = _market_data(cfg, seed=1, symbols=symbols)
+    market = _slice_market(market, cfg.get("research.test_start"), cfg.get("research.test_end"))
+    pool = load_pool(pool_file)
+    if not pool:
+        return {}
+    fctx = FactorContext(market.long)
+    return monitor_watchlist(
+        fctx, market.forward_returns, pool,
+        window_days=window_days, icir_threshold=icir_threshold,
+    )
+
+
+def _remine_and_promote(cfg, symbols, *, min_sharpe=1.0) -> dict:
+    """Opt-in auto re-mine: mine replacements, gate them, keep only if they pass.
+
+    Runs the full mining loop in a *subprocess* (isolated memory + LLM cost),
+    backtests the new pool's composite on the test window, and keeps it only if
+    the composite Sharpe clears ``min_sharpe``. Any failure — empty pool, gate
+    failure, subprocess error — restores the previous ``factors.json`` so the live
+    alpha is never silently clobbered by a worse or empty pool.
+    """
+    out = _out_dir()
+    pool_file = out / "factors.json"
+    if not pool_file.exists():
+        return {"ran": False, "note": "no factors.json to re-mine"}
+    backup = out / "factors.json.before_remine"
+    import shutil
+    import subprocess
+
+    shutil.copy2(pool_file, backup)
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "src.cli", "mine", "--window", "train"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        if proc.returncode != 0:
+            shutil.copy2(backup, pool_file)
+            return {"ran": True, "accepted": False,
+                    "note": f"mine exited {proc.returncode}", "tail": proc.stderr[-400:]}
+        from .pool import load_pool
+
+        new_pool = load_pool(pool_file)
+        if not new_pool:
+            shutil.copy2(backup, pool_file)
+            return {"ran": True, "accepted": False, "note": "mine accepted 0 factors — pool restored"}
+        bt_proc = subprocess.run(
+            [sys.executable, "-m", "src.cli", "backtest", "--factor-pool",
+             str(pool_file), "--weights", "icir", "--window", "test"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        sharpe = 0.0
+        if bt_proc.returncode == 0:
+            bt_path = out / "backtest_icir.json"
+            if bt_path.exists():
+                try:
+                    sharpe = float(json.loads(bt_path.read_text(encoding="utf-8"))
+                                   .get("composite", {}).get("sharpe", 0.0))
+                except (json.JSONDecodeError, OSError):
+                    sharpe = 0.0
+        if sharpe < min_sharpe:
+            shutil.copy2(backup, pool_file)
+            return {"ran": True, "accepted": False, "n_factors": len(new_pool),
+                    "note": f"new composite sharpe {sharpe:.2f} < floor {min_sharpe} — pool restored"}
+        return {"ran": True, "accepted": True, "n_factors": len(new_pool),
+                "sharpe": sharpe, "note": f"promoted (sharpe {sharpe:.2f} >= {min_sharpe})"}
+    except Exception as exc:  # noqa: BLE001 — never leave the live pool clobbered
+        shutil.copy2(backup, pool_file)
+        return {"ran": True, "accepted": False, "note": f"error: {exc}"}
+
+
+def _render_autopilot_report(status, decision, state, extra) -> str:
+    eq = status.get("equity", {})
+    lines = [
+        "# FQA 自动闭环 (Autopilot) 日报",
+        "",
+        f"- 运行时间: {state.last_evaluated}",
+        f"- 观察日期（数据截至）: {status.get('last_trading_date') or status.get('as_of')}",
+        "",
+        "## 风险闸门 (kill-switch)",
+        "",
+        f"- 当前档位: **{state.mode}**（总敞口 ×{state.gross_scale:g}）",
+        f"- 最新净值: {eq.get('latest', 0):,.2f}　累计收益: {eq.get('total_return', 0):.2%}　最大回撤: {eq.get('max_drawdown', 0):.2%}",
+    ]
+    for r in decision.reasons:
+        lines.append(f"  - {r}")
+    lines += ["", "## 周期任务", ""]
+    for k, v in extra.items():
+        lines.append(f"- **{k}**: {v}")
+    return "\n".join(lines) + "\n"
+
+
+def cmd_autopilot(args) -> int:
+    """自动闭环 — shadow → 风险闸门 → 周期回校 → 因子衰减监控 → (可选)重挖。
+
+    The single daily entry point that makes the shadow self-adjusting:
+
+    1. advance the shadow ledger (honouring the last kill-switch decision);
+    2. evaluate the risk gate on the fresh status → normal / de_risk / halt;
+    3. persist the decision so the *next* run (and a bare ``shadow`` run) honours it;
+    4. on a cadence, re-run §7 calibration (auto-apply) and score factor decay;
+    5. (opt-in) re-mine factors and promote only if the new pool clears the floor.
+
+    Live order execution is deliberately NOT part of this loop — the shadow never
+    places real orders; the closed loop only adjusts the paper book and config.
+    """
+    cfg = load_config()
+    acfg = cfg.section("autopilot")
+    if not bool(acfg.get("enabled", True)):
+        print("autopilot disabled (autopilot.enabled=false) — run `shadow` directly")
+        return 0
+
+    from .autopilot.risk_gate import evaluate_risk_gate
+    from .autopilot.state import ControlState
+    from .paper.shadow import resolve_shadow_universe
+
+    symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
+    state_file = str(acfg.get("state_file", "outputs/autopilot_state.json"))
+    state = ControlState.load(state_file)
+    today = pd.Timestamp.today().date().isoformat()
+
+    # 1. shadow cycle, honouring the last decision
+    start = args.start or str(cfg.section("shadow").get("start_date", "2026-01-01"))
+    status, _ = _shadow_cycle(
+        cfg, symbols, start, args.end, args.seed, args.skip_refresh,
+        control_scale=state.gross_scale,
+    )
+
+    # 2. risk gate
+    decision = evaluate_risk_gate(
+        status, state, dict(acfg.get("risk_gate", {}) or {}), now=pd.Timestamp(today)
+    )
+    if decision.changed:
+        state.mode = decision.mode
+        state.gross_scale = decision.gross_scale
+        state.since_date = today
+        state.reason = " | ".join(decision.reasons)
+    state.last_evaluated = today
+
+    # 4. periodic tasks
+    extra: dict[str, str] = {"kill_switch": f"{state.mode} (×{state.gross_scale:g})"}
+
+    # (a) §7 re-calibration
+    if not args.no_calibrate and bool(acfg.get("auto_calibrate", True)):
+        interval = int(acfg.get("calibrate_interval_days", 20))
+        if _days_since_iso(state.last_calibrate, pd.Timestamp(today)) >= interval:
+            try:
+                # the calibration window is independent of the shadow window —
+                # always the §7 walk-forward sample, not ``--start``/``--end``.
+                result = _calibrate_cycle(
+                    cfg, symbols,
+                    str(cfg.section("s7_calibration").get("window_start", "2020-01-01")),
+                    str(cfg.section("s7_calibration").get("window_end", "2025-12-31")),
+                    args.seed,
+                    auto_apply=bool(cfg.section("s7_calibration").get("auto_apply", True)),
+                )
+                state.last_calibrate = today
+                applied = sorted(result.get("applied", {}).get("changed", {}))
+                extra["calibrate"] = f"done (applied {applied or 'none'})"
+            except Exception as exc:  # noqa: BLE001 — a failed sweep must not kill the loop
+                extra["calibrate"] = f"FAILED: {exc}"
+        else:
+            extra["calibrate"] = "not due"
+    else:
+        extra["calibrate"] = "disabled"
+
+    # (b) factor-decay monitor (+ opt-in re-mine)
+    if bool(acfg.get("auto_monitor", True)):
+        interval = int(acfg.get("remine_interval_days", 60))
+        if _days_since_iso(state.last_monitor, pd.Timestamp(today)) >= interval:
+            try:
+                decay = _monitor_decay(
+                    cfg, symbols,
+                    window_days=int(acfg.get("decay_window_days", 90)),
+                    icir_threshold=float(acfg.get("decay_icir_threshold", 0.30)),
+                )
+                state.last_monitor = today
+                n_decayed = sum(1 for r in decay.values() if isinstance(r, dict) and r.get("decayed"))
+                state.factor_decayed = n_decayed > 0
+                extra["monitor"] = f"{len(decay)} factors, {n_decayed} decayed"
+                if n_decayed and bool(acfg.get("auto_remine", False)):
+                    rem = _remine_and_promote(cfg, symbols,
+                                              min_sharpe=float(acfg.get("min_sharpe", 1.0)))
+                    state.last_mine = today
+                    extra["remine"] = rem.get("note", "ran")
+            except Exception as exc:  # noqa: BLE001
+                extra["monitor"] = f"FAILED: {exc}"
+        else:
+            extra["monitor"] = "not due"
+    else:
+        extra["monitor"] = "disabled"
+
+    # persist
+    state.save(state_file)
+    report_path = ROOT / str(acfg.get("report_md", "outputs/autopilot_report.md"))
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(_render_autopilot_report(status, decision, state, extra), encoding="utf-8")
+
+    print("\n=== AUTOPILOT ===")
+    print(f"  control={state.mode} (gross x{state.gross_scale:g})  changed={decision.changed}")
+    for r in decision.reasons:
+        print(f"    - {r}")
+    for k, v in extra.items():
+        print(f"  {k}: {v}")
+    print(f"  wrote {report_path}  (state {state_file})")
     return 0
 
 
@@ -1854,6 +2132,20 @@ def main(argv: list[str] | None = None) -> int:
     p_cal.add_argument("--no-apply", action="store_true",
                        help="不自动写回 master_config.yaml")
     p_cal.set_defaults(func=cmd_calibrate)
+
+    p_auto = sub.add_parser("autopilot", help="自动闭环 — shadow → 风险闸门 → 回校/监控/重挖")
+    p_auto.add_argument("--start", type=str, default=None,
+                        help="影子观察期起点（默认 shadow.start_date）")
+    p_auto.add_argument("--end", type=str, default=None,
+                        help="影子观察期终点（默认最新 bar）")
+    p_auto.add_argument("--symbols", nargs="*", default=None,
+                        help="覆盖影子 universe")
+    p_auto.add_argument("--seed", type=int, default=1)
+    p_auto.add_argument("--skip-refresh", action="store_true",
+                        help="跳过行情/财报/研报增量刷新")
+    p_auto.add_argument("--no-calibrate", action="store_true",
+                        help="本轮跳过 §7 回校（即使已到周期）")
+    p_auto.set_defaults(func=cmd_autopilot)
 
     args = parser.parse_args(argv)
     try:

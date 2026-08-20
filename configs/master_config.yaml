@@ -246,6 +246,39 @@ shadow:
   benchmark_cache: "data/benchmark/hs300_index.csv"
 
 # =====================================================================
+# 自动闭环 (autopilot) — 影子盘 → 风险闸门(kill-switch) → 周期回校/衰减监控/(可选)重挖
+#
+# 每日一次 `python cli.py autopilot` 即可：推进影子账本 → 评估风险闸门 → 持久化档位
+# （下一轮 shadow 自动遵守）→ 按周期跑 §7 回校与因子衰减监控。**不含实盘下单**。
+# 所有风险闸门阈值只做「收缩/走平」，永不放松既有因子/风控 gate。
+# =====================================================================
+autopilot:
+  enabled: true
+  state_file: "outputs/autopilot_state.json"
+  report_md: "outputs/autopilot_report.md"
+  # --- 风险闸门 (kill-switch)：按当前回撤/尾部收益/连亏天数收缩总敞口 ---
+  risk_gate:
+    min_history_days: 20              # 交易日数低于此不触发（防首周误杀）
+    drawdown_de_risk: 0.10            # 当前回撤(距峰值) >= 10% -> 收缩至 de_risk_scale
+    drawdown_halt: 0.15               # 当前回撤 >= 15% -> 走平
+    trailing_window_days: 60          # 尾部收益窗口（交易日）
+    trailing_return_de_risk: -0.10    # 60日收益 <= -10% -> 收缩
+    trailing_return_halt: -0.15       # 60日收益 <= -15% -> 走平
+    consecutive_loss_days_halt: 20    # 连续亏损 >= 20 日 -> 走平
+    de_risk_scale: 0.5                # 收缩时的总敞口倍数
+    recovery_hysteresis: 0.5          # 回撤/收益恢复到触发阈值的 0.5 倍以下才解除
+    cooldown_days: 5                  # 进入某档后的最小持续天数（防抖）
+  # --- 周期任务 ---
+  auto_calibrate: true                # 周期性 §7 回校并自动写回配置
+  calibrate_interval_days: 20         # 每 ~20 交易日回校一次
+  auto_monitor: true                  # 周期性因子衰减监控（写回 factor_decayed）
+  remine_interval_days: 60            # 每 ~60 交易日检查一次因子衰减
+  decay_window_days: 90               # ICIR 滚动窗口（对齐 research.decay.window_days）
+  decay_icir_threshold: 0.30          # 衰减 ICIR 地板（对齐 factor_thresholds icir.keep）
+  auto_remine: false                  # 衰减后自动重挖（LLM 成本高，默认关；启用才跑 mine）
+  min_sharpe: 1.0                     # 重挖后 promote 的 Sharpe 门限（与 pool promote 一致，不降低）
+
+# =====================================================================
 # §7 三项回校 — PEAD 倾斜幅度 / 舆情阈值 / 交易成本模型
 # =====================================================================
 s7_calibration:
