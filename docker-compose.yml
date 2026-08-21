@@ -8,6 +8,10 @@ services:
   pit-db:
     image: postgres:17-alpine
     container_name: fqa-pit-db
+    # Auto-restart whenever the Docker daemon is up (e.g. after a reboot or a
+    # Docker Desktop restart) so the daily autopilot never finds the PIT store
+    # down just because the container wasn't manually started.
+    restart: unless-stopped
     environment:
       POSTGRES_DB: pit_data
       POSTGRES_USER: pit
