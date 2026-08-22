@@ -1637,6 +1637,29 @@ def _calibrate_cycle(cfg, symbols, window_start, window_end, seed, auto_apply):
     return result
 
 
+def _stamp_calibrate_state(cfg) -> None:
+    """Record the last §7 calibration run in the autopilot state, if present.
+
+    ``cli.py calibrate`` and the autopilot share :func:`_calibrate_cycle`, but only
+    the autopilot stamps ``ControlState.last_calibrate``. Stamp it here too so the
+    two entry points don't drift: the report's ``上次回校`` stays truthful and the
+    autopilot won't redundantly re-run the same sweep ~20 business days later.
+
+    Best-effort — a missing/corrupt state file must never fail a calibration that
+    already succeeded, so any error is swallowed.
+    """
+    from .autopilot.state import ControlState
+
+    acfg = cfg.section("autopilot")
+    state_file = str(ROOT / str(acfg.get("state_file", "outputs/autopilot_state.json")))
+    try:
+        state = ControlState.load(state_file)
+        state.last_calibrate = pd.Timestamp.today().date().isoformat()
+        state.save(state_file)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def cmd_calibrate(args) -> int:
     """§7 三项回校 — PEAD 倾斜幅度 / 舆情阈值 / 交易成本模型."""
     cfg = load_config()
@@ -1649,6 +1672,13 @@ def cmd_calibrate(args) -> int:
     symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
     result = _calibrate_cycle(cfg, symbols, window_start, window_end, args.seed,
                               auto_apply=not args.no_apply)
+
+    # Sync the autopilot's cadence bookkeeping: a standalone calibrate (the
+    # Saturday scheduler) runs the same §7 sweep the autopilot runs internally,
+    # so stamp last_calibrate — otherwise the report shows a stale 上次回校 and
+    # the autopilot re-runs the sweep redundantly on its own cadence.
+    if not args.no_apply:
+        _stamp_calibrate_state(cfg)
 
     print("\n=== §7 CALIBRATION ===")
     print(f"  cost: dev={result['cost']['deviation_pct']:+.1f}%  "
