@@ -201,7 +201,7 @@ alpha_core:
 seasonal_tilt:
   enabled: true
   type: "pead_reversal"
-  amplitude: 0.3                    # 倾斜幅度（§7 回校自动写回，注释不随值变动）
+  amplitude: 0.4                    # 倾斜幅度（§7 回校自动写回，注释不随值变动）
   min_weight: 0.015                  # 权重 > 1.5% 才调整（市场中性粗仓约 1.7%）
   window_days: 5
   months: [1, 2, 4, 8, 10]           # 年报/一季报/中报/三季报窗口
@@ -209,9 +209,9 @@ seasonal_tilt:
 risk_overlay:
   enabled: true
   type: "sentiment_risk"
-  zscore_threshold: -2             # 历史 5% 分位
+  zscore_threshold: -1             # 历史 5% 分位
   position_cut: 0.50                 # 触发即减半仓
-  freeze_days: 7                     # 触发后保持的交易日数（§7 回校自动写回）
+  freeze_days: 11                     # 触发后保持的交易日数（§7 回校自动写回）
   min_trigger_samples: 20            # 低于该样本数不触发（防退化 std）
 
 # =====================================================================
