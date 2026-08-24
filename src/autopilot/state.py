@@ -54,6 +54,9 @@ class ControlState:
     last_calibrate: Optional[str] = None
     last_monitor: Optional[str] = None
     factor_decayed: bool = False
+    #: Per-factor decay detail from the last monitor run (formula -> recent_icir /
+    #: decayed). Bookkeeping only — the portfolio layer acts on ``factor_decayed``.
+    decay_detail: dict = field(default_factory=dict)
     extra: dict = field(default_factory=dict)
 
     # -- serialization --------------------------------------------------------

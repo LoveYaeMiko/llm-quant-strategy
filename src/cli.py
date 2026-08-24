@@ -1834,8 +1834,55 @@ def _emit_alert(cfg, event: dict) -> None:
             print(f"WARNING: alert webhook failed ({exc})", file=sys.stderr)
 
 
-def _render_autopilot_report(status, decision, state, extra) -> str:
-    eq = status.get("equity", {})
+def _render_autopilot_report(status, decision, state, extra, risk_cfg=None) -> str:
+    """Render the autopilot report with the gate's own signals made explicit.
+
+    The kill-switch reasons about *current* drawdown-from-peak and a trailing
+    return window, not the historical max-drawdown metric — so the report shows
+    both, plus the thresholds, so an operator can see exactly why the book is in
+    its mode and how it leaves.
+    """
+    from .autopilot.risk_gate import (
+        _consecutive_loss_days,
+        _current_drawdown,
+        _equity_curve,
+        _trailing_return,
+    )
+
+    risk_cfg = risk_cfg or {}
+    eqm = status.get("equity", {})
+    eq, dd = _equity_curve(status)
+
+    current_dd = _current_drawdown(eq, dd)
+    trail_window = int(risk_cfg.get("trailing_window_days", 60))
+    trail = _trailing_return(eq, trail_window)
+    consec = _consecutive_loss_days(eq)
+
+    dd_de_risk = float(risk_cfg.get("drawdown_de_risk", 0.10))
+    dd_halt = float(risk_cfg.get("drawdown_halt", 0.15))
+    trail_de_risk = float(risk_cfg.get("trailing_return_de_risk", -0.10))
+    trail_halt = float(risk_cfg.get("trailing_return_halt", -0.15))
+    loss_halt = int(risk_cfg.get("consecutive_loss_days_halt", 20))
+    hysteresis = float(risk_cfg.get("recovery_hysteresis", 0.5))
+    cooldown = int(risk_cfg.get("cooldown_days", 5))
+
+    daily = 0.0
+    if len(eq) >= 2:
+        prev, last = float(eq.iloc[-2]), float(eq.iloc[-1])
+        if prev > 0:
+            daily = last / prev - 1.0
+
+    bench_ret = None
+    bench_curve = status.get("benchmark") or []
+    if len(bench_curve) >= 2:
+        try:
+            b0 = float(bench_curve[0].get("equity", 0.0))
+            b1 = float(bench_curve[-1].get("equity", 0.0))
+            if b0 > 0:
+                bench_ret = b1 / b0 - 1.0
+        except (ValueError, TypeError, AttributeError):
+            bench_ret = None
+
     lines = [
         "# FQA 自动闭环 (Autopilot) 日报",
         "",
@@ -1846,14 +1893,70 @@ def _render_autopilot_report(status, decision, state, extra) -> str:
         "",
         f"- 当前档位: **{state.mode}**（总敞口 ×{state.gross_scale:g}）",
         f"- 档位变化: {'是' if decision.changed else '否'}",
-        f"- 最新净值: {eq.get('latest', 0):,.2f}　累计收益: {eq.get('total_return', 0):.2%}　最大回撤: {eq.get('max_drawdown', 0):.2%}",
-        f"- 因子衰减: {'是（保持在 de_risk 之上）' if state.factor_decayed else '否'}",
+        f"- 最新净值: {eqm.get('latest', 0):,.2f}　当日: {daily:+.2%}　累计收益: {eqm.get('total_return', 0):.2%}",
+        f"- 最大回撤(历史): {eqm.get('max_drawdown', 0):.2%}　当前回撤(距峰值): {current_dd:.2%}",
     ]
+    if bench_ret is not None:
+        excess = float(eqm.get("total_return", 0)) - bench_ret
+        lines.append(f"- 基准累计: {bench_ret:+.2%}　超额: {excess:+.2%}")
+    lines.append(f"- 因子衰减: {'是（保持在 de_risk 之上）' if state.factor_decayed else '否'}")
     for r in decision.reasons:
         lines.append(f"  - {r}")
+
+    lines += [
+        "",
+        "## 风控信号 (gate)",
+        "",
+        f"- 当前回撤(距峰值): {current_dd:.2%}（de_risk {dd_de_risk:.0%} / halt {dd_halt:.0%}）",
+        f"- {trail_window}日收益: {trail:+.2%}（de_risk {trail_de_risk:.0%} / halt {trail_halt:.0%}）",
+        f"- 连续亏损: {consec} 天（halt {loss_halt} 天）",
+    ]
+
+    # Exit condition — how the book leaves the current mode.
+    if state.mode == "halt":
+        exit_note = (
+            f"60日收益回升至 {trail_de_risk * hysteresis:+.0%} 以上且冷却 {cooldown} 天 → 降至 de_risk"
+        )
+    elif state.mode == "de_risk":
+        if state.factor_decayed:
+            exit_note = (
+                "因子池衰减是当前降档主因：需重挖/替换衰减因子（auto_remine 或手动 remine）"
+                "清除衰减标记后，回撤与收益恢复即可逐步升档"
+            )
+        else:
+            exit_note = (
+                f"当前回撤 < {dd_de_risk * hysteresis:.1%} 且 {trail_window}日收益 > "
+                f"{trail_de_risk * hysteresis:+.0%} 且冷却 {cooldown} 天 → 升至 normal"
+            )
+    else:
+        exit_note = ""
+    if exit_note:
+        lines += ["", "## 退出条件", "", exit_note]
+
+    if state.decay_detail:
+        lines += ["", "## 因子衰减明细", ""]
+        for formula, d in state.decay_detail.items():
+            icir = d.get("recent_icir")
+            icir_txt = f"{icir:.3f}" if isinstance(icir, (int, float)) else "—"
+            flag = "衰减" if d.get("decayed") else "正常"
+            lines.append(f"- {formula}: ICIR {icir_txt}（{flag}）")
+
     lines += ["", "## 周期任务", ""]
     for k, v in extra.items():
         lines.append(f"- **{k}**: {v}")
+
+    positions = status.get("positions") or []
+    if positions:
+        top = sorted(positions, key=lambda p: abs(float(p.get("weight", 0.0))), reverse=True)[:10]
+        lines += ["", "## 前十大持仓", ""]
+        for p in top:
+            sym = p.get("symbol", "?")
+            side = "多" if p.get("side") == "long" else "空"
+            w = float(p.get("weight", 0.0))
+            pnl = float(p.get("pnl", 0.0))
+            pnl_pct = float(p.get("pnl_pct", 0.0))
+            lines.append(f"- {sym}（{side}）: 权重 {w:+.2%}　浮盈亏 {pnl:+,.0f}（{pnl_pct:+.1%}）")
+
     lines += ["", "## 最近一次周期时间戳", ""]
     lines.append(f"- 上次评估: {state.last_evaluated}")
     lines.append(f"- 上次回校: {state.last_calibrate}")
@@ -1941,6 +2044,15 @@ def cmd_autopilot(args) -> int:
                     icir_threshold=float(acfg.get("decay_icir_threshold", 0.30)),
                 )
                 state.last_monitor = today
+                # Persist the per-factor ICIR/decay detail so the report can show
+                # *which* factors decayed and how far, not just a count.
+                state.decay_detail = {
+                    f: {
+                        "recent_icir": (r.get("recent_icir") if isinstance(r, dict) else None),
+                        "decayed": bool(r.get("decayed")) if isinstance(r, dict) else False,
+                    }
+                    for f, r in decay.items()
+                }
                 n_decayed = sum(1 for r in decay.values() if isinstance(r, dict) and r.get("decayed"))
                 state.factor_decayed = n_decayed > 0
                 extra["monitor"] = f"{len(decay)} factors, {n_decayed} decayed"
@@ -1969,9 +2081,8 @@ def cmd_autopilot(args) -> int:
 
     # 3. risk gate (sees the freshest factor_decayed / drawdown)
     old_mode, old_scale = state.mode, state.gross_scale
-    decision = evaluate_risk_gate(
-        status, state, dict(acfg.get("risk_gate", {}) or {}), now=pd.Timestamp(today)
-    )
+    risk_cfg = dict(acfg.get("risk_gate", {}) or {})
+    decision = evaluate_risk_gate(status, state, risk_cfg, now=pd.Timestamp(today))
     # Persist the freshest reasons every run — a hold must not leave the last
     # change's stale reason in the state file (the panel/email read state.reason).
     state.reason = " | ".join(decision.reasons)
@@ -1994,7 +2105,9 @@ def cmd_autopilot(args) -> int:
     state.save(state_file)
     report_path = ROOT / str(acfg.get("report_md", "outputs/autopilot_report.md"))
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(_render_autopilot_report(status, decision, state, extra), encoding="utf-8")
+    report_path.write_text(
+        _render_autopilot_report(status, decision, state, extra, risk_cfg), encoding="utf-8"
+    )
 
     print("\n=== AUTOPILOT ===")
     print(f"  control={state.mode} (gross x{state.gross_scale:g})  changed={decision.changed}")
