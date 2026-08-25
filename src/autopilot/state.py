@@ -53,6 +53,10 @@ class ControlState:
     last_evaluated: Optional[str] = None
     last_calibrate: Optional[str] = None
     last_monitor: Optional[str] = None
+    #: Last time an auto re-mine was attempted. Drives the *event-driven* remine
+    #: cooldown — a persisted ``factor_decayed`` pins the book at de_risk, so the
+    #: loop re-mines on its own cadence instead of waiting for the calendar monitor.
+    last_remine: Optional[str] = None
     factor_decayed: bool = False
     #: Per-factor decay detail from the last monitor run (formula -> recent_icir /
     #: decayed). Bookkeeping only — the portfolio layer acts on ``factor_decayed``.

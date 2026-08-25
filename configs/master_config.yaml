@@ -286,7 +286,8 @@ autopilot:
   remine_interval_days: 60            # 每 ~60 个工作日检查一次因子衰减（工作日近似）
   decay_window_days: 90               # ICIR 滚动窗口（对齐 research.decay.window_days）
   decay_icir_threshold: 0.30          # 衰减 ICIR 地板（对齐 factor_thresholds icir.keep）
-  auto_remine: false                  # 衰减后自动重挖（LLM 成本高，默认关；启用才跑 mine）
+  auto_remine: true                   # 衰减后事件驱动自动重挖（LLM 成本高；受 remine_cooldown_days 限流，且须过 min_sharpe 才 promote）
+  remine_cooldown_days: 5             # 因子衰减持续期间，两次自动重挖的最小间隔（工作日；防每日重挖烧成本）
   min_sharpe: 1.0                     # 重挖后 promote 的 Sharpe 门限（等权复合，与 alpha_core 一致，不降低）
   alerts_file: "outputs/autopilot_alerts.jsonl"  # 档位变化的机器可读告警日志（PAICC/cron 可监听）
   alert_webhook: ""                   # 可选：档位变化时 POST 该 URL（空则不发送）

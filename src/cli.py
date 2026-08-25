@@ -1947,14 +1947,34 @@ def _render_autopilot_report(status, decision, state, extra, risk_cfg=None) -> s
 
     positions = status.get("positions") or []
     if positions:
-        top = sorted(positions, key=lambda p: abs(float(p.get("weight", 0.0))), reverse=True)[:10]
+        def _num(p, key):
+            try:
+                return float(p.get(key, 0.0) or 0.0)
+            except (TypeError, ValueError):
+                return 0.0
+
+        longs = [p for p in positions if p.get("side") == "long"]
+        shorts = [p for p in positions if p.get("side") == "short"]
+        gross_long = sum(_num(p, "weight") for p in longs)
+        gross_short = sum(abs(_num(p, "weight")) for p in shorts)
+        pnl_long = sum(_num(p, "pnl") for p in longs)
+        pnl_short = sum(_num(p, "pnl") for p in shorts)
+        lines += [
+            "",
+            "## 多空分解",
+            "",
+            f"- 多头: {len(longs)} 只　敞口 +{gross_long:.2%}　浮盈亏 {pnl_long:+,.0f}",
+            f"- 空头: {len(shorts)} 只　敞口 -{gross_short:.2%}　浮盈亏 {pnl_short:+,.0f}",
+            f"- 净敞口: {gross_long - gross_short:+.2%}　毛敞口: {gross_long + gross_short:.2%}",
+        ]
+        top = sorted(positions, key=lambda p: abs(_num(p, "weight")), reverse=True)[:10]
         lines += ["", "## 前十大持仓", ""]
         for p in top:
             sym = p.get("symbol", "?")
             side = "多" if p.get("side") == "long" else "空"
-            w = float(p.get("weight", 0.0))
-            pnl = float(p.get("pnl", 0.0))
-            pnl_pct = float(p.get("pnl_pct", 0.0))
+            w = _num(p, "weight")
+            pnl = _num(p, "pnl")
+            pnl_pct = _num(p, "pnl_pct")
             lines.append(f"- {sym}（{side}）: 权重 {w:+.2%}　浮盈亏 {pnl:+,.0f}（{pnl_pct:+.1%}）")
 
     lines += ["", "## 最近一次周期时间戳", ""]
@@ -2033,7 +2053,7 @@ def cmd_autopilot(args) -> int:
     else:
         extra["calibrate"] = "disabled"
 
-    # (b) factor-decay monitor (+ opt-in re-mine)
+    # (b) factor-decay monitor (calendar) + event-driven re-mine
     if bool(acfg.get("auto_monitor", True)):
         interval = int(acfg.get("remine_interval_days", 60))
         if _days_since_iso(state.last_monitor, pd.Timestamp(today)) >= interval:
@@ -2056,25 +2076,46 @@ def cmd_autopilot(args) -> int:
                 n_decayed = sum(1 for r in decay.values() if isinstance(r, dict) and r.get("decayed"))
                 state.factor_decayed = n_decayed > 0
                 extra["monitor"] = f"{len(decay)} factors, {n_decayed} decayed"
-                if n_decayed and bool(acfg.get("auto_remine", False)):
-                    rem = _remine_and_promote(cfg, symbols,
-                                              min_sharpe=float(acfg.get("min_sharpe", 1.0)))
-                    extra["remine"] = rem.get("note", "ran")
-                    if rem.get("accepted"):
-                        # the decayed pool was replaced — clear the flag so the gate
-                        # (and the next monitor pass) re-score the *new* pool rather
-                        # than pinning de-risk on a pool that no longer exists.
-                        state.factor_decayed = False
-                        extra["monitor"] += " (pool replaced — decay flag cleared)"
-                else:
-                    extra["remine"] = "not triggered"
             except Exception as exc:  # noqa: BLE001
                 had_failure = True
                 extra["monitor"] = f"FAILED: {exc}"
-                extra["remine"] = "not run"
         else:
             extra["monitor"] = "not due"
-            extra["remine"] = "not due"
+
+        # A persisted decay flag pins the book at de_risk, and a re-mine is the
+        # only path to clear it — so make it *event-driven*: when the flag is up,
+        # attempt a replacement on its own cooldown instead of waiting out the
+        # calendar (which would strand the book at half gross for up to
+        # ``remine_interval_days``). The monitor re-scores on the fixed research
+        # window, so re-running it daily adds nothing; only a re-mine changes the
+        # pool, hence the remine is what reacts to the event.
+        if state.factor_decayed:
+            if bool(acfg.get("auto_remine", False)):
+                cooldown = int(acfg.get("remine_cooldown_days", 5))
+                since = _days_since_iso(state.last_remine, pd.Timestamp(today))
+                if since >= cooldown:
+                    try:
+                        rem = _remine_and_promote(
+                            cfg, symbols, min_sharpe=float(acfg.get("min_sharpe", 1.0))
+                        )
+                        state.last_remine = today
+                        extra["remine"] = rem.get("note", "ran")
+                        if rem.get("accepted"):
+                            # the decayed pool was replaced — clear the flag so the
+                            # gate (and the next monitor pass) re-score the *new*
+                            # pool rather than pinning de-risk on a dead pool.
+                            state.factor_decayed = False
+                            state.decay_detail = {}  # stale per-factor detail, now wrong pool
+                            extra["remine"] += " — decay flag cleared"
+                    except Exception as exc:  # noqa: BLE001
+                        had_failure = True
+                        extra["remine"] = f"FAILED: {exc}"
+                else:
+                    extra["remine"] = f"cooling down (retry in {cooldown - since:.0f}d)"
+            else:
+                extra["remine"] = "decayed — auto_remine disabled (manual remine needed)"
+        else:
+            extra["remine"] = "not triggered"
     else:
         extra["monitor"] = "disabled"
         extra["remine"] = "disabled"
