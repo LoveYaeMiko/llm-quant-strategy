@@ -58,7 +58,7 @@ def test_experiment_auditor_routing_and_pit():
     auditor = ExperimentAuditor()
     rec = auditor.begin("mine")
     auditor.snapshot_routing(rec, cfg)
-    assert rec.model_versions["generator"] == "deepseek-v4-flash"
+    assert rec.model_versions["generator"] == "deepseek-v4-pro"
     auditor.set_pit_window(rec, "2020-01-01", "2024-12-31", 500)
     assert rec.pit_window["universe_size"] == 500
 

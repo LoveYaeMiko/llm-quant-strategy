@@ -48,9 +48,9 @@ data:
   universe_dir: "data/universe"  # cached constituent lists (hs300/zz500/sse50) written by ingest
 
 llm_routing:
-  generator_model: "deepseek-v3"      # Cheap for schema generation
-  code_model: "gpt-4o"               # Accurate for code
-  critic_model: "claude-3.5-sonnet"  # For EvoQuant diagnosis
+  generator_model: "deepseek-v4-pro"   # Schema generation (single DeepSeek model)
+  code_model: "deepseek-v4-pro"        # Code translation
+  critic_model: "deepseek-v4-pro"      # EvoQuant diagnosis
   max_tokens: 4096
 
 factor_mining:
@@ -76,6 +76,17 @@ factor_mining:
   enable_code_layer_blocking: true
   free_generation_slots: 2
   template_slots: 2
+  # direction 1 (2026-08-26): force the FREE slots into the combination-template
+  # space instead of trusting the LLM to invent a single factor. The live
+  # verification (2026-08-25) showed deepseek-v4-flash cannot produce a single
+  # factor passing the 15% drawdown gate — 0/118 free candidates accepted, 100%
+  # reject_high_risk — while the deterministic dual-factor combination templates
+  # pass by construction. Forcing free slots onto the template space means the
+  # pool grows only from the low-vol / low-turnover family that demonstrably
+  # survives the risk gate (and mining becomes fully deterministic — zero LLM
+  # tokens on the free path). Set false to re-enable LLM single-factor free
+  # slots (now on deepseek-v4-pro).
+  force_combination_templates: true
 
 # NOTE: `diversity.min_ast_distance` lives in factor_thresholds.yaml — the
 # merge order (master -> thresholds -> llm_routing) means the later file wins,
@@ -289,6 +300,13 @@ autopilot:
   auto_remine: true                   # 衰减后事件驱动自动重挖（LLM 成本高；受 remine_cooldown_days 限流，且须过 min_sharpe 才 promote）
   remine_cooldown_days: 5             # 因子衰减持续期间，两次自动重挖的最小间隔（工作日；防每日重挖烧成本）
   min_sharpe: 1.0                     # 重挖后 promote 的 Sharpe 门限（等权复合，与 alpha_core 一致，不降低）
+  # direction 3 (2026-08-26): which research window the auto-remine mines on.
+  # Previously hardcoded to `train` (2010-2019) — but the decay that TRIGGERS the
+  # remine is detected on the test window (2022-2025, via _monitor_decay). Mining
+  # replacements on `train` re-derives the same stale low-vol/low-turnover family
+  # in the old regime, not factors that work where the pool actually decayed.
+  # Default `test` so replacements are mined on the regime where the decay lives.
+  remine_window: "test"
   alerts_file: "outputs/autopilot_alerts.jsonl"  # 档位变化的机器可读告警日志（PAICC/cron 可监听）
   alert_webhook: ""                   # 可选：档位变化时 POST 该 URL（空则不发送）
 

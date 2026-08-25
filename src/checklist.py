@@ -187,11 +187,11 @@ def cost_check(tracker: Optional[CostTracker] = None, budget: float = 500.0) -> 
     if not t.entries():
         # simulate a realistic month: 200 cheap generator calls + 20 code calls
         for _ in range(200):
-            t.record("deepseek-v3", 1200, 400, purpose="hypothesis")
+            t.record("deepseek-v4-pro", 1200, 400, purpose="hypothesis")
         for _ in range(20):
-            t.record("gpt-4o", 2500, 800, purpose="code")
+            t.record("deepseek-v4-pro", 2500, 800, purpose="code")
         for _ in range(4):
-            t.record("claude-3.5-sonnet", 3000, 900, purpose="critic")
+            t.record("deepseek-v4-pro", 3000, 900, purpose="critic")
     proj = t.monthly_projection(days_elapsed=30.0)
     return CheckResult(
         name="cost",

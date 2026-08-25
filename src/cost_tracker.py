@@ -14,11 +14,13 @@ from typing import Optional
 
 # USD per 1M tokens. Placeholder rates — override via constructor.
 DEFAULT_PRICES: dict[str, dict[str, float]] = {
-    "deepseek-v3": {"in": 0.27, "out": 1.10},        # cheap generator
-    "deepseek-v4-flash": {"in": 0.27, "out": 1.10},  # active API model
-    "gpt-4o": {"in": 2.50, "out": 10.00},            # accurate code
-    "claude-3.5-sonnet": {"in": 3.00, "out": 15.00},  # critic / EvoQuant diagnosis
-    "qwen2.5-7b": {"in": 0.10, "out": 0.20},         # sentence sentiment
+    "deepseek-v3": {"in": 0.27, "out": 1.10},        # legacy generator
+    "deepseek-v4-flash": {"in": 0.27, "out": 1.10},  # legacy flash tier
+    "gpt-4o": {"in": 2.50, "out": 10.00},            # legacy
+    "claude-3.5-sonnet": {"in": 3.00, "out": 15.00},  # legacy
+    # Active model is deepseek-v4-pro; its exact per-token rate isn't pinned yet,
+    # so it falls through to the conservative "default" row (over-estimates cost,
+    # keeping the budget gate safe).
     "default": {"in": 1.00, "out": 4.00},
 }
 

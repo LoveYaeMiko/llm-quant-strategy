@@ -72,7 +72,7 @@ class OpenAICompatibleBackend:
             usage = getattr(resp, "usage", None)
             tin = int(usage.prompt_tokens) if usage is not None and usage.prompt_tokens else _estimate_tokens(prompt)
             tout = int(usage.completion_tokens) if usage is not None and usage.completion_tokens else _estimate_tokens(text)
-            self.cost_tracker.record(self.model, tin, tout, purpose="deepseek-v4-flash")
+            self.cost_tracker.record(self.model, tin, tout, purpose=self.model)
         return text
 
 
@@ -113,7 +113,7 @@ def build_llm_backend(
         )
         return None
     tier_cfg = cfg.section(f"routing.{tier}") or {}
-    model = model_override or tier_cfg.get("model") or api.get("default_model", "deepseek-v4-flash")
+    model = model_override or tier_cfg.get("model") or api.get("default_model", "deepseek-v4-pro")
     return OpenAICompatibleBackend(
         model=model,
         api_key=key,

@@ -428,6 +428,17 @@ def cmd_mine(args) -> int:
     slots_configured = bool(free_slots or tpl_slots)
     free_slots = free_slots if slots_configured else n_hyps
     tpl_slots = tpl_slots if slots_configured else 0
+    # direction 1 (2026-08-26): force the FREE slots into the combination-template
+    # space instead of trusting the LLM to invent a single factor. The live
+    # verification (2026-08-25) showed deepseek-v4-flash cannot produce a single
+    # factor passing the 15% drawdown gate — 0/118 free candidates accepted, 100%
+    # reject_high_risk — while the deterministic dual-factor combination templates
+    # pass by construction. Forcing free slots onto the template space means the
+    # pool grows only from the low-vol / low-turnover family that demonstrably
+    # survives the risk gate (and mining becomes fully deterministic — zero LLM
+    # tokens on the free path). Set false to re-enable LLM single-factor free
+    # slots (now on deepseek-v4-pro).
+    force_combination = bool(cfg.get("factor_mining.force_combination_templates", True))
     # validation_BLUEPRINT §3.3's excess-drawdown gate was reverted to the absolute
     # 15% gate (2026-08): the excess metric is structurally unpassable for a
     # market-neutral book (a pure-cash position scores excess_dd ≈ 1.03 vs the
@@ -452,7 +463,7 @@ def cmd_mine(args) -> int:
     print(
         f"mining: {n_iter} iterations x {free_slots + tpl_slots} candidates "
         f"(free={free_slots}, template={tpl_slots}) | "
-        f"llm={'deepseek-v4-flash' if p['backend'] else 'OFFLINE'} | "
+        f"llm={p['backend'].model if p['backend'] else 'OFFLINE'} | "
         f"feedback={signal.feedback_enabled} | "
         f"limit-locked-excluded={(cfg.get('evaluation.portfolio') or {}).get('exclude_limit_locked', True)}"
     )
@@ -479,11 +490,28 @@ def cmd_mine(args) -> int:
         candidates: list[dict] = []
         # 1. free slots — LLM (or offline semantic-space) proposals, each passed
         #    through the code-layer firewall (sanitize_formula) in CodeAgent.
-        for plan in signal.generate_hypotheses(context, n=free_slots):
-            gf = p["agents"]["code"].translate(context, plan)
-            candidates.append(
-                {"gf": gf, "source": "free", "plan": plan}
-            )
+        #    When force_combination_templates is on, the free slots skip the LLM
+        #    single-factor path entirely and draw from the same bounded
+        #    combination-template space as slot 2 (deduped against it), so the
+        #    pool only grows from the low-vol / low-turnover family that survives
+        #    the risk gate.
+        if force_combination:
+            for formula in signal.generate_template_formulas(
+                n=free_slots, skip={c["gf"].formula for c in candidates} | accepted_ever
+            ):
+                gf = p["generator"].generate(
+                    formula,
+                    name=f"combo{abs(hash(formula)) % 10**9:09d}",
+                    meaning="双因子等权组合模板（force_combination_templates）",
+                    category="combination_template",
+                )
+                candidates.append({"gf": gf, "source": "combination_template", "plan": None})
+        else:
+            for plan in signal.generate_hypotheses(context, n=free_slots):
+                gf = p["agents"]["code"].translate(context, plan)
+                candidates.append(
+                    {"gf": gf, "source": "free", "plan": plan}
+                )
         # 2. template slots — deterministic combination templates, evaluated as-is.
         #    ``skip`` dedups against the free path (a sanitized free formula can
         #    otherwise coincide with a template — blueprint §3.2 merge-dedup) and
@@ -1775,7 +1803,13 @@ def _remine_and_promote(cfg, symbols, *, min_sharpe=1.0) -> dict:
 
     shutil.copy2(pool_file, backup)
     try:
-        mine_cmd = [sys.executable, "-m", "src.cli", "mine", "--window", "train"]
+        # direction 3 (2026-08-26): mine replacements on the window where the
+        # decay was actually detected. ``_monitor_decay`` scores the deployed pool
+        # on the test window (2022-2025); mining on ``train`` (2010-2019) re-derives
+        # the same stale low-vol/low-turnover family in the old regime, not factors
+        # that work where the pool decayed. Configurable via autopilot.remine_window.
+        remine_window = str(cfg.get("autopilot.remine_window", "test"))
+        mine_cmd = [sys.executable, "-m", "src.cli", "mine", "--window", remine_window]
         if symbols:
             mine_cmd += ["--symbols", *symbols]
         proc = subprocess.run(
