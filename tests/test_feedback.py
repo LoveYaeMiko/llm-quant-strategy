@@ -56,7 +56,7 @@ def test_build_rejection_feedback_contains_reason_and_hard_constraints():
     assert "拒绝原因" in fb and "股灾中" in fb          # the reason is surfaced
     assert "严禁" in fb                               # hard constraint no reversal
     assert "≥ 60" in fb                               # 60-day lookback floor
-    assert "股灾压力测试" in fb                        # crisis self-check
+    assert "回撤" in fb and "15%" in fb                # drawdown cap (crisis self-check)
     assert "IC=0.021" in fb                           # the metrics recap
 
 

@@ -325,10 +325,18 @@ def test_code_agent_physically_blocks_reversal_formula():
 
 
 def test_code_agent_blocking_can_be_disabled():
+    """The code-layer firewall is config-gated: with blocking disabled a
+    blacklisted formula passes through unmodified. The offline ``default_formula_for``
+    no longer emits blacklisted formulas (it returns a clean ``Neg(Rank(TS_Return))``
+    for Mean Reversion), so inject a blacklisted formula through the LLM path."""
+    blocked = "Neg(TS_ZScore(Close, 10))"
+    assert is_forbidden(blocked)
     cfg = Config(
         {"factor_mining": {"enable_code_layer_blocking": False, "auto_upgrade_lookback": False}}
     )
     agent = CodeAgent(llm=None, config=cfg)
+    agent.llm = True                                   # route translate() through the LLM path
+    agent._llm_formula = lambda ctx, prompt: blocked   # inject a blacklisted formula
     plan = SchemaPlan(
         event="Earnings Surprise",
         context="Post-Earnings Drift",

@@ -45,12 +45,18 @@ class CodeAgent(BaseAgent):
             prompt = (
                 "Translate this trading schema into a SINGLE factor formula. Use "
                 "only operators from: add sub mul div avg abs sign log sqrt "
-                "ts_mean ts_std ts_rank ts_return ts_delay ts_delta ts_zscore "
-                "ts_ema ts_corr ts_slope ts_decay_linear cs_rank cs_zscore "
-                "cs_neutralize cs_tanh rank_mul rank_add rank_sub cond. Use "
+                "ts_mean ts_std ts_median ts_sum ts_max ts_min ts_skew ts_kurt "
+                "ts_rank ts_return ts_delay ts_delta ts_zscore ts_quantile "
+                "ts_ema ts_wma ts_corr ts_cov ts_beta ts_slope ts_mad ts_count_pos "
+                "ts_decay_linear cs_rank cs_zscore cs_scale cs_tanh cs_neutralize "
+                "rank_mul rank_add rank_sub rank_div cond greater less. Use "
                 "fields: Close Open High Low Volume. TS_* lookback windows must "
-                "be >= 60 days (medium/low frequency). Return ONLY the formula "
-                "string, e.g. Rank_Mul(Rank(Close), Rank(TS_Return(Close, 120))).\n\n"
+                "be >= 60 days (medium/low frequency). Prefer cross-sectionally "
+                "normalised signals (Rank / cs_zscore) over raw levels to keep "
+                "single-factor drawdown under 15%; the proven low-vol + "
+                "low-turnover family is the strongest direction. Return ONLY the "
+                "formula string, e.g. Avg(Neg(Rank(TS_Std(Close, 120))), "
+                "Neg(Rank(TS_Mean(Volume, 60)))).\n\n"
                 f"SCHEMA: {plan.natural_language()}"
             )
             formula = self._llm_formula(context, prompt)

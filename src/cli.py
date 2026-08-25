@@ -210,6 +210,17 @@ def _pipeline(config: Config):
     """Assemble agents, memory, cost tracker, auditor, backend."""
     cfg = config
     memory = MemoryManager()
+    # AlphaMemo: resume the previous run's search memory so the miner does not
+    # cold-start. ``cmd_mine`` writes ``outputs/memory.json`` each run; loading it
+    # back re-arms positive feedback (``top_performers`` → the proven low-vol /
+    # low-turnover family) and cross-run frequent-subtree avoidance. A missing or
+    # corrupt file is a clean first run.
+    mem_path = _out_dir() / "memory.json"
+    if mem_path.is_file():
+        try:
+            memory = MemoryManager.load(mem_path)
+        except (OSError, ValueError, TypeError):
+            memory = MemoryManager()
     costs = CostTracker(monthly_budget_usd=float(cfg.get("budget.monthly_llm_cost_usd", 500)))
     backend = build_llm_backend(cfg, cost_tracker=costs)
     fincad = FinCADWrapper(backend) if backend is not None else None

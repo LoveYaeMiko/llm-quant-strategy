@@ -739,18 +739,46 @@ def default_formula_for(plan) -> str:
     if not isinstance(plan, SchemaPlan):
         plan = SchemaPlan.from_dict(plan if isinstance(plan, dict) else plan.to_dict())
     q = plan.qualities[0]
-    # LIMIT_DOWN blueprint 方案 D: medium/low-frequency only — a 5/10-day
-    # reversal's lookback produces the crash-continuation bleed diagnosed in
-    # Phase 8.1; 60/120/240 are the only allowed windows.
+    # LIMIT_DOWN blueprint 方案 D: medium/low-frequency only — 60/120/240 are the
+    # only allowed lookbacks. Every quality maps to a DISTINCT formula (the
+    # pre-2026 mapping collapsed Momentum/Trend/Carry onto one momentum formula
+    # and left six qualities on the generic fallback, starving the offline path
+    # of diversity) and every formula avoids the code-layer blacklist patterns
+    # (``Neg(TS_ZScore)`` / ``Inv(TS_*)`` / ``TS_Rank(TS_Return)`` / sub-60-day
+    # ``TS_Return``), which force-replace into combination templates anyway.
     w = [60, 120, 240][abs(hash(plan.key())) % 3]
-    if q in ("Momentum", "Trend", "Carry"):
-        return f"Rank_Mul(Rank(Close), Rank(TS_Return(Close, {w})))"
-    if q in ("Mean Reversion", "Short-Term Reversal"):
-        return f"Neg(TS_ZScore(Close, {w}))"
+    w2 = [60, 120, 240][(abs(hash(plan.key())) // 3) % 3]
+    # -- defensive / cross-sectionally-normalised family (the proven alpha:
+    #    low-vol + low-turnover + low-price-level — see the deployed pool) -----
     if q == "Low Volatility":
-        return f"Inv(TS_Std(Close, {w}))"
-    if q == "Value":
-        return "Rank(Close)"
+        return f"Neg(Rank(TS_Std(Close, {w})))"
+    if q == "Quality":
+        return f"Neg(Rank(TS_Std(Close, {w2})))"   # stable/low-vol as a quality proxy
     if q == "Liquidity":
-        return "Rank(Volume)"
-    return f"TS_Rank(TS_Return(Close, {w}), {w})"
+        return f"Neg(Rank(TS_Mean(Volume, {w})))"  # low turnover (proven)
+    if q == "Value":
+        return f"Neg(Rank(TS_Mean(Close, {w})))"   # low price level (cheap-stock proxy)
+    if q == "Size":
+        return f"Neg(Rank(TS_Mean(Close, {w2})))"  # low price level, distinct window
+    if q == "Accruals":
+        return f"Neg(Rank(TS_Delta(Volume, {w})))"  # volume contraction proxy
+    # -- momentum / trend / growth family ------------------------------------
+    if q == "Momentum":
+        return f"Rank(TS_Return(Close, {w}))"
+    if q == "Trend":
+        return f"Rank(TS_Return(Close, {w2}))"
+    if q == "Carry":
+        return f"Rank(TS_Return(Close, 60))"
+    if q == "Growth":
+        return f"Rank(TS_Delta(Close, {w}))"
+    if q == "Sentiment":
+        return f"Rank(TS_Delta(Volume, {w}))"
+    # -- mean reversion (medium-frequency rank reversal, NOT the banned
+    #    short-horizon TS_ZScore contrarian family) ---------------------------
+    if q == "Mean Reversion":
+        return f"Neg(Rank(TS_Return(Close, {w})))"
+    if q == "Short-Term Reversal":
+        return f"Neg(Rank(TS_Return(Close, 60)))"
+    if q == "Analyst Dispersion":
+        return f"Rank(TS_Std(Volume, {w}))"
+    return f"Neg(Rank(TS_Mean(Volume, {w})))"  # default → proven low turnover
