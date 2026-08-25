@@ -1967,6 +1967,19 @@ def _render_autopilot_report(status, decision, state, extra, risk_cfg=None) -> s
             f"- 空头: {len(shorts)} 只　敞口 -{gross_short:.2%}　浮盈亏 {pnl_short:+,.0f}",
             f"- 净敞口: {gross_long - gross_short:+.2%}　毛敞口: {gross_long + gross_short:.2%}",
         ]
+        # Concentrated tail risk — deep long losers (>15% down) and large short
+        # winners (>20% up) that could snap back. Worth an explicit flag because
+        # the top-10 table is sorted by |weight|, not by |pnl_pct|, so a small-
+        # weight name with an outsized loss would otherwise be invisible.
+        tail = sorted(
+            (p for p in positions if abs(_num(p, "pnl_pct")) >= 0.15),
+            key=lambda p: _num(p, "pnl_pct"),
+        )
+        if tail:
+            lines += ["", "## 尾部风险（|浮盈亏| ≥ 15%）", ""]
+            for p in tail:
+                side = "多" if p.get("side") == "long" else "空"
+                lines.append(f"- {p.get('symbol', '?')}（{side}）: {_num(p, 'pnl_pct'):+.1%}")
         top = sorted(positions, key=lambda p: abs(_num(p, "weight")), reverse=True)[:10]
         lines += ["", "## 前十大持仓", ""]
         for p in top:
