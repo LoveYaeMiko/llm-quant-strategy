@@ -1,0 +1,84 @@
+# =====================================================================
+# EXPLORATION TRACK — high-risk/high-reward operator + LLM exploration.
+#
+# A SEPARATE, opt-in research track that runs in PARALLEL to the production
+# mining/autopilot loop. It deliberately does NOT touch the production configs
+# (master_config.yaml / factor_thresholds.yaml / llm_routing.yaml) or the
+# production pool (outputs/factors.json): the production force_combination path
+# keeps its 5-factor low-vol/low-turnover family running every day unchanged.
+#
+# The exploration track widens the search in two ways:
+#   1. NEW operators (higher moments / volatility structure / illiquidity) added
+#      to the closed library in src/factors/code_generator.py.
+#   2. Re-opened CONTROLLED LLM hypothesis generation (the production firewall
+#      force_combination_templates stays on; this track uses its own LLM path).
+#
+# It accepts HIGHER RISK (looser gates below) in the SEARCH, but promotion back
+# into the production pool still requires the HARD production gates — bold
+# search, rigorous promotion.
+# =====================================================================
+
+exploration:
+  name: "high-risk-high-reward operator + LLM exploration"
+  # -- model (reuses the deepseek-v4-pro backend already wired for production)
+  llm:
+    model: "deepseek-v4-pro"
+    temperature_hypotheses: 0.8   # creative exploration
+    temperature_translate: 0.0    # deterministic formula translation
+    hypotheses_per_round: 8       # reasoning model: 8/round keeps one call bounded
+    rounds: 3
+
+  # -- LOOSE exploration gates (production gates in factor_thresholds.yaml are
+  #    untouched). A candidate is only worth STUDYING if it clears these; it is
+  #    NOT promoted to production on this basis alone.
+  gates:
+    max_drawdown_limit: 0.30        # production keeps 0.15; exploration accepts 0.30
+    rank_ic_keep: 0.02              # production keeps 0.035
+    icir_keep: 0.20                 # production keeps 0.30
+    ic_keep: 0.01                   # production keeps 0.02
+    min_sharpe: 0.50                # production required_sharpe is Bonferroni-derived (~0.65+)
+
+  # -- walk-forward windows: a candidate must survive train + val and generalise
+  #    to the test window (no sign flip) to be deemed "reliable".
+  windows:
+    - train      # 2010-01-01 .. 2019-12-31
+    - val        # 2020-01-01 .. 2021-12-31
+    - test       # 2022-01-01 .. 2025-12-31
+
+  # -- systematic operator sweep (massive historical validation)
+  sweep:
+    enabled: true
+    lookbacks: [60, 120, 240]
+    vol_ratio_pairs: [[60, 120], [60, 240], [120, 240]]
+    signs: [long, short]            # Rank(...) and Neg(Rank(...))
+    # new operators to grid (each already registered in the closed library)
+    operators:
+      - ts_semi_std
+      - ts_max_drawdown
+      - ts_autocorr
+      - ts_rsq
+      - ts_vol_ratio
+      - ts_illiquidity
+      - ts_garman_klass
+      - ts_parkinson
+      - ts_range
+      - ts_price_position
+      - ts_rel_volume
+      - ts_sharpe
+
+  # -- controlled LLM exploration lookback bounds (wider than production's 60-240)
+  min_lookback: 20
+  max_lookback: 240
+
+  # -- outputs (separate from production outputs/factors.json)
+  output_dir: "outputs/exploration"
+  journal: "outputs/exploration/journal.json"
+  survivors: "outputs/exploration/survivors.json"
+  promoted: "outputs/exploration/promoted.json"
+  report: "outputs/exploration/report.md"
+
+  # -- promotion bridge: promote to production ONLY if the hard production gates
+  #    (factor_thresholds.yaml) also pass. Never auto-overwrites factors.json;
+  #    writes promoted candidates to `promoted` for human review.
+  promotion:
+    require_hard_gates: true

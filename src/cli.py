@@ -2218,6 +2218,13 @@ def cmd_autopilot(args) -> int:
     return 1 if had_failure else 0
 
 
+def _cmd_explore(args) -> int:
+    """Lazy entry for the exploration track (avoids importing it at CLI load)."""
+    from .exploration.run import cmd_explore
+
+    return cmd_explore(args)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="llm-quant",
@@ -2471,6 +2478,25 @@ def main(argv: list[str] | None = None) -> int:
     p_auto.add_argument("--no-calibrate", action="store_true",
                         help="本轮跳过 §7 回校（即使已到周期）")
     p_auto.set_defaults(func=cmd_autopilot)
+
+    p_x = sub.add_parser(
+        "explore",
+        help="探索轨迹 — 新算子 + 受控 LLM 假设的并行高风险高收益研究（不触碰生产池）",
+    )
+    p_x.add_argument("--seed", type=int, default=1)
+    p_x.add_argument("--symbols", nargs="*", default=None,
+                     help="override research.universe")
+    p_x.add_argument("--operators", nargs="*", default=None,
+                     help="sweep only these exploration operators (default: all)")
+    p_x.add_argument("--limit", type=int, default=None,
+                     help="cap the number of sweep candidates (smoke runs)")
+    p_x.add_argument("--llm", dest="llm", action="store_true", default=True,
+                     help="enable controlled-LLM hypothesis exploration (default: on)")
+    p_x.add_argument("--no-llm", dest="llm", action="store_false",
+                     help="disable the LLM path; run the deterministic operator sweep only")
+    p_x.add_argument("--no-sweep", dest="sweep", action="store_false", default=True,
+                     help="disable the deterministic operator sweep; run the LLM path only")
+    p_x.set_defaults(func=_cmd_explore)
 
     args = parser.parse_args(argv)
     try:

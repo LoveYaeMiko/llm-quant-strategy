@@ -157,8 +157,30 @@ def _ts_slope(s, w, ctx=None):
     def slope(g):
         return g.rolling(int(w)).apply(lambda x: _lin_slope(x), raw=True)
     return s.groupby(level=SYM_LVL).transform(slope)
-def _ts_corr(a, b, w, ctx=None): return a.groupby(level=SYM_LVL).rolling(int(w)).corr(b).reset_index(level=0, drop=True)
-def _ts_cov(a, b, w, ctx=None): return a.groupby(level=SYM_LVL).rolling(int(w)).cov(b).reset_index(level=0, drop=True)
+def _ts_corr(a, b, w, ctx=None):
+    """Rolling correlation of two aligned series, computed per symbol.
+
+    The previous ``a.groupby(level=SYM_LVL).rolling(w).corr(b)`` fed the FULL
+    (date, symbol) series ``b`` into a per-symbol rolling correlation, which
+    misaligns and segfaults on real panels. Join into one frame instead, rolling-
+    correlate within each symbol, then reindex back to the input order.
+    """
+    df = pd.concat([a.rename("_a"), b.rename("_b")], axis=1)
+    out = df.groupby(level=SYM_LVL, group_keys=False).apply(
+        lambda g: g["_a"].rolling(int(w)).corr(g["_b"])
+    )
+    return out.reindex(a.index)
+
+
+def _ts_cov(a, b, w, ctx=None):
+    """Rolling covariance of two aligned series, computed per symbol."""
+    df = pd.concat([a.rename("_a"), b.rename("_b")], axis=1)
+    out = df.groupby(level=SYM_LVL, group_keys=False).apply(
+        lambda g: g["_a"].rolling(int(w)).cov(g["_b"])
+    )
+    return out.reindex(a.index)
+
+
 def _ts_beta(a, b, w, ctx=None): return _ts_cov(a, b, w) / (_ts_std(b, w) ** 2 + 1e-12)
 def _ts_mad(s, w, ctx=None): return (_ts(s, w, "mean") - s).abs().groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).mean())
 def _ts_prod(s, w, ctx=None): return _ts(s, w, "apply", func=np.prod)
@@ -172,6 +194,131 @@ def _ts_argmin(s, w, ctx=None):
         return g.rolling(int(w)).apply(lambda x: int(np.nanargmin(x)) if np.any(~np.isnan(x)) else np.nan, raw=True)
     return s.groupby(level=SYM_LVL).transform(am)
 def _ts_ratio(s, w, ctx=None): return s / (_ts_sum(s, w) + 1e-12)
+
+# -- exploration-tier time-series operators (2026-08-26) ----------------------
+# New higher-moment / volatility-structure / illiquidity operators added for the
+# high-risk-high-reward exploration track. They are PURELY ADDITIVE: the closed
+# library grows, but the production ``force_combination_templates`` path never
+# emits them, so existing mining / autopilot behaviour is byte-for-byte unchanged.
+# Every operator is causal (backward-looking rolling windows only).
+
+
+def _ts_semi_std(s, w, ctx=None):
+    """Rolling downside semideviation (volatility of negative deviations)."""
+    def semi(x):
+        x = x[~np.isnan(x)]
+        if len(x) < 2:
+            return np.nan
+        m = x.mean()
+        neg = x[x < m]
+        if len(neg) == 0:
+            return 0.0
+        return float(np.sqrt(np.mean((neg - m) ** 2)))
+    return s.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).apply(semi, raw=True))
+
+
+def _ts_max_drawdown(s, w, ctx=None):
+    """Rolling peak-to-trough drawdown (most negative = worst, e.g. -0.30)."""
+    def mdd(x):
+        x = x[~np.isnan(x)]
+        if len(x) < 2:
+            return 0.0
+        cummax = np.maximum.accumulate(x)
+        denom = np.where(cummax != 0, cummax, np.nan)
+        dd = (x - cummax) / denom
+        return float(np.nanmin(dd))
+    return s.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).apply(mdd, raw=True))
+
+
+def _ts_autocorr(s, w, ctx=None):
+    """Rolling 1-day autocorrelation (momentum > 0, reversal < 0)."""
+    def ac(x):
+        x = x[~np.isnan(x)]
+        if len(x) < 3:
+            return np.nan
+        a = x[1:]
+        b = x[:-1]
+        if np.std(a) < 1e-12 or np.std(b) < 1e-12:
+            return 0.0
+        return float(np.corrcoef(a, b)[0, 1])
+    return s.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).apply(ac, raw=True))
+
+
+def _ts_rsq(s, w, ctx=None):
+    """Rolling R² of s vs a linear time trend (trend quality / fit)."""
+    def rsq(x):
+        x = x[~np.isnan(x)]
+        n = len(x)
+        if n < 3:
+            return np.nan
+        t = np.arange(n, dtype=float)
+        if np.std(x) < 1e-12:
+            return 0.0
+        slope, intercept = np.polyfit(t, x, 1)
+        pred = slope * t + intercept
+        ss_res = float(np.sum((x - pred) ** 2))
+        ss_tot = float(np.sum((x - x.mean()) ** 2))
+        return 1.0 - ss_res / ss_tot
+    return s.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).apply(rsq, raw=True))
+
+
+def _ts_vol_ratio(s, w1, w2, ctx=None):
+    """Short/long realized-volatility ratio (volatility term structure)."""
+    return _ts_std(s, w1) / (_ts_std(s, w2) + 1e-12)
+
+
+def _ts_illiquidity(close, volume, w, ctx=None):
+    """Amihud illiquidity: rolling mean of |daily return| / volume."""
+    ret = close / close.groupby(level=SYM_LVL).shift(1) - 1.0
+    amihud = ret.abs() / volume.replace(0, np.nan)
+    return amihud.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).mean())
+
+
+def _ts_garman_klass(o, h, l, c, w, ctx=None):
+    """Garman-Klass volatility (uses OHLC — more efficient than close-to-close).
+
+    The per-day Garman-Klass variance is only guaranteed non-negative in
+    expectation; for a single day the close-vs-open correction can drive it
+    negative, so we clamp at zero before taking the square root.
+    """
+    var = 0.5 * (np.log(h / l)) ** 2 - (2.0 * np.log(2.0) - 1.0) * (np.log(c / o)) ** 2
+    var = var.clip(lower=0.0)
+    return np.sqrt(var.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).mean()))
+
+
+def _ts_parkinson(h, l, w, ctx=None):
+    """Parkinson volatility estimator from the intraday high/low range."""
+    var = (np.log(h / l)) ** 2 / (4.0 * np.log(2.0))
+    return np.sqrt(var.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).mean()))
+
+
+def _ts_range(h, l, c, w, ctx=None):
+    """Rolling mean of the intraday range ratio (high - low) / close."""
+    rng = (h - l) / c.replace(0, np.nan)
+    return rng.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).mean())
+
+
+def _ts_price_position(s, w, ctx=None):
+    """Stochastic position (s - min) / (max - min) over the window (0..1)."""
+    def pos(x):
+        x = x[~np.isnan(x)]
+        if len(x) < 2:
+            return np.nan
+        lo, hi = x.min(), x.max()
+        if hi - lo < 1e-12:
+            return 0.5
+        return float((x[-1] - lo) / (hi - lo))
+    return s.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).apply(pos, raw=True))
+
+
+def _ts_rel_volume(s, w, ctx=None):
+    """Relative volume: s / rolling mean(s, w) (volume surprise)."""
+    return s / (_ts(s, w, "mean") + 1e-12)
+
+
+def _ts_sharpe(s, w, ctx=None):
+    """Rolling Sharpe-like ratio mean/std — apply to a RETURN series."""
+    return _ts(s, w, "mean") / (_ts(s, w, "std", ddof=0) + 1e-12)
 
 # -- cross section ------------------------------------------------------------
 
@@ -302,6 +449,19 @@ def _register() -> dict[str, Operator]:
     reg("ts_argmax", 2, _ts_argmax, "rolling index of maximum", ts)
     reg("ts_argmin", 2, _ts_argmin, "rolling index of minimum", ts)
     reg("ts_ratio", 2, _ts_ratio, "s / rolling sum(s, w)", ts)
+    # exploration-tier operators (2026-08-26) — purely additive to the library
+    reg("ts_semi_std", 2, _ts_semi_std, "rolling downside semideviation", ts)
+    reg("ts_max_drawdown", 2, _ts_max_drawdown, "rolling peak-to-trough drawdown", ts)
+    reg("ts_autocorr", 2, _ts_autocorr, "rolling 1-day autocorrelation", ts)
+    reg("ts_rsq", 2, _ts_rsq, "rolling R^2 vs linear trend", ts)
+    reg("ts_vol_ratio", 3, _ts_vol_ratio, "short/long realized-vol ratio", ts)
+    reg("ts_illiquidity", 3, _ts_illiquidity, "Amihud illiquidity |ret|/volume", ts)
+    reg("ts_garman_klass", 5, _ts_garman_klass, "Garman-Klass OHLC volatility", ts)
+    reg("ts_parkinson", 3, _ts_parkinson, "Parkinson high/low volatility", ts)
+    reg("ts_range", 4, _ts_range, "rolling intraday range ratio", ts)
+    reg("ts_price_position", 2, _ts_price_position, "stochastic (s-min)/(max-min)", ts)
+    reg("ts_rel_volume", 2, _ts_rel_volume, "relative volume vs window mean", ts)
+    reg("ts_sharpe", 2, _ts_sharpe, "rolling mean/std ratio (apply to returns)", ts)
 
     reg("rank", 1, _cs_rank, "cross-sectional percentile rank (alias of cs_rank)", cs)
     reg("cs_rank", 1, _cs_rank, "cross-sectional percentile rank", cs)

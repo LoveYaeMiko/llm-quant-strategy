@@ -52,7 +52,10 @@ class OpenAICompatibleBackend:
     cost_tracker: object = None  # CostTracker — records usage when provided
     timeout_seconds: int = 60
 
-    def complete(self, prompt: str, *, temperature: float = 0.0, max_tokens: int = 1024) -> str:
+    def complete(
+        self, prompt: str, *, temperature: float = 0.0, max_tokens: int = 1024,
+        timeout: Optional[int] = None,
+    ) -> str:
         try:
             from openai import OpenAI
         except ImportError as exc:  # pragma: no cover
@@ -60,7 +63,10 @@ class OpenAICompatibleBackend:
                 "openai is not installed; `pip install -e '.[llm]'` to enable the DeepSeek path"
             ) from exc
 
-        client = OpenAI(api_key=self.api_key, base_url=self.base_url, timeout=self.timeout_seconds)
+        client = OpenAI(
+            api_key=self.api_key, base_url=self.base_url,
+            timeout=self.timeout_seconds if timeout is None else timeout,
+        )
         resp = client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
