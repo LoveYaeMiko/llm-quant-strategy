@@ -81,3 +81,11 @@ _Avoid_: "factor died", "strategy stopped working"
 - **Phase 8 因子池**（Alpha 核心，`outputs/factors.json` 5 个低波+低换手公式）：组合回测 Sharpe 1.58–1.90 / maxDD ~10.5–11%（训练窗）。
 - **Phase 10 进行中**（`blueprint/PHASE10_BLUEPRINT.md`）：三层融合（Alpha → 战术倾斜 → 风控熔断），2010–2025 全样本回测，门禁 Sharpe > 1.6 且 maxDD < 10%。
 - 里程碑标签：`phase7-data-foundation`、`phase7-real-data`、`phase9-closed`、`phase9.1-sentiment-rejected`、`phase9.1-text-backtest-complete`、`phase9.1-text-rejected`。
+
+## 提高收益三轨（2026-08-31 起，进行中）
+
+> 影子盘毛 alpha≈0（成本主导亏损）→ 优先找收益来源。详见 `docs/ML_DATA_TRACKS.md`。
+
+- **轨道 A — GitHub 公式动物园**：`paper/repos/aurumq-rl` + qlib 存档；237 条公式（alpha101×55 / gtja191×24 / alpha158×158）翻译进闭式算子库（`src/exploration/translate.py`）并全部可求值；walk-forward 扫描结论：HS300 上唯一稳定存活家族=短周期价格均值回归（与生产 min_lookback 60 纪律冲突，需组合级可交易性门）。
+- **轨道 B — 新数据域**：融资融券（`src/data/margin.py`，192k 条 PIT 记录）与龙虎榜（`src/data/lhb.py`，73k 条，前视列按构造剥离）；门禁分段验证（发现/验证窗）——sl_mix 2026 OOS 符号翻转（负结果），sl_growth 边缘。
+- **轨道 C — ML 双轨道**：LightGBM + GPU MLP（`src/ml/`，RTX 4060），Purged-KFold/embargo + walk-forward，冻结确定性工件 + `src/ml/promote.py` 生产硬门；最佳候选 = GPU MLP（test rank_ic 0.0558 / ICIR 8.28）；三方对决（vs 在任池）见 `outputs/ml_showdown.log`。

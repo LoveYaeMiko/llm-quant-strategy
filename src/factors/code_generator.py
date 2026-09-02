@@ -367,7 +367,22 @@ def _cs_softmax(s, ctx=None):
 
 # -- logic ---------------------------------------------------------------------
 
-def _cond(c, a, b, ctx=None): return np.where(c > 0, a, b)
+def _cond(c, a, b, ctx=None):
+    """Ternary ``where(c > 0, a, b)`` — Series-preserving for scalar branches.
+
+    ``np.where`` degrades to an ndarray whenever one branch is a scalar;
+    broadcasting scalars onto the condition's index first keeps the result a
+    Series aligned to the panel (Alpha101 formulas frequently use literal
+    branches like ``Cond(x, 1, 0)``).
+    """
+    if isinstance(c, pd.Series):
+        mask = c > 0
+        a = a if isinstance(a, pd.Series) else pd.Series(float(a), index=c.index)
+        b = b if isinstance(b, pd.Series) else pd.Series(float(b), index=c.index)
+        return a.where(mask, b)
+    return a if float(c) > 0 else b
+
+
 def _greater(a, b, ctx=None): return (a > b).astype(float)
 def _less(a, b, ctx=None): return (a < b).astype(float)
 def _geq(a, b, ctx=None): return (a >= b).astype(float)
@@ -391,6 +406,54 @@ def _linear_weights(g: pd.Series, window: int) -> pd.Series:
     return g.rolling(window).apply(
         lambda x: float(np.dot(x, weights) / weights.sum()), raw=True
     )
+
+
+# -- GTJA/Alpha101 translation-tier operators (2026-08-31) ---------------------
+# Added for the GitHub factor-zoo translation. Purely additive, causal windows.
+
+
+def _ts_sma(s, n, m, ctx=None):
+    """GTJA SMA(x, n, m): y = (m*x + (n-m)*y_prev) / n (recursive).
+
+    Equivalent to an EMA with alpha = m/n (y_0 = x_0), which is exactly
+    pandas ``ewm(alpha=m/n, adjust=False)``.
+    """
+    n, m = int(n), int(m)
+    alpha = float(m) / float(n)
+    return s.groupby(level=SYM_LVL).transform(
+        lambda g: g.ewm(alpha=alpha, adjust=False).mean()
+    )
+
+
+def _ts_count(s, w, ctx=None):
+    """GTJA COUNT(x, n): rolling count of non-NaN observations."""
+    return (
+        s.notna().astype(float)
+        .groupby(level=SYM_LVL)
+        .transform(lambda g: g.rolling(int(w)).sum())
+    )
+
+
+def _ts_resi(s, w, ctx=None):
+    """qlib Resi(x, d): rolling linear-regression residual (trend deviation)."""
+    def resi(x):
+        x = np.asarray(x, dtype=float)
+        if len(x) < 2 or np.isnan(x).all():
+            return np.nan
+        idx = np.arange(len(x))
+        mask = ~np.isnan(x)
+        if mask.sum() < 2:
+            return np.nan
+        b, a = np.polyfit(idx[mask], x[mask], 1)
+        return float(x[-1] - (a + b * (len(x) - 1)))
+    return s.groupby(level=SYM_LVL).transform(lambda g: g.rolling(int(w)).apply(resi, raw=True))
+
+
+def _ts_vwap(c, v, w, ctx=None):
+    """GTJA VWAP(close, volume, n): rolling volume-weighted average price."""
+    num = _ts_sum(c * v, w)
+    den = _ts_sum(v, w)
+    return num / den.replace(0, np.nan)
 
 
 def _register() -> dict[str, Operator]:
@@ -462,6 +525,11 @@ def _register() -> dict[str, Operator]:
     reg("ts_price_position", 2, _ts_price_position, "stochastic (s-min)/(max-min)", ts)
     reg("ts_rel_volume", 2, _ts_rel_volume, "relative volume vs window mean", ts)
     reg("ts_sharpe", 2, _ts_sharpe, "rolling mean/std ratio (apply to returns)", ts)
+
+    reg("ts_sma", 3, _ts_sma, "GTJA SMA(x,n,m) recursive moving average", ts)
+    reg("ts_count", 2, _ts_count, "GTJA COUNT(x,n) non-NaN count", ts)
+    reg("ts_vwap", 3, _ts_vwap, "GTJA VWAP(close,volume,n) volume-weighted price", ts)
+    reg("ts_resi", 2, _ts_resi, "qlib Resi(x,d) linear-regression residual", ts)
 
     reg("rank", 1, _cs_rank, "cross-sectional percentile rank (alias of cs_rank)", cs)
     reg("cs_rank", 1, _cs_rank, "cross-sectional percentile rank", cs)

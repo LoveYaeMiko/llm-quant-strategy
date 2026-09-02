@@ -1,0 +1,1559 @@
+{
+  "results": {
+    "Sub(Rank(Ts_Argmax(Mul(Sign(Cond(Less(TS_Return(Close, 1), 0), Ts_Std(TS_Return(Close, 1), 20), Close)), Power(Abs(Cond(Less(TS_Return(Close, 1), 0), Ts_Std(TS_Return(Close, 1), 20), Close)), 2)), 5)), 0.5)": {
+      "windows": {
+        "train": {
+          "n_days": 2415,
+          "rank_ic": -0.027146722426973743,
+          "icir": -3.5844051069466123
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.019150960649533994,
+          "icir": -2.5371649546809896
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01502551584434426,
+          "icir": -1.8628829392492767
+        }
+      },
+      "reliable": false,
+      "sec": 25.3
+    },
+    "Mul(Neg(1), Ts_Corr(Rank(Ts_Delta(Log(Volume), 2)), Rank(Div(Sub(Close, Open), Open)), 6))": {
+      "windows": {
+        "train": {
+          "n_days": 2424,
+          "rank_ic": 0.025244803448253056,
+          "icir": 4.783930180361819
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01318646886967799,
+          "icir": 2.5084898636981183
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.007764024851619415,
+          "icir": 1.4762627803109045
+        }
+      },
+      "reliable": false,
+      "sec": 4.9
+    },
+    "Mul(Neg(1), Ts_Corr(Rank(Open), Rank(Volume), 10))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.00861868158851434,
+          "icir": 1.8819091075103966
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011475391568397105,
+          "icir": 2.4022818480426635
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.007032023240151347,
+          "icir": 1.432995666631734
+        }
+      },
+      "reliable": false,
+      "sec": 4.5
+    },
+    "Mul(Neg(1), Ts_Rank(Rank(Low), 9))": {
+      "windows": {
+        "train": {
+          "n_days": 2423,
+          "rank_ic": 0.03320040668974375,
+          "icir": 3.694022371152168
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.023134611133050823,
+          "icir": 2.8088730420632055
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01601163906499248,
+          "icir": 1.6522313161367645
+        }
+      },
+      "reliable": false,
+      "sec": 4.0
+    },
+    "Mul(Neg(1), Ts_Corr(Open, Volume, 10))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.006221070937108348,
+          "icir": 0.9038371614876253
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01045793533028672,
+          "icir": 1.5411103499499714
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.011572419257326518,
+          "icir": 1.590788700537314
+        }
+      },
+      "reliable": false,
+      "sec": 3.5
+    },
+    "Cond(Less(Ts_Mean(Volume, 20), Volume), Mul(Mul(Neg(1), Ts_Rank(Abs(Ts_Delta(Close, 7)), 60)), Sign(Ts_Delta(Close, 7))), Neg(1))": {
+      "windows": {
+        "train": {
+          "n_days": 2365,
+          "rank_ic": -0.026958727614118775,
+          "icir": -4.135341125415024
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.012197024603383799,
+          "icir": -2.167928037378251
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.008305936473632983,
+          "icir": -1.354509004103648
+        }
+      },
+      "reliable": false,
+      "sec": 4.5
+    },
+    "Mul(Neg(1), Rank(Sub(Mul(Ts_Sum(Open, 5), Ts_Sum(TS_Return(Close, 1), 5)), Ts_Delay(Mul(Ts_Sum(Open, 5), Ts_Sum(TS_Return(Close, 1), 5)), 10))))": {
+      "windows": {
+        "train": {
+          "n_days": 2416,
+          "rank_ic": 0.035704099980593706,
+          "icir": 3.8381109347477835
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.014297553947844417,
+          "icir": 1.607091122198515
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.009378787312196726,
+          "icir": 0.8833507356569557
+        }
+      },
+      "reliable": false,
+      "sec": 5.2
+    },
+    "Cond(Greater(Ts_Min(Ts_Delta(Close, 1), 5), 0), Ts_Delta(Close, 1), Cond(Less(Ts_Max(Ts_Delta(Close, 1), 5), 0), Ts_Delta(Close, 1), Mul(Neg(1), Ts_Delta(Close, 1))))": {
+      "windows": {
+        "train": {
+          "n_days": 2430,
+          "rank_ic": 0.009391747656403526,
+          "icir": 1.0265161049276583
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.020837651267161722,
+          "icir": 2.336200283928138
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01953255893520497,
+          "icir": 1.964493849974554
+        }
+      },
+      "reliable": false,
+      "sec": 4.1
+    },
+    "Rank(Cond(Greater(Ts_Min(Ts_Delta(Close, 1), 4), 0), Ts_Delta(Close, 1), Cond(Less(Ts_Max(Ts_Delta(Close, 1), 4), 0), Ts_Delta(Close, 1), Mul(Neg(1), Ts_Delta(Close, 1)))))": {
+      "windows": {
+        "train": {
+          "n_days": 2430,
+          "rank_ic": 0.0031727878355200393,
+          "icir": 0.37404224667917735
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.013648446135142505,
+          "icir": 1.6461580055639033
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.014695448429785546,
+          "icir": 1.5801205289946987
+        }
+      },
+      "reliable": false,
+      "sec": 4.4
+    },
+    "Mul(Sign(Ts_Delta(Volume, 1)), Mul(Neg(1), Ts_Delta(Close, 1)))": {
+      "windows": {
+        "train": {
+          "n_days": 2430,
+          "rank_ic": 0.012790814060860016,
+          "icir": 2.093369642181649
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.004315610370227281,
+          "icir": 0.8060935540307728
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01241136904443301,
+          "icir": 2.0503594155066813
+        }
+      },
+      "reliable": false,
+      "sec": 2.8
+    },
+    "Mul(Neg(1), Rank(Ts_Cov(Rank(Close), Rank(Volume), 5)))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.02388958109410589,
+          "icir": 4.410722704652741
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01781886462112383,
+          "icir": 3.333835154035958
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.016974030999263374,
+          "icir": 3.155840600828093
+        }
+      },
+      "reliable": false,
+      "sec": 5.0
+    },
+    "Mul(Mul(Neg(1), Rank(Ts_Delta(TS_Return(Close, 1), 3))), Ts_Corr(Open, Volume, 10))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.003785954874023529,
+          "icir": 0.5664109214300307
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.009998921986755558,
+          "icir": 1.5422048483428599
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01173772919794727,
+          "icir": 1.6613788769034845
+        }
+      },
+      "reliable": false,
+      "sec": 4.4
+    },
+    "Mul(Neg(1), Ts_Sum(Rank(Ts_Corr(Rank(High), Rank(Volume), 3)), 3))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.021129772663423998,
+          "icir": 4.791022445912878
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.015991924379912245,
+          "icir": 4.013114101433176
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01251952691055004,
+          "icir": 2.815320200758222
+        }
+      },
+      "reliable": false,
+      "sec": 13.4
+    },
+    "Mul(Neg(1), Rank(Ts_Cov(Rank(High), Rank(Volume), 5)))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.02194962014673643,
+          "icir": 4.1306763264881
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.018992282349153785,
+          "icir": 3.7700329864063264
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.017767315511004106,
+          "icir": 3.379121798758712
+        }
+      },
+      "reliable": false,
+      "sec": 10.7
+    },
+    "Mul(Mul(Mul(Neg(1), Rank(Ts_Rank(Close, 10))), Rank(Ts_Delta(Ts_Delta(Close, 1), 1))), Rank(Ts_Rank(Div(Volume, Ts_Mean(Volume, 20)), 5)))": {
+      "windows": {
+        "train": {
+          "n_days": 2408,
+          "rank_ic": 0.015621889999619823,
+          "icir": 1.7429594093005345
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.017782550964277145,
+          "icir": 2.066588698281209
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.013321869803565251,
+          "icir": 1.4490409048182686
+        }
+      },
+      "reliable": false,
+      "sec": 6.1
+    },
+    "Mul(Neg(1), Rank(Add(Add(Ts_Std(Abs(Sub(Close, Open)), 5), Sub(Close, Open)), Ts_Corr(Close, Open, 10))))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.009944448834482728,
+          "icir": 1.150146554743456
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.016529116391914338,
+          "icir": 2.0020749293056914
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.010650847478651847,
+          "icir": 1.2337427275417696
+        }
+      },
+      "reliable": false,
+      "sec": 4.6
+    },
+    "Mul(Mul(Neg(1), Sign(Add(Sub(Close, Ts_Delay(Close, 7)), Ts_Delta(Close, 7)))), Add(1, Rank(Add(1, Ts_Sum(TS_Return(Close, 1), 250)))))": {
+      "windows": {
+        "train": {
+          "n_days": 2180,
+          "rank_ic": 0.03626367852299704,
+          "icir": 4.089350952150136
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.017725912586215017,
+          "icir": 1.838799813177389
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.020507342375110003,
+          "icir": 2.128849151287701
+        }
+      },
+      "reliable": true,
+      "sec": 3.8
+    },
+    "Mul(Mul(Mul(Neg(1), Rank(Sub(Open, Ts_Delay(High, 1)))), Rank(Sub(Open, Ts_Delay(Close, 1)))), Rank(Sub(Open, Ts_Delay(Low, 1))))": {
+      "windows": {
+        "train": {
+          "n_days": 2430,
+          "rank_ic": 0.006397147243399504,
+          "icir": 0.8723939502618022
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.0005344450367977162,
+          "icir": -0.07470914412766029
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.005982359802353247,
+          "icir": -0.6439942761089494
+        }
+      },
+      "reliable": false,
+      "sec": 8.1
+    },
+    "Mul(Mul(Neg(1), Ts_Delta(Ts_Corr(High, Volume, 5), 5)), Rank(Ts_Std(Close, 20)))": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.001037057997602418,
+          "icir": -0.1895076201081332
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0012667397791647924,
+          "icir": 0.25902994067241264
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0006290757318782368,
+          "icir": -0.11616067511283433
+        }
+      },
+      "reliable": false,
+      "sec": 5.9
+    },
+    "Cond(Less(Div(Ts_Sum(High, 20), 20), High), Mul(Neg(1), Ts_Delta(High, 2)), 0)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.03532795070170351,
+          "icir": 4.614883166483074
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.012709645883291416,
+          "icir": 1.7515894344455727
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.012316951671415206,
+          "icir": 1.591737224473752
+        }
+      },
+      "reliable": false,
+      "sec": 3.6
+    },
+    "Mul(Neg(1), Ts_Max(Ts_Corr(Ts_Rank(Volume, 5), Ts_Rank(High, 5), 5), 3))": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": 0.024124034643225677,
+          "icir": 3.880536688852687
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0212771610971321,
+          "icir": 3.4109878817711015
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01474945150346537,
+          "icir": 2.2863782987470302
+        }
+      },
+      "reliable": false,
+      "sec": 13.4
+    },
+    "Cs_Scale(Sub(Add(Ts_Corr(Ts_Mean(Volume, 20), Low, 5), Div(Add(High, Low), 2)), Close))": {
+      "windows": {
+        "train": {
+          "n_days": 2326,
+          "rank_ic": 0.006741752087028823,
+          "icir": 0.7688642643521472
+        },
+        "val": {
+          "n_days": 434,
+          "rank_ic": 0.011409213097571258,
+          "icir": 1.1934206917195838
+        },
+        "test": {
+          "n_days": 894,
+          "rank_ic": -0.0048256634889503255,
+          "icir": -0.649811717189902
+        }
+      },
+      "reliable": false,
+      "sec": 5.4
+    },
+    "Add(Ts_Min(Ts_Prod(Rank(Rank(Cs_Scale(Log(Ts_Sum(Ts_Min(Rank(Rank(Mul(Neg(1), Rank(Ts_Delta(Sub(Close, 1), 5))))), 2), 1))))), 1), 5), Ts_Rank(Ts_Delay(Mul(Neg(1), TS_Return(Close, 1)), 6), 5))": {
+      "windows": {
+        "train": {
+          "n_days": 2420,
+          "rank_ic": 0.027454213501210308,
+          "icir": 3.2727048503820373
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.012619985260156742,
+          "icir": 1.40251858048575
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.017805499915009498,
+          "icir": 1.7892368893579313
+        }
+      },
+      "reliable": false,
+      "sec": 196.3
+    },
+    "Div(Mul(Sub(1, Rank(Add(Add(Sign(Sub(Close, Ts_Delay(Close, 1))), Sign(Sub(Ts_Delay(Close, 1), Ts_Delay(Close, 2)))), Sign(Sub(Ts_Delay(Close, 2), Ts_Delay(Close, 3)))))), Ts_Sum(Volume, 5)), Ts_Sum(Volume, 20))": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.02009926130892134,
+          "icir": 2.7650384691979757
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01923687665202878,
+          "icir": 2.556361168477275
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.012344399690332342,
+          "icir": 1.5379333490643217
+        }
+      },
+      "reliable": false,
+      "sec": 9.9
+    },
+    "Add(Add(Rank(Rank(Rank(Ts_Decay_Linear(Mul(Neg(1), Rank(Rank(Ts_Delta(Close, 10)))), 10)))), Rank(Mul(Neg(1), Ts_Delta(Close, 3)))), Sign(Cs_Scale(Ts_Corr(Ts_Mean(Volume, 20), Low, 12))))": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": 0.019514511322148036,
+          "icir": 2.628031611344822
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011553953262035399,
+          "icir": 1.6210622025824732
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.004377827076962217,
+          "icir": 0.5319609364013699
+        }
+      },
+      "reliable": false,
+      "sec": 32.7
+    },
+    "Rank(Mul(Neg(1), Power(Sub(1, Div(Open, Close)), 1)))": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": 0.016022327645525046,
+          "icir": 2.5404948537154395
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.015420084381632648,
+          "icir": 3.1994174801304625
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.025350847432668758,
+          "icir": 2.6995070700381385
+        }
+      },
+      "reliable": true,
+      "sec": 3.2
+    },
+    "Rank(Add(Sub(1, Rank(Div(Ts_Std(TS_Return(Close, 1), 2), Ts_Std(TS_Return(Close, 1), 5)))), Sub(1, Rank(Ts_Delta(Close, 1)))))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": 0.016781342483355145,
+          "icir": 1.97543352513805
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01905619532493078,
+          "icir": 2.3813613069481923
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01769913007568387,
+          "icir": 2.0311485316439537
+        }
+      },
+      "reliable": false,
+      "sec": 5.5
+    },
+    "Mul(Mul(Ts_Rank(Volume, 32), Sub(1, Ts_Rank(Sub(Add(Close, High), Low), 16))), Sub(1, Ts_Rank(TS_Return(Close, 1), 32)))": {
+      "windows": {
+        "train": {
+          "n_days": 2399,
+          "rank_ic": 0.011243968191364851,
+          "icir": 1.356320562595585
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.014386848756486013,
+          "icir": 1.7298001378280046
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.012772425329514283,
+          "icir": 1.4607641392366553
+        }
+      },
+      "reliable": false,
+      "sec": 8.3
+    },
+    "Add(Rank(Ts_Corr(Ts_Delay(Sub(Open, Close), 1), Close, 200)), Rank(Sub(Open, Close)))": {
+      "windows": {
+        "train": {
+          "n_days": 2230,
+          "rank_ic": 0.009713465613183484,
+          "icir": 1.5988815901401505
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.012537612942145919,
+          "icir": 1.6797619299754463
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.004261230626033152,
+          "icir": 0.5692450115739307
+        }
+      },
+      "reliable": false,
+      "sec": 12.6
+    },
+    "Mul(Mul(Neg(1), Rank(Ts_Rank(Close, 10))), Rank(Div(Close, Open)))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.033103736159878334,
+          "icir": 3.9335817531925947
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02560737967927977,
+          "icir": 3.504648798288201
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.02592743143038648,
+          "icir": 3.062143391133519
+        }
+      },
+      "reliable": true,
+      "sec": 10.9
+    },
+    "Mul(Mul(Neg(1), Rank(Mul(Ts_Delta(Close, 7), Sub(1, Rank(Ts_Decay_Linear(Div(Volume, Ts_Mean(Volume, 20)), 9)))))), Add(1, Rank(Ts_Sum(TS_Return(Close, 1), 250))))": {
+      "windows": {
+        "train": {
+          "n_days": 2180,
+          "rank_ic": 0.03679638822255467,
+          "icir": 3.74567379157693
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.018680641412958335,
+          "icir": 1.8747037494175895
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.012264121946945589,
+          "icir": 1.1038889712715791
+        }
+      },
+      "reliable": false,
+      "sec": 35.2
+    },
+    "Mul(Mul(Neg(1), Rank(Ts_Std(High, 10))), Ts_Corr(High, Volume, 10))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.017240768174861493,
+          "icir": 1.9774557133367343
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.015509631310412962,
+          "icir": 1.8556695164238761
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.035178733741683885,
+          "icir": 3.398731160359401
+        }
+      },
+      "reliable": true,
+      "sec": 11.4
+    },
+    "Mul(Ts_Rank(Div(Volume, Ts_Mean(Volume, 20)), 20), Ts_Rank(Mul(Neg(1), Ts_Delta(Close, 7)), 8))": {
+      "windows": {
+        "train": {
+          "n_days": 2393,
+          "rank_ic": -0.0073981417379799155,
+          "icir": -1.1010251019954427
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.004771215104470628,
+          "icir": 0.699177235787914
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.0026945275423375754,
+          "icir": 0.3623491324024367
+        }
+      },
+      "reliable": false,
+      "sec": 12.6
+    },
+    "Mul(Neg(1), Ts_Corr(High, Rank(Volume), 5))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.019933779472157305,
+          "icir": 3.3825343738050835
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.019852146801363046,
+          "icir": 3.3679252070138377
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.012092147630126705,
+          "icir": 2.137360543157771
+        }
+      },
+      "reliable": false,
+      "sec": 10.2
+    },
+    "Mul(Mul(Neg(1), Mul(Rank(Div(Ts_Sum(Ts_Delay(Close, 5), 20), 20)), Ts_Corr(Close, Volume, 2))), Rank(Ts_Corr(Ts_Sum(Close, 5), Ts_Sum(Close, 20), 2)))": {
+      "windows": {
+        "train": {
+          "n_days": 2407,
+          "rank_ic": 0.007603629413020986,
+          "icir": 1.5031768349916548
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0032225753223681097,
+          "icir": 0.7069771735191692
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.008540668272589454,
+          "icir": 1.8106700471431119
+        }
+      },
+      "reliable": false,
+      "sec": 17.4
+    },
+    "Cond(Greater(Sub(Div(Sub(Ts_Delay(Close, 20), Ts_Delay(Close, 10)), 10), Div(Sub(Ts_Delay(Close, 10), Close), 10)), 0.25), Neg(1), Cond(Less(Sub(Div(Sub(Ts_Delay(Close, 20), Ts_Delay(Close, 10)), 10), Div(Sub(Ts_Delay(Close, 10), Close), 10)), 0), 1, Mul(Neg(1), Sub(Close, Ts_Delay(Close, 1)))))": {
+      "windows": {
+        "train": {
+          "n_days": 2430,
+          "rank_ic": 0.019498006413077515,
+          "icir": 2.51543856052535
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.012021939028871859,
+          "icir": 1.6800760888606883
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.0125863021190547,
+          "icir": 1.4098452310112377
+        }
+      },
+      "reliable": false,
+      "sec": 7.1
+    },
+    "Cond(Less(Sub(Div(Sub(Ts_Delay(Close, 20), Ts_Delay(Close, 10)), 10), Div(Sub(Ts_Delay(Close, 10), Close), 10)), Neg(0.1)), 1, Mul(Neg(1), Sub(Close, Ts_Delay(Close, 1))))": {
+      "windows": {
+        "train": {
+          "n_days": 2430,
+          "rank_ic": 0.015439632190753732,
+          "icir": 1.6751054889278971
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.017894055351717147,
+          "icir": 1.8679835603214245
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.0056698906612012755,
+          "icir": 0.5608454527644537
+        }
+      },
+      "reliable": false,
+      "sec": 6.2
+    },
+    "Cond(Less(Sub(Div(Sub(Ts_Delay(Close, 20), Ts_Delay(Close, 10)), 10), Div(Sub(Ts_Delay(Close, 10), Close), 10)), Neg(0.05)), 1, Mul(Neg(1), Sub(Close, Ts_Delay(Close, 1))))": {
+      "windows": {
+        "train": {
+          "n_days": 2430,
+          "rank_ic": 0.01573371234100909,
+          "icir": 1.7513970578089966
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01679752058091387,
+          "icir": 1.81944650938041
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.004027856099076505,
+          "icir": 0.40798673183953593
+        }
+      },
+      "reliable": false,
+      "sec": 6.1
+    },
+    "Mul(Mul(Add(Mul(Neg(1), Ts_Min(Low, 5)), Ts_Delay(Ts_Min(Low, 5), 5)), Rank(Div(Sub(Ts_Sum(TS_Return(Close, 1), 240), Ts_Sum(TS_Return(Close, 1), 20)), 220))), Ts_Rank(Volume, 5))": {
+      "windows": {
+        "train": {
+          "n_days": 2190,
+          "rank_ic": 0.02881150049186906,
+          "icir": 3.1611027407684484
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01714910203790173,
+          "icir": 1.8081431251600093
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.011678946740408393,
+          "icir": 1.10823112517568
+        }
+      },
+      "reliable": false,
+      "sec": 14.0
+    },
+    "Mul(Neg(1), Ts_Delta(Div(Sub(Sub(Close, Low), Sub(High, Close)), Sub(Close, Low)), 9))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.019945925629836447,
+          "icir": 3.2924849403187215
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.005443237926025633,
+          "icir": 1.1944644589506443
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0007261268383903284,
+          "icir": -0.19088292829050077
+        }
+      },
+      "reliable": false,
+      "sec": 5.5
+    },
+    "Div(Mul(Neg(1), Mul(Sub(Low, Close), Power(Open, 5))), Mul(Sub(Low, High), Power(Close, 5)))": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": 0.02055357889993981,
+          "icir": 3.2772716175437058
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0188924953624694,
+          "icir": 3.567458665266638
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.030569490866488323,
+          "icir": 2.8944212552032824
+        }
+      },
+      "reliable": true,
+      "sec": 5.5
+    },
+    "Mul(Neg(1), Sub(Mul(2, Cs_Scale(Rank(Mul(Div(Sub(Sub(Close, Low), Sub(High, Close)), Sub(High, Low)), Volume)))), Cs_Scale(Rank(Ts_Argmax(Close, 10)))))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.022160731881841388,
+          "icir": -2.219539687039152
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.005722801125524621,
+          "icir": -0.6180030542113902
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.020909692342977383,
+          "icir": 1.7092186844605801
+        }
+      },
+      "reliable": false,
+      "sec": 84.8
+    },
+    "Cond(Less(Ts_Rank(Ts_Corr(Rank(High), Rank(Ts_Mean(Volume, 15)), 9), 14), Rank(Ts_Delta(Add(Mul(Close, 0.518), Mul(Low, 0.482)), 1))), Neg(1), 1)": {
+      "windows": {
+        "train": {
+          "n_days": 2396,
+          "rank_ic": 0.011250656993808273,
+          "icir": 2.043048872153666
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.009056561671490087,
+          "icir": 1.7513060946933001
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.005938225531457544,
+          "icir": 1.0117117700319924
+        }
+      },
+      "reliable": false,
+      "sec": 15.7
+    },
+    "Power(Rank(Ts_Corr(Add(Mul(High, 0.876), Mul(Close, 0.124)), Ts_Mean(Volume, 30), 10)), Rank(Ts_Corr(Ts_Rank(Div(Add(High, Low), 2), 4), Ts_Rank(Volume, 10), 7)))": {
+      "windows": {
+        "train": {
+          "n_days": 2393,
+          "rank_ic": 0.004333335073908766,
+          "icir": 0.7304258647029856
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0028910562309380425,
+          "icir": 0.5479098765962643
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.0003914323151774687,
+          "icir": 0.06496634056789126
+        }
+      },
+      "reliable": false,
+      "sec": 19.8
+    },
+    "Min2(Rank(Ts_Decay_Linear(Sub(Add(Rank(Open), Rank(Low)), Add(Rank(High), Rank(Close))), 8)), Ts_Rank(Ts_Decay_Linear(Ts_Corr(Ts_Rank(Close, 8), Ts_Rank(Ts_Mean(Volume, 60), 21), 8), 7), 3))": {
+      "windows": {
+        "train": {
+          "n_days": 2337,
+          "rank_ic": 0.00945511927550286,
+          "icir": 1.5997191885633988
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011784735116799908,
+          "icir": 1.828029415475627
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.02416379010181018,
+          "icir": 2.3287484451663447
+        }
+      },
+      "reliable": true,
+      "sec": 42.0
+    },
+    "Min2(Ts_Rank(Ts_Decay_Linear(Cond(Less(Add(Div(Add(High, Low), 2), Close), Add(Low, Open)), 1, 0), 15), 19), Ts_Rank(Ts_Decay_Linear(Ts_Corr(Rank(Low), Rank(Ts_Mean(Volume, 30)), 8), 7), 7))": {
+      "windows": {
+        "train": {
+          "n_days": 2383,
+          "rank_ic": 0.0019144425681560124,
+          "icir": 0.5313489630595821
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0070719182347894,
+          "icir": 1.9152940164893788
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.013402473002249081,
+          "icir": 2.932646254418904
+        }
+      },
+      "reliable": false,
+      "sec": 50.8
+    },
+    "Cond(Less(Rank(Sub(Open, Ts_Min(Open, 12))), Ts_Rank(Power(Rank(Ts_Corr(Ts_Sum(Div(Add(High, Low), 2), 19), Ts_Sum(Ts_Mean(Volume, 40), 19), 13)), 5), 12)), 1, 0)": {
+      "windows": {
+        "train": {
+          "n_days": 2351,
+          "rank_ic": 0.00640515287060869,
+          "icir": 1.1768696061584356
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.00034685054086266336,
+          "icir": 0.060901667844544045
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.012527123689101438,
+          "icir": 2.0919686619335516
+        }
+      },
+      "reliable": false,
+      "sec": 17.6
+    },
+    "Cond(Less(Rank(Ts_Corr(Ts_Sum(Div(Add(High, Low), 2), 19), Ts_Sum(Ts_Mean(Volume, 60), 19), 8)), Rank(Ts_Corr(Low, Volume, 6))), Neg(1), 0)": {
+      "windows": {
+        "train": {
+          "n_days": 2347,
+          "rank_ic": -0.0016329077741983956,
+          "icir": -0.2993500907139948
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.00012136280865550404,
+          "icir": -0.024389012864278567
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.0020064205587690532,
+          "icir": 0.36594778822102064
+        }
+      },
+      "reliable": false,
+      "sec": 16.5
+    },
+    "Div(Sub(Close, Open), Add(Sub(High, Low), 0.001))": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.03851030285589781,
+          "icir": -5.3956554880953735
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.023710926809172334,
+          "icir": -3.3541221290704875
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.034632196800457156,
+          "icir": -3.21594671479978
+        }
+      },
+      "reliable": false,
+      "sec": 5.1
+    },
+    "Sub(1, Rank(Ts_Argmax(Close, 20)))": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.019788205290454927,
+          "icir": 2.1319049038015687
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.005968716474693881,
+          "icir": 0.6265613814962031
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.013378061661790876,
+          "icir": 1.3614808495915205
+        }
+      },
+      "reliable": false,
+      "sec": 80.2
+    },
+    "Rank(Ts_Argmin(Close, 20))": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.008302716393563205,
+          "icir": 0.9356049758679715
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.008872524654122792,
+          "icir": 0.9858855400290063
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.010785053924836167,
+          "icir": 1.097422518951012
+        }
+      },
+      "reliable": false,
+      "sec": 89.3
+    },
+    "Rank(Ts_Decay_Linear(TS_Return(Close, 1), 10))": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": -0.04540246081325843,
+          "icir": -3.8273180856844444
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02363234459505626,
+          "icir": -2.1243719874897398
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.02393551161924391,
+          "icir": -1.9451950708970775
+        }
+      },
+      "reliable": false,
+      "sec": 24.6
+    },
+    "Mul(Neg(1), Rank(Ts_Kurt(TS_Return(Close, 1), 20)))": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": 0.009309458381956619,
+          "icir": 1.389277354681388
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.00022214870060795102,
+          "icir": -0.04158278005751326
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.004276769115977515,
+          "icir": -0.9023735826519891
+        }
+      },
+      "reliable": false,
+      "sec": 8.0
+    },
+    "Mul(Neg(1), Rank(Ts_Skew(TS_Return(Close, 1), 20)))": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": 0.004869369859471834,
+          "icir": 0.7128877100347836
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.0009776432680433935,
+          "icir": -0.1640186462028851
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.010423579983607753,
+          "icir": 1.6475012510013336
+        }
+      },
+      "reliable": false,
+      "sec": 7.7
+    },
+    "Mul(Neg(1), Ts_Zscore(Close, 5))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.023516595305250697,
+          "icir": 2.276312968246008
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.021341731949962545,
+          "icir": 2.1936804865131174
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.022274181095131903,
+          "icir": 2.1046937673779533
+        }
+      },
+      "reliable": true,
+      "sec": 7.9
+    },
+    "Mul(Neg(1), Ts_Corr(Rank(Ts_Delta(Log(Volume), 1)), Rank(Div(Sub(Close, Open), Open)), 6))": {
+      "windows": {
+        "train": {
+          "n_days": 2425,
+          "rank_ic": 0.03461623894189036,
+          "icir": 5.9961057912814475
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.018086009329458513,
+          "icir": 2.973240584864603
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01386647276823931,
+          "icir": 2.3151801376631784
+        }
+      },
+      "reliable": false,
+      "sec": 10.5
+    },
+    "Mul(Neg(1), Ts_Delta(Div(Sub(Sub(Close, Low), Sub(High, Close)), Sub(High, Low)), 1))": {
+      "windows": {
+        "train": {
+          "n_days": 2430,
+          "rank_ic": 0.0193144414028309,
+          "icir": 2.9726716794441472
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.003518054369142235,
+          "icir": 0.6498462650372554
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01176883819368053,
+          "icir": 1.86192962581759
+        }
+      },
+      "reliable": false,
+      "sec": 5.6
+    },
+    "Mul(Rank(Sign(Ts_Delta(Add(Mul(Open, 0.85), Mul(High, 0.15)), 4))), Neg(1))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.035988553141173205,
+          "icir": 4.343938500832106
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.00976660249816909,
+          "icir": 1.1507660351656979
+        },
+        "test": {
+          "n_days": 968,
+          "rank_ic": 0.013213400757375244,
+          "icir": 1.4067489741764796
+        }
+      },
+      "reliable": false,
+      "sec": 5.8
+    },
+    "Ts_Sum(Mul(Div(Sub(Sub(Mul(2, Close), Low), High), Sub(High, Low)), Volume), 6)": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": 0.00865325542436071,
+          "icir": 0.8182718827322291
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0009058793505505702,
+          "icir": 0.09745600029728413
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.02619560180569971,
+          "icir": -2.0391097602459807
+        }
+      },
+      "reliable": false,
+      "sec": 6.4
+    },
+    "Sub(Close, Ts_Delay(Close, 5))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": -0.05012443296712303,
+          "icir": -4.755971680405213
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.0230452943930763,
+          "icir": -2.2640860176060094
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.018893942602024122,
+          "icir": -1.6245716677745101
+        }
+      },
+      "reliable": false,
+      "sec": 5.4
+    },
+    "Sub(Div(Open, Ts_Delay(Close, 1)), 1)": {
+      "windows": {
+        "train": {
+          "n_days": 2430,
+          "rank_ic": 0.015799000928618488,
+          "icir": 2.512546690769571
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.013729413483163028,
+          "icir": 2.8793104888023944
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01896916787044048,
+          "icir": 1.8518110520288285
+        }
+      },
+      "reliable": false,
+      "sec": 5.4
+    },
+    "Div(Close, Ts_Delay(Close, 5))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": -0.050231891109072224,
+          "icir": -4.484757800777364
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.023214902025127604,
+          "icir": -2.207095616677755
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.02330053477459471,
+          "icir": -1.9047167189943224
+        }
+      },
+      "reliable": false,
+      "sec": 5.4
+    },
+    "Ts_Sma(Sub(Close, Ts_Delay(Close, 5)), 5, 1)": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": -0.038683863461575395,
+          "icir": -3.4377022163721636
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01743763702858793,
+          "icir": -1.5934821273757123
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.013963676239903963,
+          "icir": -1.1363690253719045
+        }
+      },
+      "reliable": false,
+      "sec": 7.3
+    },
+    "Mul(Div(Sub(Close, Ts_Delay(Close, 6)), Ts_Delay(Close, 6)), Volume)": {
+      "windows": {
+        "train": {
+          "n_days": 2425,
+          "rank_ic": -0.04368987581513787,
+          "icir": -4.223398048200913
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.022817184516997387,
+          "icir": -2.3382959928338267
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.021786795413086948,
+          "icir": -2.065793236527512
+        }
+      },
+      "reliable": false,
+      "sec": 6.2
+    },
+    "Mul(Div(Sub(Close, Ts_Mean(Close, 12)), Ts_Mean(Close, 12)), 100)": {
+      "windows": {
+        "train": {
+          "n_days": 2420,
+          "rank_ic": -0.044795059579538346,
+          "icir": -3.7314778538390416
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.022736610514109756,
+          "icir": -2.01814412328931
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.02322591711250763,
+          "icir": -1.8665876754671498
+        }
+      },
+      "reliable": false,
+      "sec": 8.3
+    },
+    "Div(Ts_Mean(Close, 12), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2420,
+          "rank_ic": 0.04479506780683682,
+          "icir": 3.731478589289653
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.022736613055530985,
+          "icir": 2.018144316770923
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.02322591607830154,
+          "icir": 1.8665876682321874
+        }
+      },
+      "reliable": true,
+      "sec": 7.2
+    },
+    "Mul(Min2(Rank(Ts_Decay_Linear(Ts_Delta(Open, 1), 15)), Rank(Ts_Decay_Linear(Ts_Corr(Volume, Add(Mul(Open, 0.65), Mul(Close, 0.35)), 17), 7))), Neg(1))": {
+      "windows": {
+        "train": {
+          "n_days": 2409,
+          "rank_ic": 0.027712750857501113,
+          "icir": 3.188046931238535
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.019509752134380103,
+          "icir": 1.9794342640479372
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.007022488680412757,
+          "icir": 0.7085633810718126
+        }
+      },
+      "reliable": false,
+      "sec": 50.6
+    },
+    "Cond(Less(Ts_Mean(High, 20), High), Mul(Neg(1), Ts_Delta(High, 2)), 0)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.03532795070170351,
+          "icir": 4.614883166483074
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.012709645883291416,
+          "icir": 1.7515894344455727
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.012316951671415206,
+          "icir": 1.591737224473752
+        }
+      },
+      "reliable": false,
+      "sec": 7.4
+    },
+    "Mul(Div(Ts_Count(Greater(Close, Ts_Delay(Close, 1)), 12), 12), 100)": {
+      "windows": {
+        "train": {
+          "n_days": 0,
+          "rank_ic": null,
+          "icir": null
+        },
+        "val": {
+          "n_days": 0,
+          "rank_ic": null,
+          "icir": null
+        },
+        "test": {
+          "n_days": 0,
+          "rank_ic": null,
+          "icir": null
+        }
+      },
+      "reliable": false,
+      "sec": 7.3
+    },
+    "Mul(Div(Ts_Count(Greater(Close, Ts_Delay(Close, 1)), 20), 20), 100)": {
+      "windows": {
+        "train": {
+          "n_days": 0,
+          "rank_ic": null,
+          "icir": null
+        },
+        "val": {
+          "n_days": 0,
+          "rank_ic": null,
+          "icir": null
+        },
+        "test": {
+          "n_days": 0,
+          "rank_ic": null,
+          "icir": null
+        }
+      },
+      "reliable": false,
+      "sec": 6.9
+    },
+    "Mul(Div(Ts_Sma(Ts_Max(Sub(Volume, Ts_Delay(Volume, 1)), 0), 6, 1), Ts_Sma(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 6, 1)), 100)": {
+      "windows": {
+        "train": {
+          "n_days": 0,
+          "rank_ic": null,
+          "icir": null
+        },
+        "val": {
+          "n_days": 0,
+          "rank_ic": null,
+          "icir": null
+        },
+        "test": {
+          "n_days": 0,
+          "rank_ic": null,
+          "icir": null
+        }
+      },
+      "reliable": false,
+      "sec": 6.2
+    },
+    "Mul(Neg(1), Mul(Ts_Delta(Ts_Corr(High, Volume, 5), 5), Rank(Ts_Std(Close, 20))))": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.001037057997602418,
+          "icir": -0.1895076201081332
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0012667397791647924,
+          "icir": 0.25902994067241264
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0006290757318782368,
+          "icir": -0.11616067511283433
+        }
+      },
+      "reliable": false,
+      "sec": 10.2
+    },
+    "Ts_Sma(Sub(Close, Ts_Delay(Close, 20)), 20, 1)": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": -0.017253177137030593,
+          "icir": -1.5746759920015199
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.004021142117208319,
+          "icir": -0.3196896012076846
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.009480603866139088,
+          "icir": -0.6862380711382049
+        }
+      },
+      "reliable": false,
+      "sec": 6.5
+    },
+    "Sub(Add(Ts_Corr(Ts_Mean(Volume, 20), Low, 5), Div(Add(High, Low), 2)), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2408,
+          "rank_ic": 0.006832342244785254,
+          "icir": 0.7784145163211148
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011618448153247128,
+          "icir": 1.23387287280326
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.00588492397849861,
+          "icir": -0.7950484083182392
+        }
+      },
+      "reliable": false,
+      "sec": 8.9
+    }
+  },
+  "errors": {}
+}

@@ -1,0 +1,3520 @@
+{
+  "summary": {
+    "alpha101": {
+      "docs": 107,
+      "parsed": 107,
+      "with_original": 101,
+      "with_aqml": 66,
+      "families": [
+        "adv_extended",
+        "breakout",
+        "cap_weighted",
+        "industry_neutral",
+        "mean_reversion",
+        "momentum",
+        "technical",
+        "volatility",
+        "volume_price"
+      ]
+    },
+    "gtja191": {
+      "docs": 191,
+      "parsed": 191,
+      "with_original": 191,
+      "with_aqml": 0,
+      "families": [
+        "benchmark",
+        "correlation",
+        "mean_reversion",
+        "momentum",
+        "price",
+        "volatility",
+        "volume",
+        "volume_price"
+      ]
+    }
+  },
+  "alpha101": [
+    {
+      "id": "alpha001",
+      "desc": "Rank of squared-clip ts_argmax within past 5 days",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(Ts_ArgMax(SignedPower(((returns < 0) ? stddev(returns, 20) : close), 2.), 5)) - 0.5",
+      "aqml": "Rank(Ts_ArgMax(SignedPower(If(returns < 0, Ts_Std(returns, 20), close), 2), 5)) - 0.5"
+    },
+    {
+      "id": "alpha002",
+      "desc": "Volume change rank vs intraday return rank correlation",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * correlation(rank(delta(log(volume), 2)), rank((close-open)/open), 6)",
+      "aqml": "-1 * Ts_Corr(Rank(Delta(Log(volume), 2)), Rank((close - open) / open), 6)"
+    },
+    {
+      "id": "alpha003",
+      "desc": "Open price rank vs volume rank correlation",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * correlation(rank(open), rank(volume), 10)",
+      "aqml": "-1 * Ts_Corr(Rank(open), Rank(volume), 10)"
+    },
+    {
+      "id": "alpha004",
+      "desc": "Negative 9-day Ts_Rank of cross-section rank of low",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * Ts_Rank(rank(low), 9)",
+      "aqml": "-1 * Ts_Rank(Rank(low), 9)"
+    },
+    {
+      "id": "alpha005",
+      "desc": "Open vs 10d VWAP mean rank, scaled by close-VWAP rank deviation",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(open - sum(vwap, 10) / 10) * (-1 * abs(rank(close - vwap)))",
+      "aqml": "Rank(open - Ts_Sum(vwap, 10) / 10) * (-1 * Abs(Rank(close - vwap)))"
+    },
+    {
+      "id": "alpha006",
+      "desc": "10d correlation between open and volume",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * correlation(open, volume, 10)",
+      "aqml": "-1 * Ts_Corr(open, volume, 10)"
+    },
+    {
+      "id": "alpha007",
+      "desc": "Volume-conditional 7-day signed momentum rank",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((adv20 < volume) ? -1 * ts_rank(abs(delta(close, 7)), 60) * sign(delta(close, 7)) : -1)",
+      "aqml": "If(adv20 < volume, -1 * Ts_Rank(Abs(Delta(close, 7)), 60) * Sign(Delta(close, 7)), -1)"
+    },
+    {
+      "id": "alpha008",
+      "desc": "Acceleration of (open*returns) sum compared to 10 days ago",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * rank(((sum(open, 5) * sum(returns, 5)) - delay((sum(open, 5) * sum(returns, 5)), 10)))",
+      "aqml": "-1 * Rank((Ts_Sum(open, 5) * Ts_Sum(returns, 5)) - Delay(Ts_Sum(open, 5) * Ts_Sum(returns, 5), 10))"
+    },
+    {
+      "id": "alpha009",
+      "desc": "Trend-confirmed price-change momentum",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((0 < ts_min(delta(close, 1), 5)) ? delta(close, 1) :\n     ((ts_max(delta(close, 1), 5) < 0) ? delta(close, 1) : (-1 * delta(close, 1))))",
+      "aqml": "If(Ts_Min(Delta(close, 1), 5) > 0, Delta(close, 1),\n       If(Ts_Max(Delta(close, 1), 5) < 0, Delta(close, 1),\n          -1 * Delta(close, 1)))"
+    },
+    {
+      "id": "alpha010",
+      "desc": "Cross-sectional rank of trend-confirmed price change",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(((0 < ts_min(delta(close, 1), 4)) ? delta(close, 1) :\n          ((ts_max(delta(close, 1), 4) < 0) ? delta(close, 1) : (-1 * delta(close, 1)))))",
+      "aqml": "Rank(If(Ts_Min(Delta(close, 1), 4) > 0, Delta(close, 1),\n           If(Ts_Max(Delta(close, 1), 4) < 0, Delta(close, 1),\n              -1 * Delta(close, 1))))"
+    },
+    {
+      "id": "alpha011",
+      "desc": "(rank(ts_max((vwap-close),3)) + rank(ts_min((vwap-close),3))) * rank(delta(volume,3))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(ts_max((vwap - close), 3)) + rank(ts_min((vwap - close), 3))) *\n    rank(delta(volume, 3))",
+      "aqml": null
+    },
+    {
+      "id": "alpha012",
+      "desc": "Volume direction times negative price change",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "sign(delta(volume, 1)) * (-1 * delta(close, 1))",
+      "aqml": "Sign(Delta(volume, 1)) * (-1 * Delta(close, 1))"
+    },
+    {
+      "id": "alpha013",
+      "desc": "Negative rank of close-rank vs volume-rank covariance",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * rank(covariance(rank(close), rank(volume), 5))",
+      "aqml": "-1 * Rank(Ts_Cov(Rank(close), Rank(volume), 5))"
+    },
+    {
+      "id": "alpha014",
+      "desc": "Returns-acceleration rank scaled by open-volume correlation",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1 * rank(delta(returns, 3))) * correlation(open, volume, 10)",
+      "aqml": "(-1 * Rank(Delta(returns, 3))) * Ts_Corr(open, volume, 10)"
+    },
+    {
+      "id": "alpha015",
+      "desc": "Negative 3d sum of ranked high-volume rank correlation",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * sum(rank(correlation(rank(high), rank(volume), 3)), 3)",
+      "aqml": "-1 * Ts_Sum(Rank(Ts_Corr(Rank(high), Rank(volume), 3)), 3)"
+    },
+    {
+      "id": "alpha016",
+      "desc": "-1 * rank(covariance(rank(high), rank(volume), 5))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * rank(covariance(rank(high), rank(volume), 5))",
+      "aqml": null
+    },
+    {
+      "id": "alpha017",
+      "desc": "Momentum exhaustion: rank-mom × second-derivative × volume-surge",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(((-1 * rank(ts_rank(close, 10))) * rank(delta(delta(close, 1), 1))) *\n     rank(ts_rank((volume / adv20), 5)))",
+      "aqml": "(-1 * Rank(Ts_Rank(close, 10))) * Rank(Delta(Delta(close, 1), 1)) *\n    Rank(Ts_Rank(volume / adv20, 5))"
+    },
+    {
+      "id": "alpha018",
+      "desc": "Negative CS rank of: 5-day std(|close-open|) + (close-open) + 10-day correlation(close, open)",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * rank((stddev(abs((close - open)), 5) +\n               (close - open)) +\n              correlation(close, open, 10))",
+      "aqml": "-1 * Rank(Ts_Std(Abs(close - open), 5) +\n              (close - open) +\n              Ts_Corr(close, open, 10))"
+    },
+    {
+      "id": "alpha019",
+      "desc": "7d-return sign times annual rank-mom multiplier",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((-1 * sign(((close - delay(close, 7)) + delta(close, 7)))) *\n     (1 + rank((1 + sum(returns, 250)))))",
+      "aqml": "(-1 * Sign((close - Delay(close, 7)) + Delta(close, 7))) *\n    (1 + Rank(1 + Ts_Sum(returns, 250)))"
+    },
+    {
+      "id": "alpha020",
+      "desc": "-1 * rank(open-delay(high,1)) * rank(open-delay(close,1)) * rank(open-delay(low,1))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * rank(open - delay(high, 1)) *\n          rank(open - delay(close, 1)) *\n          rank(open - delay(low, 1))",
+      "aqml": null
+    },
+    {
+      "id": "alpha021",
+      "desc": "Volatility-vs-momentum regime switch using sma(close,8)+/-std(close,8) with volume/adv20 confirmation",
+      "family": "adv_extended",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((sum(close, 8) / 8 + stddev(close, 8)) < (sum(close, 2) / 2))\n    ? -1 :\n    ((sum(close, 2) / 2) < (sum(close, 8) / 8 - stddev(close, 8)))\n    ? 1 :\n    ((1 < (volume / adv20)) || ((volume / adv20) == 1)) ? 1 : -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha022",
+      "desc": "Change in high-vol correlation scaled by 20d stdev rank",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * delta(correlation(high, volume, 5), 5) * rank(stddev(close, 20))",
+      "aqml": "-1 * Delta(Ts_Corr(high, volume, 5), 5) * Rank(Ts_Std(close, 20))"
+    },
+    {
+      "id": "alpha023",
+      "desc": "High-breakout-conditional negative 2d high change",
+      "family": "breakout",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "(((sum(high, 20) / 20) < high) ? (-1 * delta(high, 2)) : 0)",
+      "aqml": "If(Ts_Sum(high, 20) / 20 < high, -1 * Delta(high, 2), 0)"
+    },
+    {
+      "id": "alpha024",
+      "desc": "If delta(sma(close,100),100)/delay(close,100) <= 0.05 then -(close-ts_min(close,100)) else -delta(close,3)",
+      "family": "cap_weighted",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((delta(sum(close, 100) / 100, 100) / delay(close, 100)) <= 0.05)\n    ? -1 * (close - ts_min(close, 100))\n    : -1 * delta(close, 3)",
+      "aqml": null
+    },
+    {
+      "id": "alpha025",
+      "desc": "Rank of negative-returns × volume-weighted price-tail",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(((-1 * returns) * adv20) * vwap * (high - close))",
+      "aqml": "Rank((-1 * returns) * adv20 * vwap * (high - close))"
+    },
+    {
+      "id": "alpha026",
+      "desc": "Max recent volume-rank vs high-rank correlation",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * ts_max(correlation(ts_rank(volume, 5), ts_rank(high, 5), 5), 3)",
+      "aqml": "-1 * Ts_Max(Ts_Corr(Ts_Rank(volume, 5), Ts_Rank(high, 5), 5), 3)"
+    },
+    {
+      "id": "alpha027",
+      "desc": "Sign threshold of rank(sum(corr(rank(volume), rank(vwap), 6), 2)/2)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((0.5 < rank(sum(correlation(rank(volume), rank(vwap), 6), 2) / 2.0))\n     ? -1 : 1)",
+      "aqml": null
+    },
+    {
+      "id": "alpha028",
+      "desc": "Standardised mid-price vs close gap with volume modifier",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "scale(correlation(adv20, low, 5) + (high + low) / 2 - close)",
+      "aqml": "Scale((Ts_Corr(adv20, low, 5) + (high + low) / 2) - close)"
+    },
+    {
+      "id": "alpha029",
+      "desc": "Deeply nested rank-scale-log composite of -delta(close-1,5), plus ts_rank(delay(-returns,6),5)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "min(product(rank(rank(scale(log(sum(ts_min(\n        rank(rank(-1 * rank(delta((close - 1), 5)))), 2), 1))))), 1), 5) +\n    ts_rank(delay(-1 * returns, 6), 5)",
+      "aqml": null
+    },
+    {
+      "id": "alpha030",
+      "desc": "(1 - rank(sum(sign(delta(close,1)) over last 3 days))) * sum(volume,5)/sum(volume,20)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((1.0 - rank(sign(close - delay(close, 1)) +\n                 sign(delay(close, 1) - delay(close, 2)) +\n                 sign(delay(close, 2) - delay(close, 3)))) *\n     sum(volume, 5)) / sum(volume, 20)",
+      "aqml": null
+    },
+    {
+      "id": "alpha031",
+      "desc": "Triple-rank decay of -rank(rank(delta(close,10))) + rank(-delta(close,3)) + sign(scale(corr(adv20,low,12)))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "rank(rank(rank(decay_linear(-1 * rank(rank(delta(close, 10))), 10)))) +\n    rank(-1 * delta(close, 3)) +\n    sign(scale(correlation(adv20, low, 12)))",
+      "aqml": null
+    },
+    {
+      "id": "alpha032",
+      "desc": "Scaled 7-day MA divergence + 20x scaled 230-day correlation between vwap and delayed close",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "scale((sum(close, 7) / 7 - close)) +\n        20 * scale(correlation(vwap, delay(close, 5), 230))",
+      "aqml": "Scale(Ts_Sum(close, 7) / 7 - close)\n        + 20 * Scale(Ts_Corr(vwap, Delay(close, 5), 230))"
+    },
+    {
+      "id": "alpha033",
+      "desc": "Cross-section rank of (open/close - 1)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank((-1 * ((1 - (open / close))^1)))",
+      "aqml": "Rank(-1 * Power(1 - (open / close), 1))"
+    },
+    {
+      "id": "alpha034",
+      "desc": "Rank((1 - rank(stddev(returns,2)/stddev(returns,5))) + (1 - rank(delta(close,1))))",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(((1 - rank((stddev(returns, 2) / stddev(returns, 5)))) +\n          (1 - rank(delta(close, 1)))))",
+      "aqml": "Rank((1 - Rank(Ts_Std(returns, 2) / Ts_Std(returns, 5))) +\n         (1 - Rank(Delta(close, 1))))"
+    },
+    {
+      "id": "alpha035",
+      "desc": "Volume rank × inverse range rank × inverse returns rank",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "ts_rank(volume, 32)\n    * (1 - ts_rank(close + high - low, 16))\n    * (1 - ts_rank(returns, 32))",
+      "aqml": "Ts_Rank(volume, 32)\n    * (1 - Ts_Rank(close + high - low, 16))\n    * (1 - Ts_Rank(returns, 32))"
+    },
+    {
+      "id": "alpha036",
+      "desc": "5-component weighted rank composite (alpha036 paper formula)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "2.21 * rank(correlation((close - open), delay(volume, 1), 15)) +\n    0.7  * rank(open - close) +\n    0.73 * rank(Ts_Rank(delay(-1 * returns, 6), 5)) +\n    rank(abs(correlation(vwap, adv20, 6))) +\n    0.6  * rank((sum(close, 200) / 200 - open) * (close - open))",
+      "aqml": null
+    },
+    {
+      "id": "alpha037",
+      "desc": "Rank of 200-day correlation between delayed (open-close) and close, plus rank of (open-close)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(correlation(delay((open - close), 1), close, 200)) +\n        rank((open - close))",
+      "aqml": "Rank(Ts_Corr(Delay(open - close, 1), close, 200))\n        + Rank(open - close)"
+    },
+    {
+      "id": "alpha038",
+      "desc": "Rank of 10d close rolling rank times close-over-open rank, negated",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((-1 * rank(ts_rank(close, 10))) * rank((close / open)))",
+      "aqml": "-1 * Rank(Ts_Rank(close, 10)) * Rank(close / open)"
+    },
+    {
+      "id": "alpha039",
+      "desc": "(-rank(delta(close,7) * (1 - rank(decay_linear(volume/adv20, 9))))) * (1 + rank(sum(returns,250)))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1 * rank(delta(close, 7) *\n               (1 - rank(decay_linear(volume / adv20, 9))))) *\n    (1 + rank(sum(returns, 250)))",
+      "aqml": null
+    },
+    {
+      "id": "alpha040",
+      "desc": "Negative rank(stddev(high,10)) * correlation(high, volume, 10)",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * rank(stddev(high, 10)) * correlation(high, volume, 10)",
+      "aqml": "-1 * Rank(Ts_Std(high, 10)) * Ts_Corr(high, volume, 10)"
+    },
+    {
+      "id": "alpha041",
+      "desc": "Geometric mean of high and low minus vwap",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((high * low)^0.5) - vwap",
+      "aqml": "Power(high * low, 0.5) - vwap"
+    },
+    {
+      "id": "alpha042",
+      "desc": "Rank(vwap - close) / Rank(vwap + close)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank((vwap - close)) / rank((vwap + close))",
+      "aqml": "Rank(vwap - close) / Rank(vwap + close)"
+    },
+    {
+      "id": "alpha043",
+      "desc": "Volume-surge rank × 7d-decline rank",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "ts_rank(volume / adv20, 20) * ts_rank(-1 * delta(close, 7), 8)",
+      "aqml": "Ts_Rank(volume / adv20, 20) * Ts_Rank(-1 * Delta(close, 7), 8)"
+    },
+    {
+      "id": "alpha044",
+      "desc": "Negative high-vs-volume-rank correlation",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * correlation(high, rank(volume), 5)",
+      "aqml": "-1 * Ts_Corr(high, Rank(volume), 5)"
+    },
+    {
+      "id": "alpha045",
+      "desc": "Lagged-MA rank × short-corr × long/short-MA-corr rank, negated",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1 * ((rank((sum(delay(close, 5), 20) / 20)) * correlation(close, volume, 2)) *\n           rank(correlation(sum(close, 5), sum(close, 20), 2))))",
+      "aqml": "-1 * (Rank(Ts_Sum(Delay(close, 5), 20) / 20) * Ts_Corr(close, volume, 2)) *\n          Rank(Ts_Corr(Ts_Sum(close, 5), Ts_Sum(close, 20), 2))"
+    },
+    {
+      "id": "alpha046",
+      "desc": "Trend-shape conditional one-day reversal",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((0.25 < (((delay(close, 20) - delay(close, 10)) / 10) -\n              ((delay(close, 10) - close) / 10))) ? -1 :\n     ((((delay(close, 20) - delay(close, 10)) / 10) -\n       ((delay(close, 10) - close) / 10)) < 0) ? 1 :\n     (-1 * (close - delay(close, 1))))",
+      "aqml": "If((Delay(close, 20) - Delay(close, 10)) / 10 -\n       (Delay(close, 10) - close) / 10 > 0.25, -1,\n       If((Delay(close, 20) - Delay(close, 10)) / 10 -\n          (Delay(close, 10) - close) / 10 < 0, 1,\n          -1 * (close - Delay(close, 1))))"
+    },
+    {
+      "id": "alpha047",
+      "desc": "((rank(1/close)*volume/adv20) * (high*rank(high-close)/sma(high,5))) - rank(vwap-delay(vwap,5))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((((rank(1/close) * volume) / adv20) *\n      ((high * rank(high - close)) / (sum(high, 5) / 5))) -\n     rank(vwap - delay(vwap, 5)))",
+      "aqml": null
+    },
+    {
+      "id": "alpha048",
+      "desc": "IndNeutralize((corr(delta(close,1), delta(delay(close,1),1), 250) * delta(close,1)) / close, sub_industry) / sum((delta(close,1)/delay(close,1))^2, 250)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "IndNeutralize(\n        (correlation(delta(close, 1), delta(delay(close, 1), 1), 250) *\n         delta(close, 1)) / close,\n        IndClass.subindustry\n    ) /\n    sum((delta(close, 1) / delay(close, 1))^2, 250)",
+      "aqml": null
+    },
+    {
+      "id": "alpha049",
+      "desc": "If close-acceleration < -0.1 then 1 else -delta(close,1)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((((delay(close, 20) - delay(close, 10)) / 10 -\n       (delay(close, 10) - close) / 10) < -0.1) ? 1 :\n     (-1 * (close - delay(close, 1))))",
+      "aqml": null
+    },
+    {
+      "id": "alpha050",
+      "desc": "-ts_max(rank(corr(rank(volume), rank(vwap), 5)), 5)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * ts_max(rank(correlation(rank(volume), rank(vwap), 5)), 5)",
+      "aqml": null
+    },
+    {
+      "id": "alpha051",
+      "desc": "Trend curvature conditional reversal",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(((((delay(close, 20) - delay(close, 10)) / 10) -\n       ((delay(close, 10) - close) / 10)) < (-1 * 0.05)) ? 1 :\n     (-1 * (close - delay(close, 1))))",
+      "aqml": "If((Delay(close, 20) - Delay(close, 10)) / 10 -\n       (Delay(close, 10) - close) / 10 < -0.05, 1,\n       -1 * (close - Delay(close, 1)))"
+    },
+    {
+      "id": "alpha052",
+      "desc": "Low-shift × medium-term excess return rank × volume rank",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((((-1 * ts_min(low, 5)) + delay(ts_min(low, 5), 5)) *\n      rank(((sum(returns, 240) - sum(returns, 20)) / 220))) * ts_rank(volume, 5))",
+      "aqml": "(-1 * Ts_Min(low, 5) + Delay(Ts_Min(low, 5), 5)) *\n     Rank((Ts_Sum(returns, 240) - Ts_Sum(returns, 20)) / 220) *\n     Ts_Rank(volume, 5)"
+    },
+    {
+      "id": "alpha053",
+      "desc": "Negative 9-day delta of (close-low minus high-close)/(close-low)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * delta(((close - low) - (high - close)) / (close - low), 9)",
+      "aqml": "-1 * Delta(((close - low) - (high - close)) / (close - low), 9)"
+    },
+    {
+      "id": "alpha054",
+      "desc": "Open^5 / Close^5 weighted intraday tail signal",
+      "family": "breakout",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((-1 * ((low - close) * (open^5))) / ((low - high) * (close^5)))",
+      "aqml": "-1 * ((low - close) * Power(open, 5)) / ((low - high) * Power(close, 5))"
+    },
+    {
+      "id": "alpha055",
+      "desc": "Negative correlation between %K rank and volume rank",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * correlation(\n        rank((close - ts_min(low, 12)) / (ts_max(high, 12) - ts_min(low, 12))),\n        rank(volume),\n        6,\n    )",
+      "aqml": "-1 * Ts_Corr(\n        Rank((close - Ts_Min(low, 12)) / (Ts_Max(high, 12) - Ts_Min(low, 12))),\n        Rank(volume),\n        6,\n    )"
+    },
+    {
+      "id": "alpha056",
+      "desc": "-rank(sum(returns,10)/sum(sum(returns,2),3)) * rank(returns * cap)",
+      "family": "cap_weighted",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "0 - 1 * (rank(sum(returns, 10) / sum(sum(returns, 2), 3)) *\n             rank(returns * cap))",
+      "aqml": null
+    },
+    {
+      "id": "alpha057",
+      "desc": "Negative (close - vwap) divided by 2-day decay-linear of CS rank of 30-day argmax of close",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "0 - (1 * ((close - vwap) / decay_linear(rank(ts_argmax(close, 30)), 2)))",
+      "aqml": "-1 * ((close - vwap) / Ts_DecayLinear(Rank(Ts_ArgMax(close, 30)), 2))"
+    },
+    {
+      "id": "alpha058",
+      "desc": "-ts_rank(decay_linear(corr(IndNeutralize(vwap,industry), volume, 4), 8), 6)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * Ts_Rank(decay_linear(\n        correlation(IndNeutralize(vwap, IndClass.sector), volume, 3.92795),\n        7.89291\n    ), 5.50322)",
+      "aqml": null
+    },
+    {
+      "id": "alpha059",
+      "desc": "-ts_rank(decay_linear(corr(IndNeutralize(vwap_blend,industry), volume, 4), 16), 8)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * Ts_Rank(decay_linear(\n        correlation(IndNeutralize(\n            vwap * 0.728317 + vwap * (1 - 0.728317),\n            IndClass.industry\n        ), volume, 4.25197), 16.2289\n    ), 8.19648)",
+      "aqml": null
+    },
+    {
+      "id": "alpha060",
+      "desc": "Williams %R volume rank minus argmax rank, scaled",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * (\n        2 * scale(rank(((close - low) - (high - close)) / (high - low) * volume))\n        - scale(rank(ts_argmax(close, 10)))\n    )",
+      "aqml": "-1 * (\n        2 * Scale(Rank(((close - low) - (high - close)) / (high - low) * volume))\n        - Scale(Rank(Ts_ArgMax(close, 10)))\n    )"
+    },
+    {
+      "id": "alpha061",
+      "desc": "rank(vwap-ts_min(vwap,16)) < rank(corr(vwap, adv180, 18))",
+      "family": "adv_extended",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(vwap - ts_min(vwap, 16.1219)) <\n    rank(correlation(vwap, adv180, 17.9282))",
+      "aqml": null
+    },
+    {
+      "id": "alpha062",
+      "desc": "rank(corr(vwap,sum(adv20,22),10)) < rank(open-rank vs midpoint inequality)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(correlation(vwap, sum(adv20, 22.4101), 9.91009)) <\n     rank(((rank(open) + rank(open)) <\n           (rank((high + low) / 2) + rank(high))))) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha063",
+      "desc": "Diff of decay-linear(delta(IndNeutralize(close,industry),2),8) and decay-linear(corr(blend,sum(adv180,37),14),12), sign-flipped",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(decay_linear(delta(IndNeutralize(close, IndClass.industry),\n                              2.25164), 8.22237)) -\n     rank(decay_linear(correlation(\n          vwap * 0.318108 + open * (1 - 0.318108),\n          sum(adv180, 37.2467), 13.557), 12.2883))) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha064",
+      "desc": "(rank(corr(sum(open-low blend,13), sum(adv120,13), 17)) < rank(delta(midpoint-vwap blend, 4))) * -1",
+      "family": "adv_extended",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(correlation(sum(open*0.178404 + low*(1-0.178404), 12.7054),\n                      sum(adv120, 12.7054), 16.6208)) <\n     rank(delta((((high+low)/2)*0.178404 + vwap*(1-0.178404), 3.69741))) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha065",
+      "desc": "Volume-weighted price vs adv60 correlation rank vs open-min rank",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "if rank(correlation(open*0.0078 + vwap*0.9922, sum(adv60, 9), 6))\n          < rank(open - ts_min(open, 14))\n    then -1 else 1",
+      "aqml": "If(Rank(Ts_Corr(open*0.0078 + vwap*0.9922, Ts_Sum(adv60, 9), 6))\n            < Rank(open - Ts_Min(open, 14)), -1, 1)"
+    },
+    {
+      "id": "alpha066",
+      "desc": "-(rank(decay_linear(delta(vwap,4),7)) + ts_rank(decay_linear((low-vwap)/(open-mid),11),7))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(decay_linear(delta(vwap, 3.51013), 7.23052)) +\n     Ts_Rank(decay_linear(\n         ((low * 0.96633 + low * (1 - 0.96633)) - vwap) /\n         (open - (high + low) / 2), 11.4157\n     ), 6.72611)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha067",
+      "desc": "(rank(high-ts_min(high,2)) ^ rank(corr(IndNeutralize(vwap,industry), IndNeutralize(adv20,sub_industry), 6))) * -1",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(high - ts_min(high, 2.14593))^\n     rank(correlation(IndNeutralize(vwap, IndClass.sector),\n                      IndNeutralize(adv20, IndClass.subindustry),\n                      6.02936))) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha068",
+      "desc": "Composite price/adv15 rank vs weighted-price delta",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "if ts_rank(correlation(rank(high), rank(adv15), 9), 14)\n          < rank(delta(close*0.518 + low*0.482, 1))\n    then -1 else 1",
+      "aqml": "If(Ts_Rank(Ts_Corr(Rank(high), Rank(adv15), 9), 14)\n            < Rank(Delta(close * 0.518 + low * 0.482, 1)), -1, 1)"
+    },
+    {
+      "id": "alpha069",
+      "desc": "(rank(ts_max(delta(IndNeutralize(vwap,industry),3),5)) ^ ts_rank(corr(close-vwap blend, adv20, 5), 9)) * -1",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(ts_max(delta(IndNeutralize(vwap, IndClass.industry),\n                       2.72412), 4.79344))^\n     Ts_Rank(correlation(close * 0.490655 + vwap * (1 - 0.490655),\n                         adv20, 4.92416), 9.0615)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha070",
+      "desc": "(rank(delta(vwap,1)) ^ ts_rank(corr(IndNeutralize(close,industry), adv50, 18), 18)) * -1",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(delta(vwap, 1.29456))^\n     Ts_Rank(correlation(IndNeutralize(close, IndClass.industry), adv50,\n                         17.8256), 17.9171)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha071",
+      "desc": "Decayed correlation vs decayed weighted-price-square rank, max",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "max(\n      ts_rank(decay_linear(correlation(ts_rank(close, 3), ts_rank(adv180, 12), 18), 4), 16),\n      ts_rank(decay_linear(rank(low + open - 2*vwap)^2, 16), 4)\n    )",
+      "aqml": "Max(\n      Ts_Rank(Ts_DecayLinear(Ts_Corr(Ts_Rank(close, 3), Ts_Rank(adv180, 12), 18), 4), 16),\n      Ts_Rank(Ts_DecayLinear(Power(Rank(low + open - vwap - vwap), 2), 16), 4)\n    )"
+    },
+    {
+      "id": "alpha072",
+      "desc": "Decayed mid-price vs adv40 corr / decayed VWAP-volume corr",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(decay_linear(correlation((high+low)/2, adv40, 9), 10))\n    / rank(decay_linear(correlation(ts_rank(vwap, 4), ts_rank(volume, 19), 7), 3))",
+      "aqml": "Rank(Ts_DecayLinear(Ts_Corr((high + low) / 2, adv40, 9), 10))\n    / Rank(Ts_DecayLinear(Ts_Corr(Ts_Rank(vwap, 4), Ts_Rank(volume, 19), 7), 3))"
+    },
+    {
+      "id": "alpha073",
+      "desc": "Negative max of decayed VWAP delta rank and blend reversal rank",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * max(\n        rank(decay_linear(delta(vwap, 5), 3)),\n        ts_rank(decay_linear(-delta(open*0.147155 + low*0.852845, 2)\n                / (open*0.147155 + low*0.852845), 3), 17)\n    )",
+      "aqml": "-1 * Max(\n        Rank(Ts_DecayLinear(Delta(vwap, 5), 3)),\n        Ts_Rank(Ts_DecayLinear(\n            -1 * Delta(open * 0.147155 + low * 0.852845, 2)\n            / (open * 0.147155 + low * 0.852845), 3), 17)\n    )"
+    },
+    {
+      "id": "alpha074",
+      "desc": "Close vs adv30-sum corr vs weighted-price-volume corr",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "if rank(correlation(close, sum(adv30, 37), 15))\n          < rank(correlation(rank(high*0.0261 + vwap*0.9739), rank(volume), 11))\n    then -1 else 0",
+      "aqml": "If(Rank(Ts_Corr(close, Ts_Sum(adv30, 37), 15))\n            < Rank(Ts_Corr(Rank(high*0.0261 + vwap*0.9739), Rank(volume), 11)), -1, 0)"
+    },
+    {
+      "id": "alpha075",
+      "desc": "rank(corr(vwap,volume,4)) < rank(corr(rank(low), rank(adv50), 12))",
+      "family": "adv_extended",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(correlation(vwap, volume, 4.24304)) <\n    rank(correlation(rank(low), rank(adv50), 12.4413))",
+      "aqml": null
+    },
+    {
+      "id": "alpha076",
+      "desc": "-max(rank(decay_linear(delta(vwap,1),12)), ts_rank(decay_linear(ts_rank(corr(IndNeutralize(low,industry), adv81, 8), 20), 17), 19))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "max(rank(decay_linear(delta(vwap, 1.24383), 11.8259)),\n        Ts_Rank(decay_linear(Ts_Rank(correlation(\n            IndNeutralize(low, IndClass.sector), adv81, 8.14941\n        ), 19.569), 17.1543), 19.383)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha077",
+      "desc": "Min of two decayed-rank features",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "min(\n      rank(decay_linear((high+low)/2 + high - vwap - high, 20)),\n      rank(decay_linear(correlation((high+low)/2, adv40, 3), 6))\n    )",
+      "aqml": "Min(\n      Rank(Ts_DecayLinear(((high + low) / 2 + high) - (vwap + high), 20)),\n      Rank(Ts_DecayLinear(Ts_Corr((high + low) / 2, adv40, 3), 6))\n    )"
+    },
+    {
+      "id": "alpha078",
+      "desc": "Power composition of two correlation ranks",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(correlation(sum(low*0.352 + vwap*0.648, 20), sum(adv40, 20), 7))\n    ^ rank(correlation(rank(vwap), rank(volume), 6))",
+      "aqml": "Power(\n      Rank(Ts_Corr(Ts_Sum(low * 0.352 + vwap * 0.648, 20), Ts_Sum(adv40, 20), 7)),\n      Rank(Ts_Corr(Rank(vwap), Rank(volume), 6))\n    )"
+    },
+    {
+      "id": "alpha079",
+      "desc": "rank(delta(IndNeutralize(close-open blend,industry),1)) < rank(corr(ts_rank(vwap,4), ts_rank(adv150,9), 15))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "rank(delta(IndNeutralize(close * 0.60733 + open * (1 - 0.60733),\n                             IndClass.sector), 1.23438)) <\n    rank(correlation(Ts_Rank(vwap, 3.60973),\n                     Ts_Rank(adv150, 9.18637), 14.6644))",
+      "aqml": null
+    },
+    {
+      "id": "alpha080",
+      "desc": "(rank(sign(delta(IndNeutralize(open-high blend,industry),4))) ^ ts_rank(corr(high,adv15,5),6)) * -1",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(Sign(delta(IndNeutralize(open * 0.868128 + high * (1 - 0.868128),\n                                   IndClass.industry), 4.04545)))^\n     Ts_Rank(correlation(high, adv10, 5.11456), 5.53756)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha081",
+      "desc": "Log-product of double-rank corr vs vwap-volume corr",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "if rank(log(product(rank(rank(correlation(vwap, sum(adv10, 50), 8)^4)), 15)))\n          < rank(correlation(rank(vwap), rank(volume), 5))\n    then -1 else 0",
+      "aqml": "If(Rank(Log(Ts_Product(Rank(Rank(Power(Ts_Corr(vwap, Ts_Sum(adv10, 50), 8), 4))), 15)))\n            < Rank(Ts_Corr(Rank(vwap), Rank(volume), 5)), -1, 0)"
+    },
+    {
+      "id": "alpha082",
+      "desc": "-min(rank(decay_linear(delta(open,1),15)), ts_rank(decay_linear(corr(IndNeutralize(volume,industry), open, 17), 7), 13))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "min(rank(decay_linear(delta(open, 1.46063), 14.8717)),\n        Ts_Rank(decay_linear(correlation(\n            IndNeutralize(volume, IndClass.sector),\n            open * 0.634196 + open * (1 - 0.634196),\n            17.4842\n        ), 6.92131), 13.4283)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha083",
+      "desc": "Range/MA delay rank times volume rank-squared, scaled",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank(delay((high - low) / (sum(close, 5) / 5), 2)) * rank(rank(volume)))\n    / (((high - low) / (sum(close, 5) / 5)) / (vwap - close))",
+      "aqml": "(Rank(Delay((high - low) / (Ts_Sum(close, 5) / 5), 2)) * Rank(Rank(volume)))\n    / (((high - low) / (Ts_Sum(close, 5) / 5)) / (vwap - close))"
+    },
+    {
+      "id": "alpha084",
+      "desc": "VWAP-vs-15d-max rank, sign-preserving (delta exponent linearised)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "SignedPower(Ts_Rank((vwap - ts_max(vwap, 15.3217)), 20.7127),\n                delta(close, 4.96796))",
+      "aqml": "SignedPower(Ts_Rank(vwap - Ts_Max(vwap, 15), 21), 1.0)"
+    },
+    {
+      "id": "alpha085",
+      "desc": "Power composition of weighted-price/adv30 and rank-rank correlations",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(correlation(high*0.876 + close*0.124, adv30, 10))\n    ^ rank(correlation(ts_rank((high+low)/2, 4), ts_rank(volume, 10), 7))",
+      "aqml": "Power(\n      Rank(Ts_Corr(high * 0.876 + close * 0.124, adv30, 10)),\n      Rank(Ts_Corr(Ts_Rank((high + low) / 2, 4), Ts_Rank(volume, 10), 7))\n    )"
+    },
+    {
+      "id": "alpha086",
+      "desc": "(ts_rank(corr(close,sum(adv20,15),6),20) < rank((open+close)-(vwap+open))) * -1",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(Ts_Rank(correlation(close, sum(adv20, 14.7444), 6.00049), 20.4195) <\n     rank(open + close - vwap - open)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha087",
+      "desc": "-max(rank(decay_linear(delta(close-vwap blend,2),3)), ts_rank(decay_linear(abs(corr(IndNeutralize(adv81,industry), close, 13)), 5), 14))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "max(rank(decay_linear(delta(close * 0.369701 + vwap * (1 - 0.369701),\n                                1.91233), 2.65461)),\n        Ts_Rank(decay_linear(abs(correlation(\n            IndNeutralize(adv81, IndClass.industry), close, 13.4132\n        )), 4.89768), 14.4535)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha088",
+      "desc": "Min of decayed rank-spread and decayed correlation rank",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "min(\n      rank(decay_linear(rank(open) + rank(low) - rank(high) - rank(close), 8)),\n      ts_rank(decay_linear(correlation(ts_rank(close, 8), ts_rank(adv60, 21), 8), 7), 3)\n    )",
+      "aqml": "Min(\n      Rank(Ts_DecayLinear((Rank(open) + Rank(low)) - (Rank(high) + Rank(close)), 8)),\n      Ts_Rank(Ts_DecayLinear(Ts_Corr(Ts_Rank(close, 8), Ts_Rank(adv60, 21), 8), 7), 3)\n    )"
+    },
+    {
+      "id": "alpha089",
+      "desc": "ts_rank(decay_linear(corr(low blend, adv10, 7), 6), 4) - ts_rank(decay_linear(delta(IndNeutralize(vwap,industry),3), 10), 15)",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "Ts_Rank(decay_linear(correlation(low * 0.967285 + low * (1 - 0.967285),\n                                      adv10, 6.94279), 5.51607), 3.79744) -\n    Ts_Rank(decay_linear(delta(IndNeutralize(vwap, IndClass.industry),\n                                3.48158), 10.1466), 15.3012)",
+      "aqml": null
+    },
+    {
+      "id": "alpha090",
+      "desc": "(rank(close-ts_max(close,5)) ^ ts_rank(corr(IndNeutralize(adv40,sub_industry), low, 5), 3)) * -1",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "(rank(close - ts_max(close, 4.66719))^\n     Ts_Rank(correlation(IndNeutralize(adv40, IndClass.subindustry),\n                         low, 5.38375), 3.21856)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha091",
+      "desc": "(ts_rank(decay_linear(decay_linear(corr(IndNeutralize(close,industry), volume, 10), 16), 4), 5) - rank(decay_linear(corr(vwap,adv30,4),3))) * -1",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(Ts_Rank(decay_linear(decay_linear(correlation(\n        IndNeutralize(close, IndClass.industry), volume, 9.74928\n    ), 16.398), 3.83219), 4.8667) -\n     rank(decay_linear(correlation(vwap, adv30, 4.01303), 2.6809))) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha092",
+      "desc": "Pattern-flag rank vs low-adv30 rank correlation",
+      "family": "technical",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "Min(Ts_Rank(decay_linear(((((high + low) / 2) + close) < (low + open)),\n                             14.7221), 18.7484),\n        Ts_Rank(decay_linear(correlation(rank(low), rank(adv30), 7.58553),\n                             6.94279), 6.80584))",
+      "aqml": "Min(Ts_Rank(Ts_DecayLinear(If((high + low) / 2 + close < low + open, 1.0, 0.0),\n                               15), 19),\n        Ts_Rank(Ts_DecayLinear(Ts_Corr(Rank(low), Rank(adv30), 8), 7), 7))"
+    },
+    {
+      "id": "alpha093",
+      "desc": "ts_rank(decay_linear(corr(IndNeutralize(vwap,industry), adv81, 17), 20), 8) / rank(decay_linear(delta(close-vwap blend, 3), 16))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "Ts_Rank(decay_linear(correlation(IndNeutralize(vwap, IndClass.industry),\n                                      adv81, 17.4193), 19.848), 7.54455) /\n    rank(decay_linear(delta(close * 0.524434 + vwap * (1 - 0.524434),\n                             2.77377), 16.2664))",
+      "aqml": null
+    },
+    {
+      "id": "alpha094",
+      "desc": "Negative power of VWAP-trough rank with correlation exponent",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "-1 * rank(vwap - ts_min(vwap, 12))\n          ^ ts_rank(correlation(ts_rank(vwap, 20), ts_rank(adv60, 4), 18), 3)",
+      "aqml": "-1 * Power(\n      Rank(vwap - Ts_Min(vwap, 12)),\n      Ts_Rank(Ts_Corr(Ts_Rank(vwap, 20), Ts_Rank(adv60, 4), 18), 3)\n    )"
+    },
+    {
+      "id": "alpha095",
+      "desc": "Open-trough rank vs medium-term correlation rank-power",
+      "family": "breakout",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(rank((open - ts_min(open, 12.4105))) <\n     Ts_Rank((rank(correlation(sum(((high + low) / 2), 19.1351),\n                                sum(adv40, 19.1351), 12.8742))^5), 11.7584))",
+      "aqml": "If(Rank(open - Ts_Min(open, 12)) <\n       Ts_Rank(Power(Rank(Ts_Corr(Ts_Sum((high + low) / 2, 19),\n                                  Ts_Sum(adv40, 19), 13)), 5), 12), 1, 0)"
+    },
+    {
+      "id": "alpha096",
+      "desc": "-max(ts_rank(decay_linear(corr(rank(vwap),rank(volume),4),4),8), ts_rank(decay_linear(ts_argmax(corr(ts_rank(close,7),ts_rank(adv60,4),4),13),14),13))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "max(Ts_Rank(decay_linear(correlation(rank(vwap), rank(volume),\n                                          3.83878), 4.16783), 8.38151),\n        Ts_Rank(decay_linear(Ts_ArgMax(correlation(\n            Ts_Rank(close, 7.45404), Ts_Rank(adv60, 4.13242), 3.65459\n        ), 12.6556), 14.0365), 13.4143)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha097",
+      "desc": "(rank(decay_linear(delta(IndNeutralize(low-vwap blend,industry),3),20)) - ts_rank(decay_linear(ts_rank(corr(ts_rank(low,8),ts_rank(adv60,17),5),19),16),7)) * -1",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "(rank(decay_linear(delta(IndNeutralize(\n        low * 0.721001 + vwap * (1 - 0.721001), IndClass.industry\n     ), 3.3705), 20.4523)) -\n     Ts_Rank(decay_linear(Ts_Rank(correlation(\n         Ts_Rank(low, 7.87871), Ts_Rank(adv60, 17.255), 4.97547\n     ), 18.5925), 15.7152), 6.71659)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "alpha098",
+      "desc": "rank(decay_linear(corr(vwap,sum(adv5,26),5),7)) - rank(decay_linear(ts_rank(ts_argmin(corr(rank(open),rank(adv15),21),9),7),8))",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "rank(decay_linear(correlation(vwap, sum(adv5, 26.4719), 4.58418),\n                      7.18088)) -\n    rank(decay_linear(Ts_Rank(Ts_ArgMin(correlation(\n        rank(open), rank(adv15), 20.8187\n    ), 8.62571), 6.95668), 8.07206))",
+      "aqml": null
+    },
+    {
+      "id": "alpha099",
+      "desc": "Mid-price-adv60 corr vs low-volume corr",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "if rank(correlation(sum((high+low)/2, 19), sum(adv60, 19), 8))\n          < rank(correlation(low, volume, 6))\n    then -1 else 0",
+      "aqml": "If(Rank(Ts_Corr(Ts_Sum((high + low) / 2, 19), Ts_Sum(adv60, 19), 8))\n            < Rank(Ts_Corr(low, volume, 6)), -1, 0)"
+    },
+    {
+      "id": "alpha100",
+      "desc": "Sub-industry-neutralised body*volume signal minus scale(IndNeutralize(corr(close,rank(adv20),5)-rank(ts_argmin(close,30)), sub_industry)), weighted by volume/adv20",
+      "family": "industry_neutral",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "0 - 1 * (\n        (1.5 * scale(IndNeutralize(IndNeutralize(\n            rank(((close - low) - (high - close)) / (high - low) * volume),\n            IndClass.subindustry), IndClass.subindustry)) -\n         scale(IndNeutralize(\n             (correlation(close, rank(adv20), 5) - rank(ts_argmin(close, 30))),\n             IndClass.subindustry\n         ))\n        ) * (volume / adv20)\n    )",
+      "aqml": null
+    },
+    {
+      "id": "alpha101",
+      "desc": "Intraday body over range — (close - open) / (high - low + 0.001)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((close - open) / ((high - low) + 0.001))",
+      "aqml": "(close - open) / ((high - low) + 0.001)"
+    },
+    {
+      "id": "alpha_custom_argmax_recent",
+      "desc": "Inverse rank of days-since-20d-max (recency-of-peak)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": null,
+      "aqml": "1 - Rank(Ts_ArgMax(close, 20))"
+    },
+    {
+      "id": "alpha_custom_argmin_recent",
+      "desc": "Cross-section rank of 20-day Ts_ArgMin of close",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": null,
+      "aqml": "Rank(Ts_ArgMin(close, 20))"
+    },
+    {
+      "id": "alpha_custom_decaylinear_mom",
+      "desc": "Decay-linear-weighted 10d momentum rank",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": null,
+      "aqml": "Rank(Ts_DecayLinear(returns, 10))"
+    },
+    {
+      "id": "alpha_custom_kurt_filter",
+      "desc": "Negative CS rank of 20-day rolling kurtosis of returns",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": null,
+      "aqml": "-1 * Rank(Ts_Kurt(returns, 20))"
+    },
+    {
+      "id": "alpha_custom_skew_reversal",
+      "desc": "Negative CS rank of 20-day rolling skew of returns",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": null,
+      "aqml": "-1 * Rank(Ts_Skew(returns, 20))"
+    },
+    {
+      "id": "alpha_custom_zscore_5d",
+      "desc": "Negative 5-day rolling z-score of close",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": null,
+      "aqml": "-1 * Ts_Zscore(close, 5)"
+    }
+  ],
+  "gtja191": [
+    {
+      "id": "gtja_001",
+      "desc": "Volume-change rank vs intraday return rank correlation, 6d, negated",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1 * CORR(RANK(DELTA(LOG(VOLUME), 1)), RANK(((CLOSE - OPEN) / OPEN)), 6))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_002",
+      "desc": "One-day delta of normalised intraday mid-range, negated",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1 * DELTA((((CLOSE - LOW) - (HIGH - CLOSE)) / (HIGH - LOW)), 1))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_003",
+      "desc": "6d sum of close-vs-extreme conditional flow",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM((CLOSE=DELAY(CLOSE,1)?0:CLOSE-(CLOSE>DELAY(CLOSE,1)? MIN(LOW,DELAY(CLOSE,1)):MAX(HIGH,DELAY(CLOSE,1)))),6)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_004",
+      "desc": "Trend regime + volume gate ternary signal",
+      "family": "mean_reversion",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "if((MEAN(CLOSE,8)+STD(CLOSE,8))<MEAN(CLOSE,2)) -1 elif(MEAN(CLOSE,2)<(MEAN(CLOSE,8)-STD(CLOSE,8))) 1 elif(VOLUME/MEAN(VOLUME,20) >= 1) 1 else -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_005",
+      "desc": "Negated 3d max of 5d ts-rank corr (volume vs high)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "(-1 * TSMAX(CORR(TSRANK(VOLUME, 5), TSRANK(HIGH, 5), 5), 3))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_006",
+      "desc": "Rank of sign of 4d weighted (open*0.85 + high*0.15) delta, negated",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(RANK(SIGN(DELTA((OPEN * 0.85 + HIGH * 0.15), 4))) * -1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_007",
+      "desc": "(Rank max + Rank min) of (vwap-close,3) × Rank(volume delta,3)",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(RANK(MAX(VWAP - CLOSE, 3)) + RANK(MIN(VWAP - CLOSE, 3))) * RANK(DELTA(VOLUME, 3))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_008",
+      "desc": "Negated rank of 4d delta of HL10+VWAP80 weighted price (Daic115 parity)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "RANK(DELTA(((HIGH+LOW)/2)*0.2 + VWAP*0.8, 4) * -1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_009",
+      "desc": "EWMA(7,2) of mid-price acceleration weighted by (H-L)/Volume",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(((H+L)/2 - (DELAY(H,1)+DELAY(L,1))/2) * (H-L)/VOLUME, 7, 2)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_010",
+      "desc": "Rank of MAX5(((ret<0?std20:close))^2) — Daic115 floor-by-5 parity",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(RANK(MAX(((RET<0)?STD(RET,20):CLOSE)^2),5))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_011",
+      "desc": "6d sum of normalised mid-range × volume",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM((2*CLOSE - LOW - HIGH) / (HIGH - LOW) * VOLUME, 6)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_012",
+      "desc": "Rank(O-MA10VWAP) × -Rank(|C-VWAP|)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "RANK(OPEN - SUM(VWAP,10)/10) * (-1 * RANK(ABS(CLOSE - VWAP)))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_013",
+      "desc": "Geometric mean of (H, L) minus VWAP",
+      "family": "mean_reversion",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(HIGH * LOW)^0.5 - VWAP",
+      "aqml": null
+    },
+    {
+      "id": "gtja_014",
+      "desc": "5d price change (close - delay(close,5))",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "CLOSE - DELAY(CLOSE, 5)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_015",
+      "desc": "Overnight gap return: open / prior close - 1",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "OPEN / DELAY(CLOSE, 1) - 1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_016",
+      "desc": "-1 × TSMAX(rank(corr(rank(vol), rank(vwap), 5)), 5)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * TSMAX(RANK(CORR(RANK(VOLUME), RANK(VWAP), 5)), 5)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_017",
+      "desc": "Rank(vwap - max15(vwap)) ^ delta(close, 5)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "RANK(VWAP - MAX(VWAP, 15)) ^ DELTA(CLOSE, 5)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_018",
+      "desc": "5d close ratio: close / delay(close, 5)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "CLOSE / DELAY(CLOSE, 5)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_019",
+      "desc": "Asymmetric 6d vwap change ratio",
+      "family": "mean_reversion",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "if (VWAP < DELAY(VWAP, 6)) (VWAP - DELAY(VWAP, 6)) / DELAY(VWAP, 6) elif VWAP == DELAY(VWAP, 6) 0 else (VWAP - DELAY(VWAP, 6)) / VWAP",
+      "aqml": null
+    },
+    {
+      "id": "gtja_020",
+      "desc": "6d vwap % change × 100",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(VWAP - DELAY(VWAP, 6)) / DELAY(VWAP, 6) * 100",
+      "aqml": null
+    },
+    {
+      "id": "gtja_021",
+      "desc": "Rolling 6d slope of MEAN(close,6) vs sequence (regbeta vs row-index)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "REGBETA(MEAN(CLOSE, 6), SEQUENCE(6))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_022",
+      "desc": "EWMA(12,1) of (close mean-detrend - 3d-lag) over 6d window",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "SMA((C - MEAN(C,6))/MEAN(C,6) - DELAY((C - MEAN(C,6))/MEAN(C,6), 3), 12, 1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_023",
+      "desc": "Up-day STD share over 20d (×100), smoothed via SMA(20,1)",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(cond ? STD(C,20) : 0, 20, 1) / (SMA(cond ? STD(C,20) : 0, 20, 1) + SMA(!cond ? STD(C,20) : 0, 20, 1)) * 100 where cond = C > DELAY(C, 1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_024",
+      "desc": "EWMA(5,1) of 5d price change",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(CLOSE - DELAY(CLOSE, 5), 5, 1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_025",
+      "desc": "-Rank(close7d-delta) × Rank(EWMA volume ratio) × (1+Rank(150d ret sum))",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1 * RANK(DELTA(CLOSE, 7) * (1 - RANK(DECAYLINEAR(VOLUME / MEAN(VOLUME, 20), 9))))) * (1 + RANK(SUM(RET, 250)))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_026",
+      "desc": "(MEAN(close,12) - close) + 200d corr(vwap, delay(close,5))",
+      "family": "mean_reversion",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(MEAN(CLOSE, 7) - CLOSE) + CORR(VWAP, DELAY(CLOSE, 5), 230)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_027",
+      "desc": "EWMA(12,1) of 3d+6d % momentum sum (Daic115 SMA-substituted-WMA)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "WMA(((C/DELAY(C,3) - 1)*100 + (C/DELAY(C,6) - 1)*100), 12)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_028",
+      "desc": "KDJ-style 9d stochastic with two SMA(3,1) layers",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "3 * SMA((C - TSMIN(L,9)) / (TSMAX(H,9) - TSMIN(L,9)) * 100, 3, 1) - 2 * SMA(SMA((C - TSMIN(L,9)) / (TSMAX(H,9) - TSMIN(L,9)) * 100, 3, 1), 3, 1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_029",
+      "desc": "6d % change × log(volume) (Daic115 log-vol substitution)",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(CLOSE - DELAY(CLOSE, 6)) / DELAY(CLOSE, 6) * VOLUME",
+      "aqml": null
+    },
+    {
+      "id": "gtja_030",
+      "desc": "STUB — Fama-French residual^2 WMA (Daic115 unfinished)",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "broken",
+      "original": "WMA((REGRESI(CLOSE/DELAY(CLOSE)-1, MKT, SMB, HML, 60))^2, 20)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_031",
+      "desc": "12d MA-distance ratio × 100",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(CLOSE - MEAN(CLOSE, 12)) / MEAN(CLOSE, 12) * 100",
+      "aqml": null
+    },
+    {
+      "id": "gtja_032",
+      "desc": "-SUM(rank(corr(rank-H, rank-Vol, 3)), 3)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * SUM(RANK(CORR(RANK(HIGH), RANK(VOLUME), 3)), 3)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_033",
+      "desc": "Low-min change × ret-spread rank × turnover-proxy rank (amount/cap)",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "(((-1 * TSMIN(LOW, 5)) + DELAY(TSMIN(LOW, 5), 5)) * RANK((SUM(RET, 240) - SUM(RET, 20)) / 220)) * TSRANK(VOLUME, 5)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_034",
+      "desc": "MEAN(close, 12) / close",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "MEAN(CLOSE, 12) / CLOSE",
+      "aqml": null
+    },
+    {
+      "id": "gtja_035",
+      "desc": "Min of two rank(decay) arms (open delta + vol-weighted-price corr) negated",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "MIN( RANK(DECAYLINEAR(DELTA(OPEN, 1), 15)), RANK(DECAYLINEAR(CORR(VOLUME, OPEN*0.65 + CLOSE*0.35, 17), 7)) ) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_036",
+      "desc": "Rank of 2d sum of corr(rank-volume, rank-vwap, 6)",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "RANK(SUM(CORR(RANK(VOLUME), RANK(VWAP), 6), 2))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_037",
+      "desc": "-Rank of 10d acceleration of (sum(open,5) × sum(ret,5))",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * RANK((SUM(OPEN, 5) * SUM(RET, 5)) - DELAY(SUM(OPEN, 5) * SUM(RET, 5), 10))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_038",
+      "desc": "Conditional negated 2d high-delta when high>MEAN(high,20)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(MEAN(HIGH, 20) < HIGH) ? (-1 * DELTA(HIGH, 2)) : 0",
+      "aqml": null
+    },
+    {
+      "id": "gtja_039",
+      "desc": "-(rank-decay close-delta - rank-decay long-vol corr)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(RANK(DECAYLINEAR(DELTA(CLOSE, 2), 8)) - RANK(DECAYLINEAR(CORR(VWAP*0.3 + OPEN*0.7, SUM(MEAN(VOLUME, 180), 37), 14), 12))) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_040",
+      "desc": "26d up-volume / down-volume ratio × 100",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM((C > DELAY(C, 1) ? VOLUME : 0), 26) / SUM((C <= DELAY(C, 1) ? VOLUME : 0), 26) * 100",
+      "aqml": null
+    },
+    {
+      "id": "gtja_041",
+      "desc": "-Rank(MAX(DELTA(VWAP, 3), 5))",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "RANK(MAX(DELTA(VWAP, 3), 5)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_042",
+      "desc": "-RANK(STD(H, 10)) × CORR(H, V, 10)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * RANK(STD(HIGH, 10)) * CORR(HIGH, VOLUME, 10)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_043",
+      "desc": "6d signed-volume sum (vwap-anchored direction)",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM((C > DELAY(C,1) ? V : (C < DELAY(C,1) ? -V : 0)), 6)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_044",
+      "desc": "TS-rank decay corr(low, MA(V,10), 7) + TS-rank decay delta(VWAP, 3)",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "TSRANK(DECAYLINEAR(CORR(LOW, MEAN(VOLUME, 10), 7), 6), 4) + TSRANK(DECAYLINEAR(DELTA(VWAP, 3), 10), 15)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_045",
+      "desc": "Rank(C0.6+O0.4 delta) × CORR(VWAP, MEAN(V, 150), 15)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "RANK(DELTA(C*0.6 + O*0.4, 1)) * RANK(CORR(VWAP, MEAN(VOLUME, 150), 15))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_046",
+      "desc": "(MA3 + MA6 + MA12 + MA24) / (4 × close)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(MEAN(C,3) + MEAN(C,6) + MEAN(C,12) + MEAN(C,24)) / (4 * C)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_047",
+      "desc": "Smoothed inverse-RSV: SMA((TSMAX(H,6)-C)/(TSMAX(H,6)-TSMIN(L,6))×100, 9, 1)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "SMA( (TSMAX(HIGH, 6) - CLOSE) / (TSMAX(HIGH, 6) - TSMIN(LOW, 6)) * 100 , 9, 1) @res:   -0.010903    0.001250",
+      "aqml": null
+    },
+    {
+      "id": "gtja_048",
+      "desc": "-Rank(3-day sign sum) × SUM(V,5)/SUM(V,20)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * RANK(SIGN(C - DELAY(C,1)) + SIGN(DELAY(C,1) - DELAY(C,2)) + SIGN(DELAY(C,2) - DELAY(C,3))) * SUM(V,5) / SUM(V,20)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_049",
+      "desc": "Down-day range share over 12d",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "cond = (H + L) >= (DELAY(H, 1) + DELAY(L, 1)) part = MAX(|H - DELAY(H, 1)|, |L - DELAY(L, 1)|) SUM((!cond ? part : 0), 12) / (SUM((!cond ? part : 0), 12) + SUM((cond ? part : 0), 12))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_050",
+      "desc": "Down-share - Up-share asymmetric range ratio over 12d",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "cond1 = (H + L) <= (DELAY(H,1) + DELAY(L,1)) cond2 = (H + L) >= (DELAY(H,1) + DELAY(L,1)) part = MAX(|H - DELAY(H,1)|, |L - DELAY(L,1)|) SUM(!cond1?part:0, 12) / (SUM(!cond1?part:0, 12) + SUM(!cond2?part:0, 12)) - SUM(!cond2?part:0, 12) / (SUM(!cond2?part:0, 12) + SUM(!cond1?part:0, 12))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_051",
+      "desc": "Down-share asymmetric range ratio over 12d",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "cond1 = (H + L) <= (DELAY(H,1) + DELAY(L,1)) cond2 = (H + L) >= (DELAY(H,1) + DELAY(L,1)) part = MAX(|H - DELAY(H,1)|, |L - DELAY(L,1)|) SUM(!cond1?part:0, 12) / (SUM(!cond1?part:0, 12) + SUM(!cond2?part:0, 12))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_052",
+      "desc": "26d typical-price up/down pressure ratio × 100",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM(MAX(0, H - DELAY((H+L+C)/3, 1)), 26) / SUM(MAX(0, DELAY((H+L+C)/3, 1) - L), 26) * 100",
+      "aqml": null
+    },
+    {
+      "id": "gtja_053",
+      "desc": "% of up-days over 12d × 100",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "COUNT(CLOSE > DELAY(CLOSE, 1), 12) / 12 * 100",
+      "aqml": null
+    },
+    {
+      "id": "gtja_054",
+      "desc": "-Rank(STD(|C-O|+(C-O), 10) + CORR(C, O, 10))",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * RANK(STD(|C-O| + (C-O), 10) + CORR(C, O, 10))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_055",
+      "desc": "20d sum of TR-normalised acceleration × max(|H-C-1|,|L-C-1|)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "SUM(16 * (C - DELAY(C,1) + (C-O)/2 + DELAY(C,1) - DELAY(O,1)) / (asymmetric TR normaliser per spec) * MAX(|H - DELAY(C,1)|, |L - DELAY(C,1)|), 20)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_056",
+      "desc": "Rank-inequality: open-min vs rank-corr^5 (returns 0/1)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "RANK(OPEN - TSMIN(OPEN, 12)) < RANK(RANK(CORR(SUM((H+L)/2, 19), SUM(MEAN(V, 40), 19), 13))^5)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_057",
+      "desc": "3-period EWMA of 9-period stochastic %K",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA((C - TSMIN(L, 9)) / (TSMAX(H, 9) - TSMIN(L, 9)) * 100, 3, 1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_058",
+      "desc": "% of up-days over 20d × 100 (vwap-anchored)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "COUNT(CLOSE > DELAY(CLOSE, 1), 20) / 20 * 100",
+      "aqml": null
+    },
+    {
+      "id": "gtja_059",
+      "desc": "20d sum of close-vs-extreme conditional flow (vwap-anchored)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "SUM((C = DELAY(C,1) ? 0 : C - (C > DELAY(C,1) ? MIN(L, DELAY(C,1)) : MAX(H, DELAY(C,1)))), 20)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_060",
+      "desc": "20d sum of normalised mid-range × volume",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM(((C - L) - (H - C)) / (H - L) * VOLUME, 20)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_061",
+      "desc": "MAX of rank(decay-VWAP-delta), rank(decay-rank(corr(L, MA(V,80), 8)))",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "MAX(RANK(DECAYLINEAR(DELTA(VWAP, 1), 12)), RANK(DECAYLINEAR(RANK(CORR(LOW, MEAN(V, 80), 8)), 17))) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_062",
+      "desc": "-CORR(HIGH, RANK(turn proxy=amount/cap), 5)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "-CORR(HIGH, RANK(TURN), 5)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_063",
+      "desc": "6-day RSI (vwap-anchored)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA( MAX(CLOSE - DELAY(CLOSE, 1), 0), 6, 1 ) / SMA( ABS(CLOSE - DELAY(CLOSE, 1)), 6, 1 ) * 100 @res:   0.013111   -0.009398",
+      "aqml": null
+    },
+    {
+      "id": "gtja_064",
+      "desc": "MAX of two rank(decay-corr) arms (vwap-vol, close-MA-vol)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "MAX( RANK(DECAYLINEAR(CORR(RANK(VWAP), RANK(VOLUME), 4), 4)), RANK(DECAYLINEAR(MAX(CORR(RANK(CLOSE), RANK(MEAN(V, 60)), 4), 13), 14)) ) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_065",
+      "desc": "MEAN(close, 6) / close",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "MEAN(CLOSE,6)/CLOSE @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_066",
+      "desc": "(close - MA6) / MA6 × 100",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(CLOSE-MEAN(CLOSE,6))/MEAN(CLOSE,6)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_067",
+      "desc": "24-day RSI",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(MAX(C-C-1, 0), 24, 1) / SMA(|C-C-1|, 24, 1) × 100",
+      "aqml": null
+    },
+    {
+      "id": "gtja_068",
+      "desc": "EWMA(15,2) of mid-price acceleration × (H-L)/V",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(((H+L)/2 - (DELAY(H,1)+DELAY(L,1))/2) * (H-L)/V, 15, 2)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_069",
+      "desc": "DTM/DBM 20-day asymmetric momentum ratio",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "DTM = (O <= DELAY(O,1)) ? 0 : MAX((H-O), (O-DELAY(O,1))) DBM = (O >= DELAY(O,1)) ? 0 : MAX((O-L), (O-DELAY(O,1))) S_DTM = SUM(DTM, 20); S_DBM = SUM(DBM, 20) S_DTM > S_DBM ? (S_DTM - S_DBM)/S_DTM : S_DTM == S_DBM ? 0 : (S_DTM - S_DBM)/S_DBM",
+      "aqml": null
+    },
+    {
+      "id": "gtja_070",
+      "desc": "6-day std of amount",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "STD(AMOUNT,6) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_071",
+      "desc": "(close - MA24) / MA24 × 100",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(CLOSE-MEAN(CLOSE,24))/MEAN(CLOSE,24)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_072",
+      "desc": "SMA((TSMAX(H,6)-C)/(TSMAX(H,6)-TSMIN(L,6)) × 100, 15, 1)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "SMA((TSMAX(HIGH,6)-CLOSE)/(TSMAX(HIGH,6)-TSMIN(LOW,6))*100,15,1) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_073",
+      "desc": "-TS_RANK(decay-decay-corr(C,V)) - RANK(decay-corr(VWAP, MA30(V)))",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "-1 * TS_RANK(DECAYLINEAR(DECAYLINEAR(CORR(C, V, 10), 16), 4), 5) - RANK(DECAYLINEAR(CORR(VWAP, MEAN(V, 30), 4), 3))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_074",
+      "desc": "Rank-corr-sum-weighted-prices + Rank-corr-rank(VWAP, V)",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "RANK(CORR(SUM(L*0.35 + VWAP*0.65, 20), SUM(MEAN(V, 40), 20), 7)) + RANK(CORR(RANK(VWAP), RANK(VOLUME), 6))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_075",
+      "desc": "Up-day count ratio vs CS-mean-return-as-benchmark down-days (50d)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "COUNT(C > O & BENCH_C < BENCH_O, 50) / COUNT(BENCH_C < BENCH_O, 50)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_076",
+      "desc": "STD(|ret|/V, 20) / MEAN(|ret|/V, 20)",
+      "family": "volatility",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "STD(ABS((CLOSE / DELAY(CLOSE, 1) - 1)) / VOLUME, 20) / MEAN(ABS((CLOSE / DELAY(CLOSE, 1) - 1)) / VOLUME, 20) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_077",
+      "desc": "MIN of two rank(decay) arms (synthetic-mid-vs-VWAP, mid-MA40V-corr)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "MIN( RANK(DECAYLINEAR(((H+L)/2 + H) - (VWAP + H), 20)), RANK(DECAYLINEAR(CORR((H+L)/2, MEAN(V, 40), 3), 6)) )",
+      "aqml": null
+    },
+    {
+      "id": "gtja_078",
+      "desc": "CCI-style typical-price oscillator (12d)",
+      "family": "mean_reversion",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "((H+L+C)/3 - MA((H+L+C)/3, 12)) / (0.015 * MEAN(|C - MEAN((H+L+C)/3, 12)|, 12))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_079",
+      "desc": "12-day RSI",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(MAX(C-C-1, 0), 12, 1) / SMA(|C-C-1|, 12, 1) × 100",
+      "aqml": null
+    },
+    {
+      "id": "gtja_080",
+      "desc": "(V - DELAY(V, 5)) / DELAY(V, 5) × 100",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(VOLUME-DELAY(VOLUME,5))/DELAY(VOLUME,5)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_081",
+      "desc": "EWMA(21, 2) of volume",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(VOLUME,21,2) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_082",
+      "desc": "SMA((TSMAX(H,6)-C)/(TSMAX(H,6)-TSMIN(L,6))×100, 20, 1)",
+      "family": "mean_reversion",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "SMA((TSMAX(HIGH,6)-CLOSE)/(TSMAX(HIGH,6)-TSMIN(LOW,6))*100,20,1) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_083",
+      "desc": "-RANK(COV(RANK(H), RANK(V), 5))",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * RANK(COVARIANCE(RANK(HIGH), RANK(VOLUME), 5))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_084",
+      "desc": "20d signed-volume sum (close-direction)",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM((C > DELAY(C,1) ? V : (C < DELAY(C,1) ? -V : 0)), 20)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_085",
+      "desc": "TSRANK(V/MA20V, 20) × TSRANK(-DELTA(C, 7), 8)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "TSRANK(V / MEAN(V, 20), 20) * TSRANK(-1 * DELTA(C, 7), 8)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_086",
+      "desc": "20/10/0 close-acceleration regime ternary",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "part1 = (DELAY(C, 20) - DELAY(C, 10)) / 10 part2 = (DELAY(C, 10) - C) / 10 if (0.25 < (part1 - part2)) -1 elif ((part1 - part2) < 0) 1 else -1 * (C - DELAY(C, 1))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_087",
+      "desc": "-(rank-decay-vwap-delta + TS-rank-decay-asymmetric-spread)",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(RANK(DECAYLINEAR(DELTA(VWAP, 4), 7)) + TSRANK(DECAYLINEAR(((L*0.9 + L*0.1) - VWAP) / (O - (H+L)/2), 11), 7)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_088",
+      "desc": "20-day % change × 100",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(CLOSE-DELAY(CLOSE,20))/DELAY(CLOSE,20)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_089",
+      "desc": "MACD-style oscillator: 2*(SMA13 - SMA27 - SMA10(SMA13-SMA27))",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "2 * (SMA(C, 13, 2) - SMA(C, 27, 2) - SMA(SMA(C, 13, 2) - SMA(C, 27, 2), 10, 2))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_090",
+      "desc": "-RANK(CORR(RANK(VWAP), RANK(V), 5))",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "RANK(CORR(RANK(VWAP), RANK(VOLUME), 5)) * -1 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_091",
+      "desc": "-RANK(C - TSMAX(C, 5)) × RANK(CORR(MEAN(V, 40), L, 5))",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * RANK(C - TSMAX(C, 5)) * RANK(CORR(MEAN(V, 40), L, 5))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_092",
+      "desc": "-MAX of rank-decay-delta + TS-rank-decay-|corr| arms",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "MAX( RANK(DECAYLINEAR(DELTA(C*0.35 + VWAP*0.65, 2), 3)), TSRANK(DECAYLINEAR(|CORR(MEAN(V, 180), C, 13)|, 5), 15) ) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_093",
+      "desc": "20d sum of conditional max(O-L, O-O-1) when O<O-1",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM((O >= DELAY(O, 1) ? 0 : MAX(O - L, O - DELAY(O, 1))), 20)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_094",
+      "desc": "30d signed-volume sum",
+      "family": "volume_price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM((C > DELAY(C, 1) ? V : (C < DELAY(C, 1) ? -V : 0)), 30)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_095",
+      "desc": "20-day std of amount",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "STD(AMOUNT,20) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_096",
+      "desc": "Double-smoothed stochastic %K (3,1)(3,1)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(SMA((C - TSMIN(L, 9)) / (TSMAX(H, 9) - TSMIN(L, 9)) * 100, 3, 1), 3, 1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_097",
+      "desc": "10-day std of volume",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "STD(VOLUME,10) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_098",
+      "desc": "100d MA-acceleration regime ternary",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "cond = DELTA(SUM(C, 100)/100, 100) / DELAY(C, 100) cond <= 0.05 ? -1*(C - TSMIN(C, 100)) : -1 * DELTA(C, 3)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_099",
+      "desc": "-RANK(COV(RANK(C), RANK(V), 5))",
+      "family": "volume_price",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1 * RANK(COVARIANCE(RANK(CLOSE), RANK(VOLUME), 5))) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_100",
+      "desc": "20-day std of volume",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "STD(VOLUME,20) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_101",
+      "desc": "VWAP-volume corr ranked < volume-mean corr ranked",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((RANK(CORR(CLOSE, SUM(MEAN(VOLUME, 30), 37), 15)) < RANK(CORR(RANK(((HIGH * 0.1) + (VWAP * 0.9))), RANK(VOLUME), 11))) * -1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_102",
+      "desc": "Volume RSI — SMA(max(dV,0))/SMA(|dV|)*100",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(MAX(VOLUME-DELAY(VOLUME,1),0),6,1)/ SMA(ABS(VOLUME-DELAY(VOLUME,1)),6,1)*100",
+      "aqml": null
+    },
+    {
+      "id": "gtja_103",
+      "desc": "(20-LOWDAY(LOW,20))/20*100 — recency-of-low oscillator",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "((20-LOWDAY(LOW,20))/20)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_104",
+      "desc": "-1 * delta(corr(high,vol,5),5) * rank(std(close,20))",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * (DELTA(CORR(HIGH, VOLUME, 5), 5) * RANK(STD(CLOSE, 20)))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_105",
+      "desc": "-1 * corr(rank(open), rank(volume), 10)",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1 * CORR(RANK(OPEN), RANK(VOLUME), 10)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_106",
+      "desc": "20-day close momentum",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "CLOSE-DELAY(CLOSE,20) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_107",
+      "desc": "-rank(o-prev_h)*rank(o-prev_c)*rank(o-prev_l)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((-1 * RANK(OPEN - DELAY(HIGH, 1))) * RANK(OPEN - DELAY(CLOSE, 1))) * RANK(OPEN - DELAY(LOW, 1))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_108",
+      "desc": "(rank(high-min(high,2)) ^ rank(corr(vwap, ma(v,120), 6))) * -1",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((RANK((HIGH - MIN(HIGH, 2)))^RANK(CORR((VWAP), (MEAN(VOLUME,120)), 6))) * -1) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_109",
+      "desc": "SMA(H-L,10,2) / SMA(SMA(H-L,10,2),10,2)",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(HIGH-LOW,10,2)/SMA(SMA(HIGH-LOW,10,2),10,2) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_110",
+      "desc": "20d up-move-vs-down-move pressure ratio",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM(MAX(0,HIGH-DELAY(CLOSE,1)),20)/SUM(MAX(0,DELAY(CLOSE,1)-LOW),20)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_111",
+      "desc": "Volume * intraday position SMA-differential (11-4)",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(VOL*((CLOSE-LOW)-(HIGH-CLOSE))/(HIGH-LOW),11,2)-SMA(VOL*((CLOSE-LOW)-(HIGH-CLOSE))/(HIGH-LOW),4,2) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_112",
+      "desc": "Chande momentum oscillator over 12 days",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "( SUM((CLOSE - DELAY(CLOSE, 1) > 0 ? CLOSE - DELAY(CLOSE, 1) : 0), 12) - SUM((CLOSE - DELAY(CLOSE, 1) < 0 ? ABS(CLOSE - DELAY(CLOSE, 1)) : 0), 12)) / ( SUM((CLOSE - DELAY(CLOSE, 1) > 0 ? CLOSE - DELAY(CLOSE, 1) : 0), 12) + SUM((CLOSE - DELAY(CLOSE, 1) < 0 ? ABS(CLOSE - DELAY(CLOSE, 1)) : 0), 12)) * 100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_113",
+      "desc": "-rank(sum(delay(c,5),20)/20)*corr(c,v,20)*rank(corr(sum_c5,sum_c20,20))",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "-1 * ( (RANK((SUM(DELAY(CLOSE, 5), 20) / 20)) * CORR(CLOSE, VOLUME, 2)) * RANK(CORR(SUM(CLOSE, 5), SUM(CLOSE, 20), 2)) ) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_114",
+      "desc": "rank(delay(rng/ma5,2))*rank(rank(v)) / ((rng/ma5)/(vwap-c))",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(RANK(DELAY(((HIGH - LOW) / (SUM(CLOSE, 5) / 5)), 2)) * RANK(RANK(VOLUME))) / (((HIGH - LOW) / (SUM(CLOSE, 5) / 5)) / (VWAP - CLOSE)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_115",
+      "desc": "rank(corr(0.9H+0.1C, ma(v,30),10)) ^ rank(corr(tsr_HL2_4, tsr_v_10, 7))",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "RANK(CORR(((HIGH * 0.9) + (CLOSE * 0.1)), MEAN(VOLUME, 30), 10)) ^ RANK(CORR(TSRANK(((HIGH + LOW) / 2), 4), TSRANK(VOLUME, 10), 7)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_116",
+      "desc": "20-day rolling OLS slope of CLOSE on time-index",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "REGBETA(CLOSE,SEQUENCE,20) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_117",
+      "desc": "tsrank(v,32) * (1-tsrank(c+h-l,16)) * (1-tsrank(ret,32))",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(TSRANK(VOLUME, 32) * (1 - TSRANK(((CLOSE + HIGH) - LOW), 16))) * (1 - TSRANK(RET, 32)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_118",
+      "desc": "20-day open-relative range skew (h-o vs o-l)",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM(HIGH-OPEN,20)/SUM(OPEN-LOW,20)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_119",
+      "desc": "decay-linear of corr(vwap, sum_mean_v) minus decay-linear tsrank-min-corr(rank_o, rank_mv)",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "RANK(DECAYLINEAR(CORR(VWAP, SUM(MEAN(VOLUME,5),26), 5), 7)) - RANK(DECAYLINEAR(TSRANK(MIN(CORR(RANK(OPEN), RANK(MEAN(VOLUME,15)),21), 9), 7), 8))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_120",
+      "desc": "rank(vwap-close) / rank(vwap+close)",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(RANK((VWAP - CLOSE)) / RANK((VWAP + CLOSE))) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_121",
+      "desc": "(rank(vwap-min(vwap,12)) ^ tsrank(corr(tsr_vwap_20, tsr_mv60_2, 18), 3)) * -1",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "warn",
+      "original": "(RANK((VWAP - MIN(VWAP, 12))) ^ TSRANK(CORR(TSRANK(VWAP, 20), TSRANK(MEAN(VOLUME, 60), 2), 18), 3)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_122",
+      "desc": "Triple-SMA log-close 1-day delta ratio",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(SMA^3(LOG(CLOSE),13,2) - DELAY(SMA^3(LOG(CLOSE),13,2), 1)) / DELAY(SMA^3(LOG(CLOSE),13,2), 1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_123",
+      "desc": "(rank(corr_HL2_sum_mv60) < rank(corr_low_vol)) * -1",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(RANK(CORR(SUM((H+L)/2, 20), SUM(MEAN(V,60), 20), 9)) < RANK(CORR(LOW, VOLUME, 6))) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_124",
+      "desc": "(close-vwap) / decay_linear(rank(ts_max(close,30)), 2)",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(CLOSE - VWAP) / DECAYLINEAR(RANK(TSMAX(CLOSE, 30)),2) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_125",
+      "desc": "rank(decay_linear(corr_vwap_mv80,20)) / rank(decay_linear(delta(0.5C+0.5VWAP,3),16))",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "RANK(DECAYLINEAR(CORR((VWAP), MEAN(VOLUME, 80), 17), 20)) / RANK(DECAYLINEAR(DELTA(((CLOSE * 0.5) + (VWAP * 0.5)), 3), 16)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_126",
+      "desc": "(close + high + low) / 3 — typical price",
+      "family": "price",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(CLOSE+HIGH+LOW)/3 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_127",
+      "desc": "sqrt(mean((100*(c-max(c,12))/max(c,12))^2, 12))",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(MEAN((100*(CLOSE-MAX(CLOSE,12))/(MAX(CLOSE,12)))^2))^(1/2) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_128",
+      "desc": "14-day money flow index (MFI) on typical price",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "100 - 100 / (1 + SUMIF(TP*V, 14, TP > prev_TP) / SUMIF(TP*V, 14, TP < prev_TP))",
+      "aqml": null
+    },
+    {
+      "id": "gtja_129",
+      "desc": "12-day downside move cumsum",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "SUM((CLOSE-DELAY(CLOSE,1)<0?ABS(CLOSE-DELAY(CLOSE,1)):0),12) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_130",
+      "desc": "rank(decay_linear(corr(HL2,mv40,9),10)) / rank(decay_linear(corr(rk_vwap,rk_v,7),3))",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "RANK(DECAYLINEAR(CORR(((HIGH + LOW) / 2), MEAN(VOLUME, 40), 9), 10)) / RANK(DECAYLINEAR(CORR(RANK(VWAP), RANK(VOLUME), 7), 3)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_131",
+      "desc": "rank(delta(vwap,1)) ^ tsrank(corr(close, mv50, 18), 18)",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "RANK(DELTA(VWAP, 1)) ^ TSRANK(CORR(CLOSE, MEAN(VOLUME, 50), 18), 18)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_132",
+      "desc": "20-day mean amount (turnover proxy)",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "MEAN(AMOUNT,20) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_133",
+      "desc": "(20-highday(high,20))/20*100 - (20-lowday(low,20))/20*100",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "((20-HIGHDAY(HIGH,20))/20)*100-((20-LOWDAY(LOW,20))/20)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_134",
+      "desc": "(c-prev_c12)/prev_c12 * volume",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(CLOSE-DELAY(CLOSE,12))/DELAY(CLOSE,12)*VOLUME @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_135",
+      "desc": "SMA(delay(close/delay(close,20),1), 20, 1)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(DELAY(CLOSE/DELAY(CLOSE,20),1),20,1) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_136",
+      "desc": "-rank(delta(ret,3)) * corr(open, volume, 10)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((-1 * RANK(DELTA(RET, 3))) * CORR(OPEN, VOLUME, 10)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_137",
+      "desc": "Wilders'-style TR-normalised close move",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "condition1 = abshc > abslc; condition2 = abshc > abshl; condition3 = abslc > abshc; abshc = ABS(HIGH - DELAY(CLOSE, 1)); abslc = ABS(LOW - DELAY(CLOSE, 1)); absco = ABS(DELAY(CLOSE, 1) - DELAY(OPEN, 1)); abshl = ABS(HIGH - DELAY(LOW, 1)); 16 * (CLOSE - DELAY(CLOSE, 1) + (CLOSE - OPEN) / 2 + DELAY(CLOSE, 1) - DELAY(OPEN, 1)) / ((condition1 & condition2 ? abshc + abslc / 2 + absco / 4 : (abslc > abshl & condition3 ? abslc + abshc / 2 + absco / 4 : abshl + absco / 4))) * MAX(abshc, abslc) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_138",
+      "desc": "(rank(dl(delta(0.7L+0.3VWAP,3),20)) - tsr(dl(tsr_corr_ll_mv60),16),7)) * -1",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(RANK(DECAYLINEAR(DELTA(0.7L + 0.3VWAP, 3), 20)) - TSRANK(DECAYLINEAR(TSRANK(CORR(TSRANK(LOW, 8), TSRANK(MEAN(VOLUME,60), 17), 5), 19), 16), 7)) * -1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_139",
+      "desc": "-corr(open, volume, 10)",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1 * CORR(OPEN, VOLUME, 10)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_140",
+      "desc": "min(rank(dl(rank_OL_HC,8)), tsr(dl(corr(tsr_c8,tsr_mv60_20,8),7),3))",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "MIN( RANK(DECAYLINEAR(((RANK(OPEN) + RANK(LOW)) - (RANK(HIGH) + RANK(CLOSE))), 8)), TSRANK(DECAYLINEAR(CORR(TSRANK(CLOSE, 8), TSRANK(MEAN(VOLUME, 60), 20), 8), 7), 3) ) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_141",
+      "desc": "-rank(corr(rank(high), rank(mean(v,15)), 9))",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(RANK(CORR(RANK(HIGH), RANK(MEAN(VOLUME,15)), 9))* -1) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_142",
+      "desc": "-rank(tsr_c10) * rank(d2_close) * rank(tsr_vrel_5)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(((-1 * RANK(TSRANK(CLOSE, 10))) * RANK(DELTA(DELTA(CLOSE, 1), 1))) * RANK(TSRANK((VOLUME /MEAN(VOLUME,20)), 5))) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_143",
+      "desc": "STUB — recursive SELF reference, formula ambiguous",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "broken",
+      "original": "CLOSE > DELAY(CLOSE,1) ? (CLOSE-DELAY(CLOSE,1))/DELAY(CLOSE,1)*SELF : SELF",
+      "aqml": null
+    },
+    {
+      "id": "gtja_144",
+      "desc": "20d down-day mean(|ret|/log(amount))",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUMIF(ABS(CLOSE / DELAY(CLOSE, 1) - 1) / AMOUNT, 20, CLOSE < DELAY(CLOSE, 1)) / COUNT(CLOSE < DELAY(CLOSE, 1), 20) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_145",
+      "desc": "(mean(v,9) - mean(v,26)) / mean(v,12) * 100",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(MEAN(VOLUME,9)-MEAN(VOLUME,26))/MEAN(VOLUME,12)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_146",
+      "desc": "mean(ret-sma(ret,61,2),20) * (ret-sma) / SMA((ret-(ret-sma))^2,61,2)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "part = (CLOSE - DELAY(CLOSE, 1)) / DELAY(CLOSE, 1) part_ma = part - SMA(part, 61, 2) MEAN(part1, 20) * (part_ma) / SMA((part - (part_ma)) ^ 2, 60) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_147",
+      "desc": "12-day rolling OLS slope of MEAN(close,12) on time-index",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "REGBETA(MEAN(CLOSE,12),SEQUENCE(12)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_148",
+      "desc": "(rank(corr(o, sum(mv60,9), 6)) < rank(o-tsmin(o,14))) * -1",
+      "family": "correlation",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(RANK(CORR((OPEN), SUM(MEAN(VOLUME, 60), 9), 6)) < RANK((OPEN - TSMIN(OPEN, 14)))) * -1 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_149",
+      "desc": "252d beta vs cross-section-mean-return benchmark proxy (CSI300 wiring is Phase D)",
+      "family": "benchmark",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "REGBETA( FILTER(CLOSE/DELAY(CLOSE,1)-1, BMK < DELAY(BMK,1)), FILTER(BMK/DELAY(BMK,1)-1, BMK < DELAY(BMK,1)), 252)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_150",
+      "desc": "typical price * log(volume) (Daic115 variant)",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(CLOSE+HIGH+LOW)/3*VOLUME @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_151",
+      "desc": "SMA(close - delay(close,20), 20, 1)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "SMA(CLOSE - DELAY(CLOSE, 20), 20, 1)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_152",
+      "desc": "sma(mean(part,12)-mean(part,26),9,1) where part is delayed sma(c/c9,9,1)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(MEAN(DELAY(SMA(DELAY(CLOSE/DELAY(CLOSE,9),1),9,1),1),12)-MEAN(DELAY(SMA(DELAY(CLOSE/DELAY(CLOSE,9),1),9,1),1),26),9,1) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_153",
+      "desc": "Average of 4 different moving averages (BBI)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(MEAN(CLOSE,3)+MEAN(CLOSE,6)+MEAN(CLOSE,12)+MEAN(CLOSE,24))/4 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_154",
+      "desc": "sign((vwap-min(vwap,16)) < corr(vwap, mv180, 18))",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "((VWAP - MIN(VWAP, 16))) < (CORR(VWAP, MEAN(VOLUME,180), 18)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_155",
+      "desc": "Volume MACD (13,27,10) histogram",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(VOLUME,13,2)-SMA(VOLUME,27,2)-SMA(SMA(VOLUME,13,2)-SMA(VOLUME,27,2),10,2) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_156",
+      "desc": "-max(rank(dl(d_vwap_5,3)), rank(dl(-d_inner_2/inner,3)))",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "MAX( RANK(DECAYLINEAR(DELTA(VWAP, 5), 3)), RANK(DECAYLINEAR((( DELTA(((OPEN * 0.15) + (LOW * 0.85)), 2) / ((OPEN * 0.15) + (LOW * 0.85))) * -1), 3)) ) * -1 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_157",
+      "desc": "ts_min(rank(rank(log(sum(ts_min(rank(rank(-rank(d(c-1,5)))),2),1)))),5) + tsr(delay(-ret,6),5)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "MIN(RANK(RANK(LOG(SUM(TSMIN(RANK(RANK((-1 * RANK(DELTA((CLOSE - 1), 5))))), 2), 1)))), 5) + TSRANK(DELAY((-1 * RET), 6), 5) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_158",
+      "desc": "(H - L) / C — high-low spread normalised by close (SMA terms cancel)",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "((HIGH - SMA(CLOSE, 15, 2)) - (LOW - SMA(CLOSE, 15, 2))) / CLOSE @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_159",
+      "desc": "3-window cumulative range-position oscillator (KDJ-like)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "part1 = part3 - part2; part2 = MIN(LOW, DELAY(CLOSE, 1)); part3 = MAX(HGIH, DELAY(CLOSE, 1)); ( (CLOSE - SUM(part2, 6)) / SUM(part1, 6) * 288 + (CLOSE - SUM(part2, 12)) / SUM(part3 - part2, 12) * 144 + (CLOSE - SUM(part2, 24)) / SUM(part1, 24) * 144) * 100 / 504 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_160",
+      "desc": "EWMA of down-day std(close,20)",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA((CLOSE <= DELAY(CLOSE, 1) ? STD(CLOSE, 20) : 0), 20, 1) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_161",
+      "desc": "12-day mean true range",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "MEAN(MAX(MAX((HIGH-LOW),ABS(DELAY(CLOSE,1)-HIGH)),ABS(DELAY(CLOSE,1)-LOW)),12) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_162",
+      "desc": "Stochastic-RSI: (RSI-min(RSI,12)) / (max(RSI,12)-min(RSI,12))",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "prat1 = CLOSE - DELAY(CLOSE, 1); part2 = SMA(MAX(part1, 0), 12, 1); part3 = SMA(ABS(part1), 12, 1); part4 = MIN(part2 / part3 * 100, 12); (part2 / part3 * 100 - part4) / (MAX(part2 / part3 * 100, 12) - part4) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_163",
+      "desc": "rank(-ret * mv20 * vwap * (high-close))",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "RANK(((((-1 * RET) * MEAN(VOLUME,20)) * VWAP) * (HIGH - CLOSE))) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_164",
+      "desc": "SMA((rec - min(rec,12) / (h-l) * 100), 13, 2) — Daic115 parsing",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA(( ((CLOSE > DELAY(CLOSE, 1)) ? 1 / (CLOSE - DELAY(CLOSE, 1)) : 1) - MIN(((CLOSE > DELAY(CLOSE, 1)) ? 1 / (CLOSE - DELAY(CLOSE, 1)) : 1), 12) ) / (HIGH - LOW) * 100, 13, 2) --> diff = (CLOSE - DELAY(CLOSE, 1)); conditon = (CLOSE > DELAY(CLOSE, 1)); SMA(( (conditiopn ? 1 / diff : 1) - MIN((conditiopn ? 1 / diff : 1), 12) ) / (HIGH - LOW) * 100, 13, 2) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_165",
+      "desc": "MAX(SUMAC(close-ma48)) - MIN(SUMAC(close-ma48)) / STD(close,48) — Daic115 SUMAC expansion",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "MAX(SUMAC(CLOSE-MEAN(CLOSE,48)))-MIN(SUMAC(CLOSE-MEAN(CLOSE,48)))/STD(CLOSE,48) --> MAX(SUMAC(diff)) - MIN(SUMAC(diff)) / STD(CLOSE, 48) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_166",
+      "desc": "5*sum(centered_ret,20)/(sum(ma_ret_squared,20))^1.5 — Daic115 errata simplification",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "-20 * (19) ^ 1.5 * SUM(CLOSE / DELAY(CLOSE, 1) - 1 - MEAN(CLOSE / DELAY(CLOSE, 1) - 1, 20), 20) / ((20 - 1) * (20 - 2)(SUM((CLOSE / DELAY(CLOSE, 1), 20) ^ 2, 20)) ^ 1.5) -> 5 * SUM(CLOSE / DELAY(CLOSE, 1) - 1 - MEAN(CLOSE / DELAY(CLOSE, 1) - 1, 20), 20) / (SUM(MEAN(CLOSE / DELAY(CLOSE, 1), 20) ^ 2, 20)) ^ 1.5 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_167",
+      "desc": "12-day cumulative up-move",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM((CLOSE-DELAY(CLOSE,1)>0?CLOSE-DELAY(CLOSE,1):0),12) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_168",
+      "desc": "-volume / mean(volume,20)",
+      "family": "volume",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "(-1*VOLUME/MEAN(VOLUME,20)) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_169",
+      "desc": "SMA(mean(delay(SMA(dC,9,1),1),12) - mean(delay(SMA(dC,9,1),1),26), 10, 1)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA( MEAN(DELAY(SMA(CLOSE - DELAY(CLOSE, 1), 9, 1), 1), 12) - MEAN(DELAY(SMA(CLOSE - DELAY(CLOSE, 1), 9, 1), 1), 26), 10, 1) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_170",
+      "desc": "rank(1/c)*v/mv20 * (h*rank(h-c))/(sum(h,5)/5) - rank(vwap-d_vwap_5)",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "( ((RANK((1 / CLOSE)) * VOLUME) / MEAN(VOLUME, 20)) * ((HIGH * RANK((HIGH - CLOSE))) / (SUM(HIGH, 5) / 5)) ) - RANK((VWAP - DELAY(VWAP, 5))) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_171",
+      "desc": "-(low-close)*open^5 / ((close-high)*close^5)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "((-1 * ((LOW - CLOSE) * (OPEN^5))) / ((CLOSE - HIGH) * (CLOSE^5))) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_172",
+      "desc": "6-day mean of DI-difference oscillator (DX)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "MEAN( ABS(SUM((LD > 0 & LD > HD) ? LD : 0, 14) * 100 / SUM(TR, 14) - SUM((HD > 0 & HD > LD) ? HD : 0, 14) * 100 / SUM(TR, 14)) / (SUM((LD > 0 & LD > HD) ? LD : 0, 14) * 100 / SUM(TR, 14) + SUM((HD > 0 & HD > LD) ? HD : 0, 14) * 100 / SUM(TR, 14)) * 100, 6) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_173",
+      "desc": "3*sma(c,13,2) - 2*sma^2(c,13,2) + sma^3(log(c),13,2)",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "3 * SMA(CLOSE, 13, 2) - 2 * SMA(SMA(CLOSE, 13, 2), 13, 2) + SMA(SMA(SMA(LOG(CLOSE), 13, 2), 13, 2), 13, 2); @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_174",
+      "desc": "EWMA of up-day std(close,20)",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SMA((CLOSE>DELAY(CLOSE,1)?STD(CLOSE,20):0),20,1) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_175",
+      "desc": "6-day mean true range",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "MEAN(MAX(MAX((HIGH-LOW),ABS(DELAY(CLOSE,1)-HIGH)),ABS(DELAY(CLOSE,1)-LOW)),6) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_176",
+      "desc": "corr(rank(stoch_K_12), rank(volume), 6)",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "CORR(RANK(((CLOSE - TSMIN(LOW, 12)) / (TSMAX(HIGH, 12) - TSMIN(LOW,12)))), RANK(VOLUME), 6) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_177",
+      "desc": "(20-highday(high,20))/20*100 — recency-of-high oscillator",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "((20-HIGHDAY(HIGH,20))/20)*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_178",
+      "desc": "(c-prev_c)/prev_c * volume",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(CLOSE-DELAY(CLOSE,1))/DELAY(CLOSE,1)*VOLUME @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_179",
+      "desc": "rank(corr(vwap,v,4)) * rank(corr(rank(low), rank(mv50), 12))",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(RANK(CORR(VWAP, VOLUME, 4)) *RANK(CORR(RANK(LOW), RANK(MEAN(VOLUME,50)), 12))) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_180",
+      "desc": "Conditional: -tsrank(|d_c7|,60)*sign(d_c7) when V > MV20 else -V",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "MEAN(VOLUME,20) < VOLUME ? -TSRANK(|DELTA(CLOSE,7)|,60) * SIGN(DELTA(CLOSE,7)) : -VOLUME",
+      "aqml": null
+    },
+    {
+      "id": "gtja_181",
+      "desc": "Skew-adjusted return-vs-benchmark — CSI300 proxied via CS mean (Phase D)",
+      "family": "benchmark",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "SUM(((CLOSE/DELAY(CLOSE,1)-1) - MEAN(C/Cprev-1, 20)) - (BMK - MEAN(BMK,20))^2, 20) / SUM((BMK - MEAN(BMK,20))^3)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_182",
+      "desc": "20d frac of days stock & benchmark co-move — CS-mean OHLC proxy (Phase D)",
+      "family": "benchmark",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "COUNT( (CLOSE > OPEN & BMK_C > BMK_O) | (CLOSE < OPEN & BMK_C < BMK_O), 20 ) / 20",
+      "aqml": null
+    },
+    {
+      "id": "gtja_183",
+      "desc": "MAX(SUMAC(c-ma24,24)) - MIN(SUMAC(c-ma24,24)) / STD(c,24)",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "MAX(SUMAC(C-MEAN(C,24))) - MIN(SUMAC(C-MEAN(C,24))) / STD(C,24)",
+      "aqml": null
+    },
+    {
+      "id": "gtja_184",
+      "desc": "rank(corr(delay(o-c,1), close, 200)) + rank(o-c)",
+      "family": "correlation",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "(RANK(CORR(DELAY((OPEN - CLOSE), 1), CLOSE, 200)) + RANK((OPEN - CLOSE))) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_185",
+      "desc": "rank(-(1 - open/close)^2)",
+      "family": "momentum",
+      "direction": "reverse",
+      "quality": "ok",
+      "original": "RANK((-1 * ((1 - (OPEN / CLOSE))^2))) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_186",
+      "desc": "(mean(DX,6) + delay(mean(DX,6),6)) / 2 — smoothed ADX-style",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "part1 = SUM((LD > 0 & LD > HD) ? LD : 0, 14) * 100 / SUM(TR, 14); part2 = SUM((HD > 0 & HD > LD) ? HD : 0, 14) * 100 / SUM(TR, 14); part3 = ABS(part1 - part2) / (part1 + part2) * 100; (MEAN(part3, 6) + DELAY(MEAN(part3, 6), 6)) / 2 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_187",
+      "desc": "20-day cumulative open-up-gap or daily upper-body-range",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "SUM((OPEN <= DELAY(OPEN, 1) ? 0 : MAX((HIGH - OPEN), (OPEN - DELAY(OPEN, 1)))), 20) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_188",
+      "desc": "((H-L) - SMA(H-L,11,2)) / SMA(H-L,11,2) * 100",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "((HIGH-LOW–SMA(HIGH-LOW,11,2))/SMA(HIGH-LOW,11,2))*100 @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_189",
+      "desc": "6-day mean abs deviation from MA6",
+      "family": "volatility",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "MEAN(ABS(CLOSE-MEAN(CLOSE,6)),6) @res:",
+      "aqml": null
+    },
+    {
+      "id": "gtja_190",
+      "desc": "log((cnt_p1>p2-1)*SUMIF((p1-p2)^2,20,p1<p2)/(cnt_p1<p2 * SUMIF(.,20,p1>p2)))",
+      "family": "momentum",
+      "direction": "normal",
+      "quality": "ok",
+      "original": "LOG((COUNT(p1>p2,20)-1) * SUMIF((p1-p2)^2,20,p1<p2) / ((COUNT(p1<p2,20)) * SUMIF((p1-p2)^2,20,p1>p2))) where p1 = C/prev_C - 1, p2 = (C/C-19)^(1/20) - 1",
+      "aqml": null
+    },
+    {
+      "id": "gtja_191",
+      "desc": "corr(mv20, low, 5) + (h+l)/2 - close",
+      "family": "volume",
+      "direction": "normal",
+      "quality": "warn",
+      "original": "CORR(MEAN(VOLUME,20), LOW, 5) + (HIGH+LOW)/2 - CLOSE",
+      "aqml": null
+    }
+  ],
+  "alpha158": [
+    {
+      "id": "KMID",
+      "family": "alpha158",
+      "original": "($close-$open)/$open"
+    },
+    {
+      "id": "KLEN",
+      "family": "alpha158",
+      "original": "($high-$low)/$open"
+    },
+    {
+      "id": "KMID2",
+      "family": "alpha158",
+      "original": "($close-$open)/($high-$low+1e-12)"
+    },
+    {
+      "id": "KUP",
+      "family": "alpha158",
+      "original": "($high-Greater($open, $close))/$open"
+    },
+    {
+      "id": "KUP2",
+      "family": "alpha158",
+      "original": "($high-Greater($open, $close))/($high-$low+1e-12)"
+    },
+    {
+      "id": "KLOW",
+      "family": "alpha158",
+      "original": "(Less($open, $close)-$low)/$open"
+    },
+    {
+      "id": "KLOW2",
+      "family": "alpha158",
+      "original": "(Less($open, $close)-$low)/($high-$low+1e-12)"
+    },
+    {
+      "id": "KSFT",
+      "family": "alpha158",
+      "original": "(2*$close-$high-$low)/$open"
+    },
+    {
+      "id": "KSFT2",
+      "family": "alpha158",
+      "original": "(2*$close-$high-$low)/($high-$low+1e-12)"
+    },
+    {
+      "id": "OPEN0",
+      "family": "alpha158",
+      "original": "$open/$close"
+    },
+    {
+      "id": "HIGH0",
+      "family": "alpha158",
+      "original": "$high/$close"
+    },
+    {
+      "id": "LOW0",
+      "family": "alpha158",
+      "original": "$low/$close"
+    },
+    {
+      "id": "VWAP0",
+      "family": "alpha158",
+      "original": "$vwap/$close"
+    },
+    {
+      "id": "VOLUME0",
+      "family": "alpha158",
+      "original": "$volume/($volume+1e-12)"
+    },
+    {
+      "id": "ROC5",
+      "family": "alpha158",
+      "original": "Ref($close, 5)/$close"
+    },
+    {
+      "id": "MA5",
+      "family": "alpha158",
+      "original": "Mean($close, 5)/$close"
+    },
+    {
+      "id": "STD5",
+      "family": "alpha158",
+      "original": "Std($close, 5)/$close"
+    },
+    {
+      "id": "BETA5",
+      "family": "alpha158",
+      "original": "Slope($close, 5)/$close"
+    },
+    {
+      "id": "RSQR5",
+      "family": "alpha158",
+      "original": "Rsquare($close, 5)"
+    },
+    {
+      "id": "RESI5",
+      "family": "alpha158",
+      "original": "Resi($close, 5)/$close"
+    },
+    {
+      "id": "MAX5",
+      "family": "alpha158",
+      "original": "Max($high, 5)/$close"
+    },
+    {
+      "id": "MIN5",
+      "family": "alpha158",
+      "original": "Min($low, 5)/$close"
+    },
+    {
+      "id": "QTLU5",
+      "family": "alpha158",
+      "original": "Quantile($close, 5, 0.8)/$close"
+    },
+    {
+      "id": "QTLD5",
+      "family": "alpha158",
+      "original": "Quantile($close, 5, 0.2)/$close"
+    },
+    {
+      "id": "RANK5",
+      "family": "alpha158",
+      "original": "Rank($close, 5)"
+    },
+    {
+      "id": "RSV5",
+      "family": "alpha158",
+      "original": "($close-Min($low, 5))/(Max($high, 5)-Min($low, 5)+1e-12)"
+    },
+    {
+      "id": "IMAX5",
+      "family": "alpha158",
+      "original": "IdxMax($high, 5)/5"
+    },
+    {
+      "id": "IMIN5",
+      "family": "alpha158",
+      "original": "IdxMin($low, 5)/5"
+    },
+    {
+      "id": "IMXD5",
+      "family": "alpha158",
+      "original": "(IdxMax($high, 5)-IdxMin($low, 5))/5"
+    },
+    {
+      "id": "CORR5",
+      "family": "alpha158",
+      "original": "Corr($close, Log($volume+1), 5)"
+    },
+    {
+      "id": "CORD5",
+      "family": "alpha158",
+      "original": "Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 5)"
+    },
+    {
+      "id": "CNTP5",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 5)"
+    },
+    {
+      "id": "CNTN5",
+      "family": "alpha158",
+      "original": "Mean($close<Ref($close, 1), 5)"
+    },
+    {
+      "id": "CNTD5",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 5)-Mean($close<Ref($close, 1), 5)"
+    },
+    {
+      "id": "SUMP5",
+      "family": "alpha158",
+      "original": "Sum(Greater($close-Ref($close, 1), 0), 5)/(Sum(Abs($close-Ref($close, 1)), 5)+1e-12)"
+    },
+    {
+      "id": "SUMN5",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($close, 1)-$close, 0), 5)/(Sum(Abs($close-Ref($close, 1)), 5)+1e-12)"
+    },
+    {
+      "id": "SUMD5",
+      "family": "alpha158",
+      "original": "(Sum(Greater($close-Ref($close, 1), 0), 5)-Sum(Greater(Ref($close, 1)-$close, 0), 5))/(Sum(Abs($close-Ref($close, 1)), 5)+1e-12)"
+    },
+    {
+      "id": "VMA5",
+      "family": "alpha158",
+      "original": "Mean($volume, 5)/($volume+1e-12)"
+    },
+    {
+      "id": "VSTD5",
+      "family": "alpha158",
+      "original": "Std($volume, 5)/($volume+1e-12)"
+    },
+    {
+      "id": "WVMA5",
+      "family": "alpha158",
+      "original": "Std(Abs($close/Ref($close, 1)-1)*$volume, 5)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 5)+1e-12)"
+    },
+    {
+      "id": "VSUMP5",
+      "family": "alpha158",
+      "original": "Sum(Greater($volume-Ref($volume, 1), 0), 5)/(Sum(Abs($volume-Ref($volume, 1)), 5)+1e-12)"
+    },
+    {
+      "id": "VSUMN5",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($volume, 1)-$volume, 0), 5)/(Sum(Abs($volume-Ref($volume, 1)), 5)+1e-12)"
+    },
+    {
+      "id": "VSUMD5",
+      "family": "alpha158",
+      "original": "(Sum(Greater($volume-Ref($volume, 1), 0), 5)-Sum(Greater(Ref($volume, 1)-$volume, 0), 5))/(Sum(Abs($volume-Ref($volume, 1)), 5)+1e-12)"
+    },
+    {
+      "id": "ROC10",
+      "family": "alpha158",
+      "original": "Ref($close, 10)/$close"
+    },
+    {
+      "id": "MA10",
+      "family": "alpha158",
+      "original": "Mean($close, 10)/$close"
+    },
+    {
+      "id": "STD10",
+      "family": "alpha158",
+      "original": "Std($close, 10)/$close"
+    },
+    {
+      "id": "BETA10",
+      "family": "alpha158",
+      "original": "Slope($close, 10)/$close"
+    },
+    {
+      "id": "RSQR10",
+      "family": "alpha158",
+      "original": "Rsquare($close, 10)"
+    },
+    {
+      "id": "RESI10",
+      "family": "alpha158",
+      "original": "Resi($close, 10)/$close"
+    },
+    {
+      "id": "MAX10",
+      "family": "alpha158",
+      "original": "Max($high, 10)/$close"
+    },
+    {
+      "id": "MIN10",
+      "family": "alpha158",
+      "original": "Min($low, 10)/$close"
+    },
+    {
+      "id": "QTLU10",
+      "family": "alpha158",
+      "original": "Quantile($close, 10, 0.8)/$close"
+    },
+    {
+      "id": "QTLD10",
+      "family": "alpha158",
+      "original": "Quantile($close, 10, 0.2)/$close"
+    },
+    {
+      "id": "RANK10",
+      "family": "alpha158",
+      "original": "Rank($close, 10)"
+    },
+    {
+      "id": "RSV10",
+      "family": "alpha158",
+      "original": "($close-Min($low, 10))/(Max($high, 10)-Min($low, 10)+1e-12)"
+    },
+    {
+      "id": "IMAX10",
+      "family": "alpha158",
+      "original": "IdxMax($high, 10)/10"
+    },
+    {
+      "id": "IMIN10",
+      "family": "alpha158",
+      "original": "IdxMin($low, 10)/10"
+    },
+    {
+      "id": "IMXD10",
+      "family": "alpha158",
+      "original": "(IdxMax($high, 10)-IdxMin($low, 10))/10"
+    },
+    {
+      "id": "CORR10",
+      "family": "alpha158",
+      "original": "Corr($close, Log($volume+1), 10)"
+    },
+    {
+      "id": "CORD10",
+      "family": "alpha158",
+      "original": "Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 10)"
+    },
+    {
+      "id": "CNTP10",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 10)"
+    },
+    {
+      "id": "CNTN10",
+      "family": "alpha158",
+      "original": "Mean($close<Ref($close, 1), 10)"
+    },
+    {
+      "id": "CNTD10",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 10)-Mean($close<Ref($close, 1), 10)"
+    },
+    {
+      "id": "SUMP10",
+      "family": "alpha158",
+      "original": "Sum(Greater($close-Ref($close, 1), 0), 10)/(Sum(Abs($close-Ref($close, 1)), 10)+1e-12)"
+    },
+    {
+      "id": "SUMN10",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($close, 1)-$close, 0), 10)/(Sum(Abs($close-Ref($close, 1)), 10)+1e-12)"
+    },
+    {
+      "id": "SUMD10",
+      "family": "alpha158",
+      "original": "(Sum(Greater($close-Ref($close, 1), 0), 10)-Sum(Greater(Ref($close, 1)-$close, 0), 10))/(Sum(Abs($close-Ref($close, 1)), 10)+1e-12)"
+    },
+    {
+      "id": "VMA10",
+      "family": "alpha158",
+      "original": "Mean($volume, 10)/($volume+1e-12)"
+    },
+    {
+      "id": "VSTD10",
+      "family": "alpha158",
+      "original": "Std($volume, 10)/($volume+1e-12)"
+    },
+    {
+      "id": "WVMA10",
+      "family": "alpha158",
+      "original": "Std(Abs($close/Ref($close, 1)-1)*$volume, 10)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 10)+1e-12)"
+    },
+    {
+      "id": "VSUMP10",
+      "family": "alpha158",
+      "original": "Sum(Greater($volume-Ref($volume, 1), 0), 10)/(Sum(Abs($volume-Ref($volume, 1)), 10)+1e-12)"
+    },
+    {
+      "id": "VSUMN10",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($volume, 1)-$volume, 0), 10)/(Sum(Abs($volume-Ref($volume, 1)), 10)+1e-12)"
+    },
+    {
+      "id": "VSUMD10",
+      "family": "alpha158",
+      "original": "(Sum(Greater($volume-Ref($volume, 1), 0), 10)-Sum(Greater(Ref($volume, 1)-$volume, 0), 10))/(Sum(Abs($volume-Ref($volume, 1)), 10)+1e-12)"
+    },
+    {
+      "id": "ROC20",
+      "family": "alpha158",
+      "original": "Ref($close, 20)/$close"
+    },
+    {
+      "id": "MA20",
+      "family": "alpha158",
+      "original": "Mean($close, 20)/$close"
+    },
+    {
+      "id": "STD20",
+      "family": "alpha158",
+      "original": "Std($close, 20)/$close"
+    },
+    {
+      "id": "BETA20",
+      "family": "alpha158",
+      "original": "Slope($close, 20)/$close"
+    },
+    {
+      "id": "RSQR20",
+      "family": "alpha158",
+      "original": "Rsquare($close, 20)"
+    },
+    {
+      "id": "RESI20",
+      "family": "alpha158",
+      "original": "Resi($close, 20)/$close"
+    },
+    {
+      "id": "MAX20",
+      "family": "alpha158",
+      "original": "Max($high, 20)/$close"
+    },
+    {
+      "id": "MIN20",
+      "family": "alpha158",
+      "original": "Min($low, 20)/$close"
+    },
+    {
+      "id": "QTLU20",
+      "family": "alpha158",
+      "original": "Quantile($close, 20, 0.8)/$close"
+    },
+    {
+      "id": "QTLD20",
+      "family": "alpha158",
+      "original": "Quantile($close, 20, 0.2)/$close"
+    },
+    {
+      "id": "RANK20",
+      "family": "alpha158",
+      "original": "Rank($close, 20)"
+    },
+    {
+      "id": "RSV20",
+      "family": "alpha158",
+      "original": "($close-Min($low, 20))/(Max($high, 20)-Min($low, 20)+1e-12)"
+    },
+    {
+      "id": "IMAX20",
+      "family": "alpha158",
+      "original": "IdxMax($high, 20)/20"
+    },
+    {
+      "id": "IMIN20",
+      "family": "alpha158",
+      "original": "IdxMin($low, 20)/20"
+    },
+    {
+      "id": "IMXD20",
+      "family": "alpha158",
+      "original": "(IdxMax($high, 20)-IdxMin($low, 20))/20"
+    },
+    {
+      "id": "CORR20",
+      "family": "alpha158",
+      "original": "Corr($close, Log($volume+1), 20)"
+    },
+    {
+      "id": "CORD20",
+      "family": "alpha158",
+      "original": "Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 20)"
+    },
+    {
+      "id": "CNTP20",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 20)"
+    },
+    {
+      "id": "CNTN20",
+      "family": "alpha158",
+      "original": "Mean($close<Ref($close, 1), 20)"
+    },
+    {
+      "id": "CNTD20",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 20)-Mean($close<Ref($close, 1), 20)"
+    },
+    {
+      "id": "SUMP20",
+      "family": "alpha158",
+      "original": "Sum(Greater($close-Ref($close, 1), 0), 20)/(Sum(Abs($close-Ref($close, 1)), 20)+1e-12)"
+    },
+    {
+      "id": "SUMN20",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($close, 1)-$close, 0), 20)/(Sum(Abs($close-Ref($close, 1)), 20)+1e-12)"
+    },
+    {
+      "id": "SUMD20",
+      "family": "alpha158",
+      "original": "(Sum(Greater($close-Ref($close, 1), 0), 20)-Sum(Greater(Ref($close, 1)-$close, 0), 20))/(Sum(Abs($close-Ref($close, 1)), 20)+1e-12)"
+    },
+    {
+      "id": "VMA20",
+      "family": "alpha158",
+      "original": "Mean($volume, 20)/($volume+1e-12)"
+    },
+    {
+      "id": "VSTD20",
+      "family": "alpha158",
+      "original": "Std($volume, 20)/($volume+1e-12)"
+    },
+    {
+      "id": "WVMA20",
+      "family": "alpha158",
+      "original": "Std(Abs($close/Ref($close, 1)-1)*$volume, 20)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 20)+1e-12)"
+    },
+    {
+      "id": "VSUMP20",
+      "family": "alpha158",
+      "original": "Sum(Greater($volume-Ref($volume, 1), 0), 20)/(Sum(Abs($volume-Ref($volume, 1)), 20)+1e-12)"
+    },
+    {
+      "id": "VSUMN20",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($volume, 1)-$volume, 0), 20)/(Sum(Abs($volume-Ref($volume, 1)), 20)+1e-12)"
+    },
+    {
+      "id": "VSUMD20",
+      "family": "alpha158",
+      "original": "(Sum(Greater($volume-Ref($volume, 1), 0), 20)-Sum(Greater(Ref($volume, 1)-$volume, 0), 20))/(Sum(Abs($volume-Ref($volume, 1)), 20)+1e-12)"
+    },
+    {
+      "id": "ROC30",
+      "family": "alpha158",
+      "original": "Ref($close, 30)/$close"
+    },
+    {
+      "id": "MA30",
+      "family": "alpha158",
+      "original": "Mean($close, 30)/$close"
+    },
+    {
+      "id": "STD30",
+      "family": "alpha158",
+      "original": "Std($close, 30)/$close"
+    },
+    {
+      "id": "BETA30",
+      "family": "alpha158",
+      "original": "Slope($close, 30)/$close"
+    },
+    {
+      "id": "RSQR30",
+      "family": "alpha158",
+      "original": "Rsquare($close, 30)"
+    },
+    {
+      "id": "RESI30",
+      "family": "alpha158",
+      "original": "Resi($close, 30)/$close"
+    },
+    {
+      "id": "MAX30",
+      "family": "alpha158",
+      "original": "Max($high, 30)/$close"
+    },
+    {
+      "id": "MIN30",
+      "family": "alpha158",
+      "original": "Min($low, 30)/$close"
+    },
+    {
+      "id": "QTLU30",
+      "family": "alpha158",
+      "original": "Quantile($close, 30, 0.8)/$close"
+    },
+    {
+      "id": "QTLD30",
+      "family": "alpha158",
+      "original": "Quantile($close, 30, 0.2)/$close"
+    },
+    {
+      "id": "RANK30",
+      "family": "alpha158",
+      "original": "Rank($close, 30)"
+    },
+    {
+      "id": "RSV30",
+      "family": "alpha158",
+      "original": "($close-Min($low, 30))/(Max($high, 30)-Min($low, 30)+1e-12)"
+    },
+    {
+      "id": "IMAX30",
+      "family": "alpha158",
+      "original": "IdxMax($high, 30)/30"
+    },
+    {
+      "id": "IMIN30",
+      "family": "alpha158",
+      "original": "IdxMin($low, 30)/30"
+    },
+    {
+      "id": "IMXD30",
+      "family": "alpha158",
+      "original": "(IdxMax($high, 30)-IdxMin($low, 30))/30"
+    },
+    {
+      "id": "CORR30",
+      "family": "alpha158",
+      "original": "Corr($close, Log($volume+1), 30)"
+    },
+    {
+      "id": "CORD30",
+      "family": "alpha158",
+      "original": "Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 30)"
+    },
+    {
+      "id": "CNTP30",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 30)"
+    },
+    {
+      "id": "CNTN30",
+      "family": "alpha158",
+      "original": "Mean($close<Ref($close, 1), 30)"
+    },
+    {
+      "id": "CNTD30",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 30)-Mean($close<Ref($close, 1), 30)"
+    },
+    {
+      "id": "SUMP30",
+      "family": "alpha158",
+      "original": "Sum(Greater($close-Ref($close, 1), 0), 30)/(Sum(Abs($close-Ref($close, 1)), 30)+1e-12)"
+    },
+    {
+      "id": "SUMN30",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($close, 1)-$close, 0), 30)/(Sum(Abs($close-Ref($close, 1)), 30)+1e-12)"
+    },
+    {
+      "id": "SUMD30",
+      "family": "alpha158",
+      "original": "(Sum(Greater($close-Ref($close, 1), 0), 30)-Sum(Greater(Ref($close, 1)-$close, 0), 30))/(Sum(Abs($close-Ref($close, 1)), 30)+1e-12)"
+    },
+    {
+      "id": "VMA30",
+      "family": "alpha158",
+      "original": "Mean($volume, 30)/($volume+1e-12)"
+    },
+    {
+      "id": "VSTD30",
+      "family": "alpha158",
+      "original": "Std($volume, 30)/($volume+1e-12)"
+    },
+    {
+      "id": "WVMA30",
+      "family": "alpha158",
+      "original": "Std(Abs($close/Ref($close, 1)-1)*$volume, 30)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 30)+1e-12)"
+    },
+    {
+      "id": "VSUMP30",
+      "family": "alpha158",
+      "original": "Sum(Greater($volume-Ref($volume, 1), 0), 30)/(Sum(Abs($volume-Ref($volume, 1)), 30)+1e-12)"
+    },
+    {
+      "id": "VSUMN30",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($volume, 1)-$volume, 0), 30)/(Sum(Abs($volume-Ref($volume, 1)), 30)+1e-12)"
+    },
+    {
+      "id": "VSUMD30",
+      "family": "alpha158",
+      "original": "(Sum(Greater($volume-Ref($volume, 1), 0), 30)-Sum(Greater(Ref($volume, 1)-$volume, 0), 30))/(Sum(Abs($volume-Ref($volume, 1)), 30)+1e-12)"
+    },
+    {
+      "id": "ROC60",
+      "family": "alpha158",
+      "original": "Ref($close, 60)/$close"
+    },
+    {
+      "id": "MA60",
+      "family": "alpha158",
+      "original": "Mean($close, 60)/$close"
+    },
+    {
+      "id": "STD60",
+      "family": "alpha158",
+      "original": "Std($close, 60)/$close"
+    },
+    {
+      "id": "BETA60",
+      "family": "alpha158",
+      "original": "Slope($close, 60)/$close"
+    },
+    {
+      "id": "RSQR60",
+      "family": "alpha158",
+      "original": "Rsquare($close, 60)"
+    },
+    {
+      "id": "RESI60",
+      "family": "alpha158",
+      "original": "Resi($close, 60)/$close"
+    },
+    {
+      "id": "MAX60",
+      "family": "alpha158",
+      "original": "Max($high, 60)/$close"
+    },
+    {
+      "id": "MIN60",
+      "family": "alpha158",
+      "original": "Min($low, 60)/$close"
+    },
+    {
+      "id": "QTLU60",
+      "family": "alpha158",
+      "original": "Quantile($close, 60, 0.8)/$close"
+    },
+    {
+      "id": "QTLD60",
+      "family": "alpha158",
+      "original": "Quantile($close, 60, 0.2)/$close"
+    },
+    {
+      "id": "RANK60",
+      "family": "alpha158",
+      "original": "Rank($close, 60)"
+    },
+    {
+      "id": "RSV60",
+      "family": "alpha158",
+      "original": "($close-Min($low, 60))/(Max($high, 60)-Min($low, 60)+1e-12)"
+    },
+    {
+      "id": "IMAX60",
+      "family": "alpha158",
+      "original": "IdxMax($high, 60)/60"
+    },
+    {
+      "id": "IMIN60",
+      "family": "alpha158",
+      "original": "IdxMin($low, 60)/60"
+    },
+    {
+      "id": "IMXD60",
+      "family": "alpha158",
+      "original": "(IdxMax($high, 60)-IdxMin($low, 60))/60"
+    },
+    {
+      "id": "CORR60",
+      "family": "alpha158",
+      "original": "Corr($close, Log($volume+1), 60)"
+    },
+    {
+      "id": "CORD60",
+      "family": "alpha158",
+      "original": "Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 60)"
+    },
+    {
+      "id": "CNTP60",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 60)"
+    },
+    {
+      "id": "CNTN60",
+      "family": "alpha158",
+      "original": "Mean($close<Ref($close, 1), 60)"
+    },
+    {
+      "id": "CNTD60",
+      "family": "alpha158",
+      "original": "Mean($close>Ref($close, 1), 60)-Mean($close<Ref($close, 1), 60)"
+    },
+    {
+      "id": "SUMP60",
+      "family": "alpha158",
+      "original": "Sum(Greater($close-Ref($close, 1), 0), 60)/(Sum(Abs($close-Ref($close, 1)), 60)+1e-12)"
+    },
+    {
+      "id": "SUMN60",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($close, 1)-$close, 0), 60)/(Sum(Abs($close-Ref($close, 1)), 60)+1e-12)"
+    },
+    {
+      "id": "SUMD60",
+      "family": "alpha158",
+      "original": "(Sum(Greater($close-Ref($close, 1), 0), 60)-Sum(Greater(Ref($close, 1)-$close, 0), 60))/(Sum(Abs($close-Ref($close, 1)), 60)+1e-12)"
+    },
+    {
+      "id": "VMA60",
+      "family": "alpha158",
+      "original": "Mean($volume, 60)/($volume+1e-12)"
+    },
+    {
+      "id": "VSTD60",
+      "family": "alpha158",
+      "original": "Std($volume, 60)/($volume+1e-12)"
+    },
+    {
+      "id": "WVMA60",
+      "family": "alpha158",
+      "original": "Std(Abs($close/Ref($close, 1)-1)*$volume, 60)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 60)+1e-12)"
+    },
+    {
+      "id": "VSUMP60",
+      "family": "alpha158",
+      "original": "Sum(Greater($volume-Ref($volume, 1), 0), 60)/(Sum(Abs($volume-Ref($volume, 1)), 60)+1e-12)"
+    },
+    {
+      "id": "VSUMN60",
+      "family": "alpha158",
+      "original": "Sum(Greater(Ref($volume, 1)-$volume, 0), 60)/(Sum(Abs($volume-Ref($volume, 1)), 60)+1e-12)"
+    },
+    {
+      "id": "VSUMD60",
+      "family": "alpha158",
+      "original": "(Sum(Greater($volume-Ref($volume, 1), 0), 60)-Sum(Greater(Ref($volume, 1)-$volume, 0), 60))/(Sum(Abs($volume-Ref($volume, 1)), 60)+1e-12)"
+    }
+  ]
+}

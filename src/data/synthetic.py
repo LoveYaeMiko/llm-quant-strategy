@@ -81,7 +81,8 @@ def make_synthetic_market(
         {s: pd.DataFrame(ohlc[s], index=dates) for s in names}, axis=0
     )
     panel.index.names = ["symbol", "date"]  # level 0 = symbol, level 1 = date
-    panel = panel[["open", "high", "low", "close", "volume"]]
+    panel["amount"] = panel["close"] * panel["volume"]  # synthetic turnover
+    panel = panel[["open", "high", "low", "close", "volume", "amount"]]
 
     # PIT records: bar at date d is a fact valid over [d, d+1 day)
     rec = panel.reset_index().copy()

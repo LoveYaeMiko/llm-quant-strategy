@@ -40,3 +40,7 @@ data/reports/
 data/models/
 data/text/
 data/*.log
+
+# 新数据域缓存（可由回填脚本重新生成）
+data/margin/
+data/lhb/

@@ -40,12 +40,26 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------------------------------- #
 # universe + cost params
 # --------------------------------------------------------------------------- #
-def resolve_shadow_universe(cfg) -> list[str]:
-    """HS300 constituents (``data/universe/hs300.json``) — the shadow book universe."""
+def resolve_shadow_universe(cfg, name=None) -> list[str]:
+    """Shadow book universe — cached constituent list(s) under ``data.universe_dir``.
+
+    ``name`` (``shadow.universe``, default ``hs300``) may be ``hs300``,
+    ``hs300_500`` (union of HS300 + ZZ500 — the research cross-section the ML
+    artifacts were trained on), or any other cached ``<name>.json``.
+    """
     from ..config import Config
 
+    name = name or str(cfg.get("shadow.universe", "hs300"))
     universe_dir = Path(str(cfg.get("data.universe_dir", "data/universe")))
-    path = universe_dir / "hs300.json"
+    if name == "hs300_500":
+        out: list[str] = []
+        for sub in ("hs300", "zz500"):
+            path = universe_dir / f"{sub}.json"
+            if not path.is_file():
+                raise SystemExit(f"universe file {path} not found — run `python -m src.cli ingest` first")
+            out.extend(json.loads(path.read_text(encoding="utf-8")))
+        return sorted(set(out))
+    path = universe_dir / f"{name}.json"
     if not path.is_file():
         raise SystemExit(f"universe file {path} not found — run `python -m src.cli ingest` first")
     return sorted(json.loads(path.read_text(encoding="utf-8")))
@@ -140,13 +154,32 @@ def refresh_pead(cfg, symbols: list[str], current_year: int | None = None) -> in
 
 def refresh_sentiment(cfg, symbols: list[str]) -> dict[str, int]:
     """Re-fetch the research-report history for ``symbols`` (full per-symbol
-    history — the endpoint has no date param). Heavy (~15-20 min full HS300)."""
+    history — the endpoint has no date param). Heavy (~15-20 min full HS300).
+
+    Symbols whose cache parquet was written *today* are skipped: the deployed
+    daily scheduler runs once per day, so this keeps the loop incremental while
+    a full re-fetch stays available as a manual one-off (delete the parquet).
+    """
     from ..sentiment.ingestion import ReportIngestor
 
     report_dir = str(cfg.get("sentiment", {}).get("report_dir", "data/reports"))
     ingestor = ReportIngestor(report_dir)
-    counts = ingestor.collect(symbols, pause=0.2, force=True)
-    return {"symbols": len(counts), "rows": sum(counts.values())}
+    want = set(symbols)
+    today = datetime.today().date()
+    fresh: set[str] = set()
+    for p in ingestor.data_dir.glob("*.parquet"):
+        if p.stat().st_size <= 0:
+            continue
+        try:
+            if datetime.fromtimestamp(p.stat().st_mtime).date() >= today:
+                fresh.add(p.stem.replace("_", "."))
+        except Exception:  # noqa: BLE001
+            continue
+    todo = [s for s in symbols if s not in fresh]
+    if not todo:
+        return {"symbols": 0, "rows": 0, "fresh_skipped": len(fresh & want)}
+    counts = ingestor.collect(todo, pause=0.2, force=True)
+    return {"symbols": len(counts), "rows": sum(counts.values()), "fresh_skipped": len(fresh & want)}
 
 
 # --------------------------------------------------------------------------- #
@@ -364,6 +397,8 @@ def build_shadow_status(
     overlays: dict[str, Any],
     meta: dict[str, Any],
     benchmark: pd.Series | None = None,
+    book_long_pct: float | None = None,
+    book_short_pct: float | None = None,
 ) -> dict[str, Any]:
     """Build the ``outputs/shadow_status.json`` payload PAICC consumes."""
     last_date, cash, positions = ledger.latest_state()
@@ -462,22 +497,44 @@ def build_shadow_status(
     real = real_cost_model(cfg)
     cost_dev = compute_cost_deviation(fills_df, real)
 
-    # short-leg imbalance: |long_gross - short_gross| / gross
+    # short-leg imbalance: |long_gross - short_gross| / gross. The regime-adaptive
+    # short leg deliberately scales shorts to ``short_scale`` in strong uptrends,
+    # and long-only books (short_pct=0) are 100% long by design — the expected
+    # imbalance is |long - ss*short| / (long + ss*short); flag only the EXCESS
+    # over that design baseline, otherwise every uptrend day fires a spurious
+    # critical line.
+    trend_gate = float(acfg.get("trend_gate", 0.03))
+    trend_pct = _market_trend_pct(market.price_panel, int(acfg.get("trend_days", 60)))
+    regime_triggered = trend_pct > trend_gate * 100.0
+    book_long = float(book_long_pct if book_long_pct is not None else acfg.get("long_pct", 0.10))
+    book_short = float(book_short_pct if book_short_pct is not None else acfg.get("short_pct", 0.10))
+    short_scale_cfg = float(acfg.get("short_scale", 0.5)) if regime_triggered else 1.0
+    if book_short > 0:
+        expected_imb = abs(book_long - short_scale_cfg * book_short) / (
+            book_long + short_scale_cfg * book_short
+        ) * 100.0
+    else:
+        expected_imb = 100.0
     short_dev = 0.0
     if last_date is not None and positions:
         try:
             close = market.price_panel.loc[pd.Timestamp(last_date)]
         except KeyError:
             close = market.price_panel.iloc[-1]
-        long_gross = sum(s * float(close.get(sym, 0.0)) for sym, s in positions.items() if s > 0)
-        short_gross = sum(-s * float(close.get(sym, 0.0)) for sym, s in positions.items() if s < 0)
+        long_gross = 0.0
+        short_gross = 0.0
+        for sym, s in positions.items():
+            px = close.get(sym, np.nan)
+            if not np.isfinite(px):  # suspended name — no mark today
+                continue
+            if s > 0:
+                long_gross += s * float(px)
+            else:
+                short_gross += -s * float(px)
         gross = long_gross + short_gross
-        short_dev = 0.0 if gross <= 0 else abs(long_gross - short_gross) / gross * 100.0
-
-    # regime switch: current 60-day equal-weight trend vs gate
-    trend_gate = float(acfg.get("trend_gate", 0.03))
-    trend_pct = _market_trend_pct(market.price_panel, int(acfg.get("trend_days", 60)))
-    regime_triggered = trend_pct > trend_gate * 100.0
+        if gross > 0:
+            raw_imb = abs(long_gross - short_gross) / gross * 100.0
+            short_dev = max(0.0, raw_imb - expected_imb)
 
     # pead anomaly: tilt expected but no valid PEAD data
     pead = overlays.get("pead")
@@ -508,7 +565,8 @@ def build_shadow_status(
             "level": _threshold_level(short_dev, short_threshold, short_critical),
             "threshold": short_threshold,
             "critical": short_critical,
-            "detail": f"多头/空头总敞口失衡 {short_dev:.1f}%",
+            "detail": (f"多头/空头敞口超出 regime 基准 {short_dev:.1f}%"
+                       f"（regime 基准 {expected_imb:.1f}%）"),
         },
         {
             "name": "regime_switch",
@@ -518,7 +576,9 @@ def build_shadow_status(
             "threshold": round(trend_gate * 100.0, 2),
             "critical": round(trend_gate * 100.0, 2),
             "detail": (f"60日等权市场趋势 {trend_pct:+.2f}% (门限 {trend_gate * 100:.0f}%)"
-                       + (" → 空腿收缩已触发" if regime_triggered else "，未触发")),
+                       + (" → 空腿收缩已触发" if regime_triggered and book_short > 0 else "")
+                       + (" → 上行趋势（长多簿形无空腿）" if regime_triggered and book_short <= 0 else "")
+                       + ("，未触发" if not regime_triggered else "")),
         },
         {
             "name": "pead_anomaly",
@@ -557,11 +617,16 @@ def build_shadow_status(
     }
 
 
-def render_shadow_report(status: dict[str, Any]) -> str:
-    """Chinese markdown daily report (email body / ``shadow_report.md``)."""
+def render_shadow_report(status: dict[str, Any], trades: list[dict[str, Any]] | None = None) -> str:
+    """Chinese markdown daily report (email body / ``shadow_report.md``).
+
+    ``trades`` (optional) = the latest trading day's fills — the report gains a
+    "当日成交" section so PAICC's daily email carries the trade log.
+    """
     eq = status.get("equity", {})
+    account = status.get("account_name")
     lines: list[str] = [
-        "# FQA 影子模式日报",
+        "# FQA 影子模式日报" + (f" — {account}" if account else ""),
         "",
         f"- 观察日期（数据截至）: **{status.get('last_trading_date') or status.get('as_of')}**",
         f"- 上次运行: {status.get('last_run')}",
@@ -573,6 +638,24 @@ def render_shadow_report(status: dict[str, Any]) -> str:
         f"- 累计收益: {eq.get('total_return', 0):.2%}　年化: {eq.get('annualized_return', 0):.2%}",
         f"- Sharpe: {eq.get('sharpe', 0):.2f}　最大回撤: {eq.get('max_drawdown', 0):.2%}",
         f"- 交易日: {eq.get('n_days', 0)}　成交笔数: {eq.get('n_fills', 0)}　累计成本: {eq.get('total_commission', 0):,.2f}",
+        "",
+        "## 当日成交",
+        "",
+    ]
+    if trades:
+        lines.append("| 时间 | 代码 | 方向 | 股数 | 价格 | 佣金 | 金额 |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+        for t in trades[:50]:
+            lines.append(
+                f"| {t.get('date', '')} | {t.get('symbol', '')} | {t.get('side', '')} | "
+                f"{float(t.get('shares', 0)):+,.0f} | {float(t.get('price', 0)):.2f} | "
+                f"{float(t.get('commission', 0)):.2f} | {float(t.get('notional', 0)):,.0f} |"
+            )
+        if len(trades) > 50:
+            lines.append(f"（另有 {len(trades) - 50} 笔，详见账本）")
+    else:
+        lines.append("（今日无成交）")
+    lines += [
         "",
         "## 当日目标持仓 (Top 10)",
         "",

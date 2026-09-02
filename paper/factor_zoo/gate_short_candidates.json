@@ -1,0 +1,674 @@
+{
+  "Mul(Mul(Neg(1), Sign(Add(Sub(Close, Ts_Delay(Close, 7)), Ts_Delta(Close, 7)))), Add(1, Rank(Add(1, Ts_Sum(TS_Return(Close, 1), 250)))))": {
+    "fqa": "Mul(Mul(Neg(1), Sign(Add(Sub(Close, Ts_Delay(Close, 7)), Ts_Delta(Close, 7)))), Add(1, Rank(Add(1, Ts_Sum(TS_Return(Close, 1), 250)))))",
+    "test": {
+      "verdict": "keep",
+      "sharpe": 0.690630175577167,
+      "max_drawdown": 0.10347112049702045,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.43077924055005645,
+      "max_drawdown": 0.16831670471779492,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Rank(Mul(Neg(1), Power(Sub(1, Div(Open, Close)), 1)))": {
+    "fqa": "Rank(Mul(Neg(1), Power(Sub(1, Div(Open, Close)), 1)))",
+    "test": {
+      "verdict": "keep",
+      "sharpe": -0.17005463774446186,
+      "max_drawdown": 0.14588331050284964,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.914226433521717,
+      "max_drawdown": 0.16787906150482346,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Mul(Mul(Neg(1), Rank(Ts_Rank(Close, 10))), Rank(Div(Close, Open)))": {
+    "fqa": "Mul(Mul(Neg(1), Rank(Ts_Rank(Close, 10))), Rank(Div(Close, Open)))",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.5060701793200656,
+      "max_drawdown": 0.2231860425838058,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.28217083851952757,
+      "max_drawdown": 0.3847936866546673,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Mul(Mul(Neg(1), Rank(Ts_Std(High, 10))), Ts_Corr(High, Volume, 10))": {
+    "fqa": "Mul(Mul(Neg(1), Rank(Ts_Std(High, 10))), Ts_Corr(High, Volume, 10))",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.29477926034426427,
+      "max_drawdown": 0.1991554474668088,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.4037636135286479,
+      "max_drawdown": 0.4773875296425738,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Mul(Neg(1), Mul(Sub(Low, Close), Power(Open, 5))), Mul(Sub(Low, High), Power(Close, 5)))": {
+    "fqa": "Div(Mul(Neg(1), Mul(Sub(Low, Close), Power(Open, 5))), Mul(Sub(Low, High), Power(Close, 5)))",
+    "test": {
+      "verdict": "keep",
+      "sharpe": 0.17814249401790075,
+      "max_drawdown": 0.09260431320474583,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 1.2318718595560951,
+      "max_drawdown": 0.16395263115127334,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Min2(Rank(Ts_Decay_Linear(Sub(Add(Rank(Open), Rank(Low)), Add(Rank(High), Rank(Close))), 8)), Ts_Rank(Ts_Decay_Linear(Ts_Corr(Ts_Rank(Close, 8), Ts_Rank(Ts_Mean(Volume, 60), 21), 8), 7), 3))": {
+    "fqa": "Min2(Rank(Ts_Decay_Linear(Sub(Add(Rank(Open), Rank(Low)), Add(Rank(High), Rank(Close))), 8)), Ts_Rank(Ts_Decay_Linear(Ts_Corr(Ts_Rank(Close, 8), Ts_Rank(Ts_Mean(Volume, 60), 21), 8), 7), 3))",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.7670183794528996,
+      "max_drawdown": 0.2731449964936936,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.12398801486405782,
+      "max_drawdown": 0.3287182046647329,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Mul(Neg(1), Ts_Zscore(Close, 5))": {
+    "fqa": "Mul(Neg(1), Ts_Zscore(Close, 5))",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -2.561666979320614,
+      "max_drawdown": 0.6038001296661892,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -3.1870177355403055,
+      "max_drawdown": 0.9912545406681104,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Mean(Close, 12), Close)": {
+    "fqa": "Div(Ts_Mean(Close, 12), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.3264947616719703,
+      "max_drawdown": 0.20599424009777434,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.7837628571163562,
+      "max_drawdown": 0.20599424009777623,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Open, Close)": {
+    "fqa": "Div(Open, Close)",
+    "test": {
+      "verdict": "keep",
+      "sharpe": -0.17005463774446186,
+      "max_drawdown": 0.14588331050284964,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.914226433521717,
+      "max_drawdown": 0.16787906150482346,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Low, Close)": {
+    "fqa": "Div(Low, Close)",
+    "test": {
+      "verdict": "keep",
+      "sharpe": 0.8327705026136676,
+      "max_drawdown": 0.1025717566618286,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "keep",
+      "sharpe": 1.4474024517290527,
+      "max_drawdown": 0.11534681880916464,
+      "risk_passed": true,
+      "risk": {
+        "passed": true
+      }
+    }
+  },
+  "Div(Ts_Delay(Close, 5), Close)": {
+    "fqa": "Div(Ts_Delay(Close, 5), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.038874392701210944,
+      "max_drawdown": 0.30896653843233135,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.66367754076527,
+      "max_drawdown": 0.30896653843233046,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Mean(Close, 5), Close)": {
+    "fqa": "Div(Ts_Mean(Close, 5), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.7724685778191778,
+      "max_drawdown": 0.39693044060667815,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.8342580688081292,
+      "max_drawdown": 0.7873529841590506,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Min(Low, 5), Close)": {
+    "fqa": "Div(Ts_Min(Low, 5), Close)",
+    "test": {
+      "verdict": "keep",
+      "sharpe": 1.3902951905846044,
+      "max_drawdown": 0.08002785435022697,
+      "risk_passed": true,
+      "risk": {
+        "passed": true
+      }
+    },
+    "full": {
+      "verdict": "keep",
+      "sharpe": 1.7773061188082397,
+      "max_drawdown": 0.1353581340353499,
+      "risk_passed": true,
+      "risk": {
+        "passed": true
+      }
+    }
+  },
+  "Div(Ts_Quantile(Close, 5, 0.2), Close)": {
+    "fqa": "Div(Ts_Quantile(Close, 5, 0.2), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.995090319657663,
+      "max_drawdown": 0.414488368079741,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -1.44581390084926,
+      "max_drawdown": 0.9149938094004444,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 5), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 5), 0.000000000001))": {
+    "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 5), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 5), 0.000000000001))",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.5074948730306443,
+      "max_drawdown": 0.32072771437517744,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.11104114825461853,
+      "max_drawdown": 0.5527503114531942,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Mean(Close, 10), Close)": {
+    "fqa": "Div(Ts_Mean(Close, 10), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.1933299796499688,
+      "max_drawdown": 0.2549624718941893,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.6406856299794604,
+      "max_drawdown": 0.25496247189418986,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Min(Low, 10), Close)": {
+    "fqa": "Div(Ts_Min(Low, 10), Close)",
+    "test": {
+      "verdict": "reject_level_effect",
+      "sharpe": 1.3591852539572475,
+      "max_drawdown": 0.06762406032214485,
+      "risk_passed": true,
+      "risk": {
+        "passed": true
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 1.8002026726370803,
+      "max_drawdown": 0.18395119355564393,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Quantile(Close, 10, 0.2), Close)": {
+    "fqa": "Div(Ts_Quantile(Close, 10, 0.2), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.0934718621769115,
+      "max_drawdown": 0.24503312087330575,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.1071721094443302,
+      "max_drawdown": 0.3443049740128924,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Delay(Close, 20), Close)": {
+    "fqa": "Div(Ts_Delay(Close, 20), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.45863054602892916,
+      "max_drawdown": 0.16416106076899517,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.6413453813355916,
+      "max_drawdown": 0.20173387040177426,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Mean(Close, 20), Close)": {
+    "fqa": "Div(Ts_Mean(Close, 20), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.5582879973683101,
+      "max_drawdown": 0.16085841243436028,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.9161837982114495,
+      "max_drawdown": 0.1974878478220946,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Min(Low, 20), Close)": {
+    "fqa": "Div(Ts_Min(Low, 20), Close)",
+    "test": {
+      "verdict": "reject_level_effect",
+      "sharpe": 1.3671096997794328,
+      "max_drawdown": 0.05640415441706559,
+      "risk_passed": true,
+      "risk": {
+        "passed": true
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 1.7618125901120785,
+      "max_drawdown": 0.22376650673795595,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Quantile(Close, 20, 0.2), Close)": {
+    "fqa": "Div(Ts_Quantile(Close, 20, 0.2), Close)",
+    "test": {
+      "verdict": "reject_level_effect",
+      "sharpe": 0.18195204566450948,
+      "max_drawdown": 0.13981459958010323,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.35326906282925585,
+      "max_drawdown": 0.26638196358789834,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Delay(Close, 30), Close)": {
+    "fqa": "Div(Ts_Delay(Close, 30), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.7726136787198191,
+      "max_drawdown": 0.16124414957516264,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.7799402259967039,
+      "max_drawdown": 0.27388972661355626,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Mean(Close, 30), Close)": {
+    "fqa": "Div(Ts_Mean(Close, 30), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.7483270879516348,
+      "max_drawdown": 0.16466004341520468,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.9951082224698933,
+      "max_drawdown": 0.1821330047747326,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Min(Low, 30), Close)": {
+    "fqa": "Div(Ts_Min(Low, 30), Close)",
+    "test": {
+      "verdict": "reject_level_effect",
+      "sharpe": 1.4029607969701177,
+      "max_drawdown": 0.07350051874494612,
+      "risk_passed": true,
+      "risk": {
+        "passed": true
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 1.839713308551609,
+      "max_drawdown": 0.2114497054384381,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Quantile(Close, 30, 0.2), Close)": {
+    "fqa": "Div(Ts_Quantile(Close, 30, 0.2), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.3446457902204927,
+      "max_drawdown": 0.1544027394948928,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.5696760210068323,
+      "max_drawdown": 0.26658243542233495,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Mean(Volume, 30), Add(Volume, 0.000000000001))": {
+    "fqa": "Div(Ts_Mean(Volume, 30), Add(Volume, 0.000000000001))",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -1.5784804790066402,
+      "max_drawdown": 0.41815860401045846,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -1.0217898070214058,
+      "max_drawdown": 0.7739164267307199,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Mean(Close, 60), Close)": {
+    "fqa": "Div(Ts_Mean(Close, 60), Close)",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.9417311737555887,
+      "max_drawdown": 0.16391572872206328,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 1.0597201016774584,
+      "max_drawdown": 0.2625605361752795,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Min(Low, 60), Close)": {
+    "fqa": "Div(Ts_Min(Low, 60), Close)",
+    "test": {
+      "verdict": "reject_level_effect",
+      "sharpe": 1.1353521999963938,
+      "max_drawdown": 0.10737925952412974,
+      "risk_passed": true,
+      "risk": {
+        "passed": true
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 1.6986175270259967,
+      "max_drawdown": 0.2598200393073755,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Quantile(Close, 60, 0.2), Close)": {
+    "fqa": "Div(Ts_Quantile(Close, 60, 0.2), Close)",
+    "test": {
+      "verdict": "reject_level_effect",
+      "sharpe": 0.5639754464205377,
+      "max_drawdown": 0.14162524129444587,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": 0.7008250661698446,
+      "max_drawdown": 0.30757559451532646,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Mean(Volume, 60), Add(Volume, 0.000000000001))": {
+    "fqa": "Div(Ts_Mean(Volume, 60), Add(Volume, 0.000000000001))",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -1.1514527553061307,
+      "max_drawdown": 0.30968752271526834,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.36222442739828103,
+      "max_drawdown": 0.6140811341594969,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  },
+  "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 60), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 60), 0.000000000001))": {
+    "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 60), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 60), 0.000000000001))",
+    "test": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.9867723325379152,
+      "max_drawdown": 0.2802363478159968,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    },
+    "full": {
+      "verdict": "reject_high_risk",
+      "sharpe": -0.3853837275780739,
+      "max_drawdown": 0.4571863639134748,
+      "risk_passed": false,
+      "risk": {
+        "passed": false
+      }
+    }
+  }
+}

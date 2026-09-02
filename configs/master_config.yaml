@@ -25,6 +25,8 @@ data:
     alphafeed_daily_batch: 120
     alphafeed_quote: 300
     alphafeed_adjust: 120
+    alphafeed_minute_batch: 60
+    alphafeed_depth_batch: 60
     baostock: 120
   alphafeed:
     api_key: "${ALPHAFEED_API_KEY}"   # interpolated from .env
@@ -232,6 +234,7 @@ paper:
   ledger_db: "outputs/paper_ledger.sqlite"
   output_json: "outputs/paper_run.json"
   initial_cash: 100000.0
+  warmup_calendar_days: 540          # 影子/paper 预热（≈360 交易日）——必须 > 最长因子窗口 252 日，否则期初簿形落在 LightGBM 缺失值分支
   slippage_bps: 2.0                  # 冲击成本（买贵卖贱，双边）
   commission_bps: 2.5                # 券商佣金（当前固定粗估；§7 会写回真实 ~2.5）
   min_commission: 5                # 最低佣金（真实 A 股为 5 元）
@@ -247,6 +250,7 @@ paper:
 shadow:
   enabled: true
   start_date: "2026-01-01"           # 影子观察期起点（超出回测 test_end 2025-12-31）
+  universe: "hs300"                  # 默认影子 universe；账户级 universe 键可覆盖（hs300_500 = HS300+ZZ500）
   ledger_db: "outputs/shadow_ledger.sqlite"
   refresh_data: true                 # 运行前增量 ingest 行情
   refresh_pead: true                 # 增量 Baostock 利润表（当前年）
@@ -255,6 +259,30 @@ shadow:
   report_md: "outputs/shadow_report.md"
   refresh_benchmark: true             # 运行前抓取 HS300 指数基准（失败保留旧缓存）
   benchmark_cache: "data/benchmark/hs300_index.csv"
+  # 双资金轨（2026-09）：每个账户独立账本/状态/日报，文件按 name 后缀。
+  # 10 万轨必须用成本治理（notional_floor + band_frac），200 万轨治理可选。
+  accounts:
+    - name: "A_200W"
+      cash: 2000000
+      alpha_source: "ml"              # ml | pool
+      ml_artifacts: ["lgbm"]          # 最新 LightGBM 工件（345 特征，2026 段最佳）
+      ml_ensemble: true               # 多工件时用 rank 集成（此处单工件即自身）
+      long_pct: 0.10
+      short_pct: 0.0                  # 2026 长多网格：去空腿 +26.7%/Sharpe 1.80/maxDD 8.0%（空腿 13.7%/1.14/16.3%）
+      rebalance_days: 10              # 调优最优：10 日调仓
+      notional_floor: 0               # 200 万规模微尘成本二阶化，无需治理
+      band_frac: 0.0
+    - name: "B_10W"
+      cash: 100000
+      alpha_source: "ml"
+      ml_artifacts: ["lgbm"]          # 先同模型，治理后簿形重估
+      ml_ensemble: true
+      universe: "hs300_500"           # 模型在 hs300_500 截面训练；HS300 内排序 alpha 不足（+0.8% vs +13.5% 年化）
+      long_pct: 0.05                  # 5%×多头，去空腿（B 网格：+26.3%/Sharpe 1.88/maxDD 10.1%）
+      short_pct: 0.0
+      rebalance_days: 10              # B 网格最优：10 日调仓
+      notional_floor: 2000            # 微尘下限
+      band_frac: 0.001                # 带宽调仓
 
 # =====================================================================
 # 红线监控阈值 (red_lines) — 影子盘逐日输出的四条红线 + PAICC 量化面板展示。

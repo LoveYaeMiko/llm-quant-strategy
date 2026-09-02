@@ -57,6 +57,8 @@ class RateLimiters:
     alphafeed_daily_batch = RateLimiter(120)  # batch klines (paid quota → generous)
     alphafeed_quote = RateLimiter(300)        # quotes / universe cross-check
     alphafeed_adjust = RateLimiter(120)       # ex_factors
+    alphafeed_minute_batch = RateLimiter(60)  # minute/intraday klines batches
+    alphafeed_depth_batch = RateLimiter(60)   # market-depth (盘口) batches
     baostock = RateLimiter(120)               # free source — be gentle
 
     @classmethod

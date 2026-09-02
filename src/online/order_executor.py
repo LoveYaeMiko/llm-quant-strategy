@@ -64,6 +64,8 @@ class OrderExecutor:
         blacklist: Optional[set[str]] = None,
         cash: float = 100_000.0,
         seed: int = 0,
+        notional_floor: float = 0.0,
+        band_frac: float = 0.0,
     ) -> None:
         self.slippage_bps = slippage_bps
         self.commission_bps = commission_bps
@@ -78,6 +80,12 @@ class OrderExecutor:
         self.cash = cash
         self.positions: dict[str, float] = {}
         self.rng = np.random.default_rng(seed)  # deterministic per seed
+        # cost governance: skip fills whose notional is below the floor (a
+        # 5-yuan min commission on a dust fill is structurally ruinous at small
+        # capital), and skip ADJUSTMENTS whose weight drift stays inside the
+        # band (band rebalancing) — exits always execute.
+        self.notional_floor = float(notional_floor)
+        self.band_frac = float(band_frac)
 
     def restore(self, cash: float, positions: dict[str, float]) -> None:
         """Resume from a persisted account state (paper-trading ledger)."""
@@ -136,6 +144,17 @@ class OrderExecutor:
                 delta = target_shares - current
                 if abs(delta) < 1e-9:
                     continue
+                # cost governance — exits always execute (closing is one fill);
+                # entries/adjustments skip when too small to be worth the fees
+                is_exit = abs(target_w) < 1e-12
+                if not is_exit:
+                    trade_notional = abs(delta) * price
+                    if trade_notional < self.notional_floor:
+                        continue
+                    if self.band_frac > 0:
+                        current_w = abs(current) * price / equity
+                        if abs(target_w - current_w) < self.band_frac:
+                            continue
                 side = "buy" if delta > 0 else "sell"
                 fill_price = self._quote(price, side)
                 fee = self._fee(abs(delta) * fill_price, side)

@@ -145,10 +145,10 @@ def _market_from_records(records: pd.DataFrame):
     store.upsert(records)
     rec = store.records.copy()
     rec["date"] = pd.to_datetime(rec["valid_from"])
-    for col in ("open", "high", "low", "close", "volume"):
+    for col in ("open", "high", "low", "close", "volume", "amount"):
         if col not in rec.columns:
             rec[col] = 0.0
-    long = rec.set_index(["date", "symbol"])[["open", "high", "low", "close", "volume"]].sort_index()
+    long = rec.set_index(["date", "symbol"])[["open", "high", "low", "close", "volume", "amount"]].sort_index()
     close_wide = long["close"].unstack()
     # fill_method=None: a forward return is only valid between two *consecutive*
     # trading days of the same name. The default fill_method='pad' forward-fills
@@ -1373,13 +1373,18 @@ def cmd_pool(args) -> int:
 def _build_market_for_paper(cfg, symbols, start, end, seed=1):
     """Market for the paper/shadow/calibrate loops.
 
-    Real PIT store when set (else synthetic), sliced to ``[start - 360d, end]``
-    so the alpha momentum lookbacks (120/240d) are warm before the first window
-    date. ``symbols`` may be ``None`` (research universe) or an explicit list.
+    Real PIT store when set (else synthetic), sliced to ``[start - warmup, end]``
+    so the alpha momentum lookbacks (120/240/252d) are warm before the first
+    window date. ``symbols`` may be ``None`` (research universe) or an explicit
+    list. The warmup is calendar-day based (``paper.warmup_calendar_days``,
+    default 540 ≈ 360 trading days) — it must exceed the longest formula
+    window (252 bars) or the earliest books are ranked on LightGBM
+    missing-value branches instead of real lookbacks.
     """
     market = _market_data(cfg, seed=seed, symbols=symbols)
     if start:
-        warmup_start = (pd.Timestamp(start) - pd.Timedelta(days=360)).date().isoformat()
+        warmup_days = int(cfg.get("paper.warmup_calendar_days", 540))
+        warmup_start = (pd.Timestamp(start) - pd.Timedelta(days=warmup_days)).date().isoformat()
         market = _slice_market(market, warmup_start, end)
     elif end:
         market = _slice_market(market, None, end)
@@ -1539,69 +1544,145 @@ def cmd_paper(args) -> int:
     return 0
 
 
-def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None):
+def _build_account_portfolio(cfg, market, symbols, account, control_scale=None):
+    """Per-account portfolio: ML artifact book or the factor-pool book.
+
+    ``account`` (a ``shadow.accounts`` entry) selects the signal source and the
+    book shape: the 10W track runs half-size deciles + cost governance, the 2M
+    track the validated 10% deciles.
+    """
+    source = str(account.get("alpha_source", "pool"))
+    if source == "ml":
+        from .paper.ml_book import MLBookPortfolio
+
+        import os
+
+        return MLBookPortfolio(
+            market,
+            list(account.get("ml_artifacts", ["lgbm"])),
+            long_pct=float(account.get("long_pct", 0.10)),
+            short_pct=float(account.get("short_pct", 0.10)),
+            max_position_pct=float(account.get("max_position_pct", 0.05)),
+            trend_days=int(account.get("trend_days", 60)),
+            trend_gate=float(account.get("trend_gate", 0.03)),
+            short_scale=float(account.get("short_scale", 0.5)),
+            ensemble=bool(account.get("ml_ensemble", False)),
+            cfg=cfg,
+            n_jobs=max(2, (os.cpu_count() or 4) - 2),
+        ), None
+    portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
+    return portfolio, overlays
+
+
+def _refresh_shadow_data(cfg, symbols) -> dict:
+    """Refresh price/PEAD/sentiment/benchmark once for the shadow loop.
+
+    Returns the meta dict embedded into ``shadow_status.json``. Hoisted out of
+    :func:`_shadow_cycle` so multi-account runs refresh the union universe ONCE
+    per invocation instead of once per account.
+    """
+    from .paper.shadow import refresh_benchmark, refresh_pead, refresh_price, refresh_sentiment
+
+    shadow = cfg.section("shadow")
+    meta: dict = {}
+    if bool(shadow.get("refresh_data", True)):
+        print("shadow: refreshing price data (incremental) ...")
+        meta["price"] = refresh_price(cfg, symbols)
+    if bool(shadow.get("refresh_pead", True)):
+        print("shadow: refreshing PEAD profit (current year) ...")
+        meta["pead_fetched"] = refresh_pead(cfg, symbols)
+    if bool(shadow.get("refresh_sentiment", True)):
+        print("shadow: refreshing research reports (heavy; same-day cache skip) ...")
+        meta["sentiment"] = refresh_sentiment(cfg, symbols)
+    if bool(shadow.get("refresh_benchmark", True)):
+        print("shadow: refreshing HS300 benchmark index ...")
+        meta["benchmark"] = refresh_benchmark(cfg)
+    return meta
+
+
+def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None, account=None, shared_meta=None):
     """Run one shadow cycle: refresh → build market+portfolio → advance the
     resumable ledger → emit ``shadow_status.json`` + ``shadow_report.md``.
 
     Shared by :func:`cmd_shadow` and the autopilot orchestrator. ``control_scale``
     (optional) wraps the book in the kill-switch multiplier; when ``None`` the
-    un-de-risked book is built. Returns ``(status, ledger_path)``.
+    un-de-risked book is built. ``account`` (optional, a ``shadow.accounts``
+    entry) suffixes ledger/status/report per account and applies per-account
+    cash/governance. ``shared_meta`` (optional) carries a refresh meta dict from
+    a caller-level union refresh, which then replaces the per-cycle refresh.
+    Returns ``(status, ledger_path)``.
     """
     shadow = cfg.section("shadow")
+    suffix = f"_{account['name']}" if account else ""
 
     from .paper.shadow import (
         build_shadow_status,
         load_benchmark_index,
         paper_runner_kwargs,
-        refresh_benchmark,
-        refresh_pead,
-        refresh_price,
-        refresh_sentiment,
         render_shadow_report,
     )
 
     meta: dict = {}
-    if skip_refresh:
+    if shared_meta is not None:
+        meta = shared_meta
+    elif skip_refresh:
         meta = {"note": "refresh skipped (--skip-refresh)"}
     else:
-        if bool(shadow.get("refresh_data", True)):
-            print("shadow: refreshing price data (incremental) ...")
-            meta["price"] = refresh_price(cfg, symbols)
-        if bool(shadow.get("refresh_pead", True)):
-            print("shadow: refreshing PEAD profit (current year) ...")
-            meta["pead_fetched"] = refresh_pead(cfg, symbols)
-        if bool(shadow.get("refresh_sentiment", True)):
-            print("shadow: refreshing research reports (full re-fetch, heavy) ...")
-            meta["sentiment"] = refresh_sentiment(cfg, symbols)
-        if bool(shadow.get("refresh_benchmark", True)):
-            print("shadow: refreshing HS300 benchmark index ...")
-            meta["benchmark"] = refresh_benchmark(cfg)
+        meta = _refresh_shadow_data(cfg, symbols)
 
     # market includes 360d warmup before ``start``; run through the latest bar.
     market = _build_market_for_paper(cfg, symbols, start, None, seed=seed)
     latest = pd.Timestamp(market.price_panel.index.max()).date().isoformat()
     end = end or latest
-    portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
+    if account:
+        portfolio, overlays = _build_account_portfolio(cfg, market, symbols, account, control_scale)
+    else:
+        portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
 
     from .paper import PaperLedger, PaperRunner
 
     # ledger/status/report all anchor to ROOT (not the process CWD) so the daily
     # scheduler, a bare `shadow` run and the autopilot read the *same* ledger.
-    ledger_path = str(ROOT / str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite")))
-    ledger = PaperLedger(ledger_path)
-    runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=seed,
-                         **paper_runner_kwargs(cfg))
+    base = str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite"))
+    ledger_path = base if not suffix else base.replace(".sqlite", f"{suffix}.sqlite")
+    ledger = PaperLedger(str(ROOT / ledger_path))
+    runner_kwargs = paper_runner_kwargs(cfg)
+    if account:
+        runner_kwargs.update(
+            {
+                "cash": float(account.get("cash", runner_kwargs["cash"])),
+                "notional_floor": float(account.get("notional_floor", 0.0)),
+                "band_frac": float(account.get("band_frac", 0.0)),
+                "rebalance_days": int(account.get("rebalance_days", runner_kwargs.get("rebalance_days", 1))),
+            }
+        )
+    runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=seed, **runner_kwargs)
     result = runner.run(start=start, end=end)
 
     benchmark = load_benchmark_index(cfg)
-    status = build_shadow_status(cfg, ledger, market, result, overlays, meta, benchmark=benchmark)
+    status = build_shadow_status(
+        cfg, ledger, market, result, overlays or {}, meta, benchmark=benchmark,
+        book_long_pct=(float(account.get("long_pct")) if account and "long_pct" in account else None),
+        book_short_pct=(float(account.get("short_pct")) if account and "short_pct" in account else None),
+    )
+    if account:
+        status["account_name"] = account["name"]
+    # the latest trading day's fills → the report's 当日成交 section
+    fills = ledger.fills()
+    last_day = str(fills["date"].max()) if len(fills) else None
+    trades = (
+        fills[fills["date"] == last_day].to_dict("records") if last_day else []
+    )
     ledger.close()
 
     status_path = ROOT / str(shadow.get("status_json", "outputs/shadow_status.json"))
     report_path = ROOT / str(shadow.get("report_md", "outputs/shadow_report.md"))
+    if suffix:
+        status_path = status_path.with_name(status_path.stem + f"{suffix}.json")
+        report_path = report_path.with_name(report_path.stem + f"{suffix}.md")
     status_path.parent.mkdir(parents=True, exist_ok=True)
     status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
-    report_path.write_text(render_shadow_report(status), encoding="utf-8")
+    report_path.write_text(render_shadow_report(status, trades=trades), encoding="utf-8")
     return status, ledger_path
 
 
@@ -1621,24 +1702,52 @@ def cmd_shadow(args) -> int:
     from .autopilot.state import ControlState
     from .paper.shadow import resolve_shadow_universe
 
-    symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
+    accounts = list(shadow.get("accounts", []) or [])
+    if not accounts:
+        accounts = [None]
 
-    state = ControlState.load(str(ROOT / str(cfg.get("autopilot.state_file", "outputs/autopilot_state.json"))))
-    status, ledger_path = _shadow_cycle(
-        cfg, symbols, start, args.end, args.seed, args.skip_refresh,
-        control_scale=state.gross_scale,
-    )
+    # per-account universes; refresh the UNION once per invocation so a
+    # hs300 + hs300_500 mix does not re-fetch data twice per daily run.
+    per_acct_symbols: list[list[str]] = []
+    for account in accounts:
+        uni_name = account.get("universe") if account else None
+        per_acct_symbols.append(
+            list(args.symbols) if args.symbols else resolve_shadow_universe(cfg, uni_name)
+        )
+    union = sorted({s for lst in per_acct_symbols for s in lst})
+    shared_meta = None
+    if not args.skip_refresh:
+        shared_meta = _refresh_shadow_data(cfg, union)
 
-    eq = status["equity"]
-    print("\n=== SHADOW MODE ===")
-    print(f"  as_of={status['last_trading_date']}  freshness={status['data_freshness_days']}d")
-    print(f"  control={state.mode} (gross x{state.gross_scale:g})")
-    print(f"  equity={eq['latest']:,.2f}  total_ret={eq['total_return']:.2%}  "
-          f"sharpe={eq['sharpe']:.2f}  maxDD={eq['max_drawdown']:.2%}")
-    for rl in status["red_lines"]:
-        print(f"  [{rl.get('level', 'ok'):>8}] {rl.get('label', rl.get('name'))}: "
-              f"{rl['value']}  {rl['detail']}")
-    print(f"  wrote {ROOT / str(shadow.get('status_json', 'outputs/shadow_status.json'))}  (ledger {ledger_path})")
+    for idx, account in enumerate(accounts):
+        name = account["name"] if account else "default"
+        symbols = per_acct_symbols[idx]
+        state = ControlState.load(
+            str(ROOT / str(cfg.get("autopilot.state_file", "outputs/autopilot_state.json")))
+        )
+        if account:
+            acct_state_path = (
+                str(ROOT / str(cfg.get("autopilot.state_file", "outputs/autopilot_state.json")))
+                .replace(".json", f"_{name}.json")
+            )
+            state = ControlState.load(acct_state_path)
+        status, ledger_path = _shadow_cycle(
+            cfg, symbols, start, args.end, args.seed, args.skip_refresh,
+            control_scale=state.gross_scale,
+            account=account,
+            shared_meta=shared_meta,
+        )
+
+        eq = status["equity"]
+        print(f"\n=== SHADOW MODE [{name}] ===")
+        print(f"  as_of={status['last_trading_date']}  freshness={status['data_freshness_days']}d")
+        print(f"  control={state.mode} (gross x{state.gross_scale:g})")
+        print(f"  equity={eq['latest']:,.2f}  total_ret={eq['total_return']:.2%}  "
+              f"sharpe={eq['sharpe']:.2f}  maxDD={eq['max_drawdown']:.2%}")
+        for rl in status["red_lines"]:
+            print(f"  [{rl.get('level', 'ok'):>8}] {rl.get('label', rl.get('name'))}: "
+                  f"{rl['value']}  {rl['detail']}")
+        print(f"  wrote status/report (ledger {ledger_path})")
     return 0
 
 
@@ -2218,6 +2327,12 @@ def cmd_autopilot(args) -> int:
     return 1 if had_failure else 0
 
 
+def _cmd_weekly(args) -> int:
+    from .weekly import cmd_weekly
+
+    return cmd_weekly(args)
+
+
 def _cmd_explore(args) -> int:
     """Lazy entry for the exploration track (avoids importing it at CLI load)."""
     from .exploration.run import cmd_explore
@@ -2497,6 +2612,12 @@ def main(argv: list[str] | None = None) -> int:
     p_x.add_argument("--no-sweep", dest="sweep", action="store_false", default=True,
                      help="disable the deterministic operator sweep; run the LLM path only")
     p_x.set_defaults(func=_cmd_explore)
+
+    p_w = sub.add_parser(
+        "weekly",
+        help="周度自动闭环 — 纳入当周数据重训，尾部 Sharpe 改善才 promote（PAICC 周日调度）",
+    )
+    p_w.set_defaults(func=_cmd_weekly)
 
     args = parser.parse_args(argv)
     try:

@@ -1,0 +1,2142 @@
+{
+  "summary": {
+    "alpha101": {
+      "ok": 84,
+      "deferred": 23
+    },
+    "gtja191": {
+      "ok": 73,
+      "deferred": 118
+    },
+    "alpha158": {
+      "ok": 159
+    }
+  },
+  "alpha101": {
+    "alpha001": {
+      "status": "ok",
+      "fqa": "Sub(Rank(Ts_Argmax(Mul(Sign(Cond(Less(TS_Return(Close, 1), 0), Ts_Std(TS_Return(Close, 1), 20), Close)), Power(Abs(Cond(Less(TS_Return(Close, 1), 0), Ts_Std(TS_Return(Close, 1), 20), Close)), 2)), 5)), 0.5)"
+    },
+    "alpha002": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Corr(Rank(Ts_Delta(Log(Volume), 2)), Rank(Div(Sub(Close, Open), Open)), 6))"
+    },
+    "alpha003": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Corr(Rank(Open), Rank(Volume), 10))"
+    },
+    "alpha004": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Rank(Rank(Low), 9))"
+    },
+    "alpha005": {
+      "status": "ok",
+      "fqa": "Mul(Rank(Sub(Open, Div(Ts_Sum(Div(Amount, Volume), 10), 10))), Mul(Neg(1), Abs(Rank(Sub(Close, Div(Amount, Volume))))))"
+    },
+    "alpha006": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Corr(Open, Volume, 10))"
+    },
+    "alpha007": {
+      "status": "ok",
+      "fqa": "Cond(Less(Ts_Mean(Volume, 20), Volume), Mul(Mul(Neg(1), Ts_Rank(Abs(Ts_Delta(Close, 7)), 60)), Sign(Ts_Delta(Close, 7))), Neg(1))"
+    },
+    "alpha008": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Rank(Sub(Mul(Ts_Sum(Open, 5), Ts_Sum(TS_Return(Close, 1), 5)), Ts_Delay(Mul(Ts_Sum(Open, 5), Ts_Sum(TS_Return(Close, 1), 5)), 10))))"
+    },
+    "alpha009": {
+      "status": "ok",
+      "fqa": "Cond(Greater(Ts_Min(Ts_Delta(Close, 1), 5), 0), Ts_Delta(Close, 1), Cond(Less(Ts_Max(Ts_Delta(Close, 1), 5), 0), Ts_Delta(Close, 1), Mul(Neg(1), Ts_Delta(Close, 1))))"
+    },
+    "alpha010": {
+      "status": "ok",
+      "fqa": "Rank(Cond(Greater(Ts_Min(Ts_Delta(Close, 1), 4), 0), Ts_Delta(Close, 1), Cond(Less(Ts_Max(Ts_Delta(Close, 1), 4), 0), Ts_Delta(Close, 1), Mul(Neg(1), Ts_Delta(Close, 1)))))"
+    },
+    "alpha011": {
+      "status": "ok",
+      "fqa": "Mul(Add(Rank(Ts_Max(Sub(Div(Amount, Volume), Close), 3)), Rank(Ts_Min(Sub(Div(Amount, Volume), Close), 3))), Rank(Ts_Delta(Volume, 3)))"
+    },
+    "alpha012": {
+      "status": "ok",
+      "fqa": "Mul(Sign(Ts_Delta(Volume, 1)), Mul(Neg(1), Ts_Delta(Close, 1)))"
+    },
+    "alpha013": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Rank(Ts_Cov(Rank(Close), Rank(Volume), 5)))"
+    },
+    "alpha014": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Rank(Ts_Delta(TS_Return(Close, 1), 3))), Ts_Corr(Open, Volume, 10))"
+    },
+    "alpha015": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Sum(Rank(Ts_Corr(Rank(High), Rank(Volume), 3)), 3))"
+    },
+    "alpha016": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Rank(Ts_Cov(Rank(High), Rank(Volume), 5)))"
+    },
+    "alpha017": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Mul(Neg(1), Rank(Ts_Rank(Close, 10))), Rank(Ts_Delta(Ts_Delta(Close, 1), 1))), Rank(Ts_Rank(Div(Volume, Ts_Mean(Volume, 20)), 5)))"
+    },
+    "alpha018": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Rank(Add(Add(Ts_Std(Abs(Sub(Close, Open)), 5), Sub(Close, Open)), Ts_Corr(Close, Open, 10))))"
+    },
+    "alpha019": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Sign(Add(Sub(Close, Ts_Delay(Close, 7)), Ts_Delta(Close, 7)))), Add(1, Rank(Add(1, Ts_Sum(TS_Return(Close, 1), 250)))))"
+    },
+    "alpha020": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Mul(Neg(1), Rank(Sub(Open, Ts_Delay(High, 1)))), Rank(Sub(Open, Ts_Delay(Close, 1)))), Rank(Sub(Open, Ts_Delay(Low, 1))))"
+    },
+    "alpha021": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected token ('op', '=')"
+      ]
+    },
+    "alpha022": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Ts_Delta(Ts_Corr(High, Volume, 5), 5)), Rank(Ts_Std(Close, 20)))"
+    },
+    "alpha023": {
+      "status": "ok",
+      "fqa": "Cond(Less(Div(Ts_Sum(High, 20), 20), High), Mul(Neg(1), Ts_Delta(High, 2)), 0)"
+    },
+    "alpha024": {
+      "status": "deferred",
+      "reasons": [
+        "comparison '<=' has no FQA operator"
+      ]
+    },
+    "alpha025": {
+      "status": "ok",
+      "fqa": "Rank(Mul(Mul(Mul(Mul(Neg(1), TS_Return(Close, 1)), Ts_Mean(Volume, 20)), Div(Amount, Volume)), Sub(High, Close)))"
+    },
+    "alpha026": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Max(Ts_Corr(Ts_Rank(Volume, 5), Ts_Rank(High, 5), 5), 3))"
+    },
+    "alpha027": {
+      "status": "ok",
+      "fqa": "Cond(Less(0.5, Rank(Div(Ts_Sum(Ts_Corr(Rank(Volume), Rank(Div(Amount, Volume)), 6), 2), 2))), Neg(1), 1)"
+    },
+    "alpha028": {
+      "status": "ok",
+      "fqa": "Cs_Scale(Sub(Add(Ts_Corr(Ts_Mean(Volume, 20), Low, 5), Div(Add(High, Low), 2)), Close))"
+    },
+    "alpha029": {
+      "status": "ok",
+      "fqa": "Add(Ts_Min(Ts_Prod(Rank(Rank(Cs_Scale(Log(Ts_Sum(Ts_Min(Rank(Rank(Mul(Neg(1), Rank(Ts_Delta(Sub(Close, 1), 5))))), 2), 1))))), 1), 5), Ts_Rank(Ts_Delay(Mul(Neg(1), TS_Return(Close, 1)), 6), 5))"
+    },
+    "alpha030": {
+      "status": "ok",
+      "fqa": "Div(Mul(Sub(1, Rank(Add(Add(Sign(Sub(Close, Ts_Delay(Close, 1))), Sign(Sub(Ts_Delay(Close, 1), Ts_Delay(Close, 2)))), Sign(Sub(Ts_Delay(Close, 2), Ts_Delay(Close, 3)))))), Ts_Sum(Volume, 5)), Ts_Sum(Volume, 20))"
+    },
+    "alpha031": {
+      "status": "ok",
+      "fqa": "Add(Add(Rank(Rank(Rank(Ts_Decay_Linear(Mul(Neg(1), Rank(Rank(Ts_Delta(Close, 10)))), 10)))), Rank(Mul(Neg(1), Ts_Delta(Close, 3)))), Sign(Cs_Scale(Ts_Corr(Ts_Mean(Volume, 20), Low, 12))))"
+    },
+    "alpha032": {
+      "status": "ok",
+      "fqa": "Add(Cs_Scale(Sub(Div(Ts_Sum(Close, 7), 7), Close)), Mul(20, Cs_Scale(Ts_Corr(Div(Amount, Volume), Ts_Delay(Close, 5), 230))))"
+    },
+    "alpha033": {
+      "status": "ok",
+      "fqa": "Rank(Mul(Neg(1), Power(Sub(1, Div(Open, Close)), 1)))"
+    },
+    "alpha034": {
+      "status": "ok",
+      "fqa": "Rank(Add(Sub(1, Rank(Div(Ts_Std(TS_Return(Close, 1), 2), Ts_Std(TS_Return(Close, 1), 5)))), Sub(1, Rank(Ts_Delta(Close, 1)))))"
+    },
+    "alpha035": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Ts_Rank(Volume, 32), Sub(1, Ts_Rank(Sub(Add(Close, High), Low), 16))), Sub(1, Ts_Rank(TS_Return(Close, 1), 32)))"
+    },
+    "alpha036": {
+      "status": "ok",
+      "fqa": "Add(Add(Add(Add(Mul(2.21, Rank(Ts_Corr(Sub(Close, Open), Ts_Delay(Volume, 1), 15))), Mul(0.7, Rank(Sub(Open, Close)))), Mul(0.73, Rank(Ts_Rank(Ts_Delay(Mul(Neg(1), TS_Return(Close, 1)), 6), 5)))), Rank(Abs(Ts_Corr(Div(Amount, Volume), Ts_Mean(Volume, 20), 6)))), Mul(0.6, Rank(Mul(Sub(Div(Ts_Sum(Close, 200), 200), Open), Sub(Close, Open)))))"
+    },
+    "alpha037": {
+      "status": "ok",
+      "fqa": "Add(Rank(Ts_Corr(Ts_Delay(Sub(Open, Close), 1), Close, 200)), Rank(Sub(Open, Close)))"
+    },
+    "alpha038": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Rank(Ts_Rank(Close, 10))), Rank(Div(Close, Open)))"
+    },
+    "alpha039": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Rank(Mul(Ts_Delta(Close, 7), Sub(1, Rank(Ts_Decay_Linear(Div(Volume, Ts_Mean(Volume, 20)), 9)))))), Add(1, Rank(Ts_Sum(TS_Return(Close, 1), 250))))"
+    },
+    "alpha040": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Rank(Ts_Std(High, 10))), Ts_Corr(High, Volume, 10))"
+    },
+    "alpha041": {
+      "status": "ok",
+      "fqa": "Sub(Power(Mul(High, Low), 0.5), Div(Amount, Volume))"
+    },
+    "alpha042": {
+      "status": "ok",
+      "fqa": "Div(Rank(Sub(Div(Amount, Volume), Close)), Rank(Add(Div(Amount, Volume), Close)))"
+    },
+    "alpha043": {
+      "status": "ok",
+      "fqa": "Mul(Ts_Rank(Div(Volume, Ts_Mean(Volume, 20)), 20), Ts_Rank(Mul(Neg(1), Ts_Delta(Close, 7)), 8))"
+    },
+    "alpha044": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Corr(High, Rank(Volume), 5))"
+    },
+    "alpha045": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Mul(Rank(Div(Ts_Sum(Ts_Delay(Close, 5), 20), 20)), Ts_Corr(Close, Volume, 2))), Rank(Ts_Corr(Ts_Sum(Close, 5), Ts_Sum(Close, 20), 2)))"
+    },
+    "alpha046": {
+      "status": "ok",
+      "fqa": "Cond(Greater(Sub(Div(Sub(Ts_Delay(Close, 20), Ts_Delay(Close, 10)), 10), Div(Sub(Ts_Delay(Close, 10), Close), 10)), 0.25), Neg(1), Cond(Less(Sub(Div(Sub(Ts_Delay(Close, 20), Ts_Delay(Close, 10)), 10), Div(Sub(Ts_Delay(Close, 10), Close), 10)), 0), 1, Mul(Neg(1), Sub(Close, Ts_Delay(Close, 1)))))"
+    },
+    "alpha047": {
+      "status": "ok",
+      "fqa": "Sub(Mul(Div(Mul(Rank(Div(1, Close)), Volume), Ts_Mean(Volume, 20)), Div(Mul(High, Rank(Sub(High, Close))), Div(Ts_Sum(High, 5), 5))), Rank(Sub(Div(Amount, Volume), Ts_Delay(Div(Amount, Volume), 5))))"
+    },
+    "alpha048": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 138: '.subindust'"
+      ]
+    },
+    "alpha049": {
+      "status": "ok",
+      "fqa": "Cond(Less(Sub(Div(Sub(Ts_Delay(Close, 20), Ts_Delay(Close, 10)), 10), Div(Sub(Ts_Delay(Close, 10), Close), 10)), Neg(0.1)), 1, Mul(Neg(1), Sub(Close, Ts_Delay(Close, 1))))"
+    },
+    "alpha050": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Max(Rank(Ts_Corr(Rank(Volume), Rank(Div(Amount, Volume)), 5)), 5))"
+    },
+    "alpha051": {
+      "status": "ok",
+      "fqa": "Cond(Less(Sub(Div(Sub(Ts_Delay(Close, 20), Ts_Delay(Close, 10)), 10), Div(Sub(Ts_Delay(Close, 10), Close), 10)), Neg(0.05)), 1, Mul(Neg(1), Sub(Close, Ts_Delay(Close, 1))))"
+    },
+    "alpha052": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Add(Mul(Neg(1), Ts_Min(Low, 5)), Ts_Delay(Ts_Min(Low, 5), 5)), Rank(Div(Sub(Ts_Sum(TS_Return(Close, 1), 240), Ts_Sum(TS_Return(Close, 1), 20)), 220))), Ts_Rank(Volume, 5))"
+    },
+    "alpha053": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Delta(Div(Sub(Sub(Close, Low), Sub(High, Close)), Sub(Close, Low)), 9))"
+    },
+    "alpha054": {
+      "status": "ok",
+      "fqa": "Div(Mul(Neg(1), Mul(Sub(Low, Close), Power(Open, 5))), Mul(Sub(Low, High), Power(Close, 5)))"
+    },
+    "alpha055": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected token ('op', ')')"
+      ]
+    },
+    "alpha056": {
+      "status": "deferred",
+      "reasons": [
+        "benchmark/amount field: cap"
+      ]
+    },
+    "alpha057": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Div(Sub(Close, Div(Amount, Volume)), Ts_Decay_Linear(Rank(Ts_Argmax(Close, 30)), 2)))"
+    },
+    "alpha058": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 75: '.sector), '"
+      ]
+    },
+    "alpha059": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 135: '.industry\\n'"
+      ]
+    },
+    "alpha060": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Sub(Mul(2, Cs_Scale(Rank(Mul(Div(Sub(Sub(Close, Low), Sub(High, Close)), Sub(High, Low)), Volume)))), Cs_Scale(Rank(Ts_Argmax(Close, 10)))))"
+    },
+    "alpha061": {
+      "status": "ok",
+      "fqa": "Less(Rank(Sub(Div(Amount, Volume), Ts_Min(Div(Amount, Volume), 16.1219))), Rank(Ts_Corr(Div(Amount, Volume), Ts_Mean(Volume, 180), 17.9282)))"
+    },
+    "alpha062": {
+      "status": "ok",
+      "fqa": "Mul(Less(Rank(Ts_Corr(Div(Amount, Volume), Ts_Sum(Ts_Mean(Volume, 20), 22.4101), 9.91009)), Rank(Less(Add(Rank(Open), Rank(Open)), Add(Rank(Div(Add(High, Low), 2)), Rank(High))))), Neg(1))"
+    },
+    "alpha063": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 54: '.industry)'"
+      ]
+    },
+    "alpha064": {
+      "status": "deferred",
+      "reasons": [
+        "parse: expected ')', got ('op', ',')"
+      ]
+    },
+    "alpha065": {
+      "status": "ok",
+      "fqa": "Cond(Less(Rank(Ts_Corr(Add(Mul(Open, 0.0078), Mul(Div(Amount, Volume), 0.9922)), Ts_Sum(Ts_Mean(Volume, 60), 9), 6)), Rank(Sub(Open, Ts_Min(Open, 14)))), Neg(1), 1)"
+    },
+    "alpha066": {
+      "status": "ok",
+      "fqa": "Mul(Add(Rank(Ts_Decay_Linear(Ts_Delta(Div(Amount, Volume), 3.51013), 7.23052)), Ts_Rank(Ts_Decay_Linear(Div(Sub(Add(Mul(Low, 0.96633), Mul(Low, Sub(1, 0.96633))), Div(Amount, Volume)), Sub(Open, Div(Add(High, Low), 2))), 11.4157), 6.72611)), Neg(1))"
+    },
+    "alpha067": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 87: '.sector),\\n'"
+      ]
+    },
+    "alpha068": {
+      "status": "ok",
+      "fqa": "Cond(Less(Ts_Rank(Ts_Corr(Rank(High), Rank(Ts_Mean(Volume, 15)), 9), 14), Rank(Ts_Delta(Add(Mul(Close, 0.518), Mul(Low, 0.482)), 1))), Neg(1), 1)"
+    },
+    "alpha069": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 47: '.industry)'"
+      ]
+    },
+    "alpha070": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 83: '.industry)'"
+      ]
+    },
+    "alpha071": {
+      "status": "ok",
+      "fqa": "Max2(Ts_Rank(Ts_Decay_Linear(Ts_Corr(Ts_Rank(Close, 3), Ts_Rank(Ts_Mean(Volume, 180), 12), 18), 4), 16), Ts_Rank(Ts_Decay_Linear(Power(Rank(Sub(Sub(Add(Low, Open), Div(Amount, Volume)), Div(Amount, Volume))), 2), 16), 4))"
+    },
+    "alpha072": {
+      "status": "ok",
+      "fqa": "Div(Rank(Ts_Decay_Linear(Ts_Corr(Div(Add(High, Low), 2), Ts_Mean(Volume, 40), 9), 10)), Rank(Ts_Decay_Linear(Ts_Corr(Ts_Rank(Div(Amount, Volume), 4), Ts_Rank(Volume, 19), 7), 3)))"
+    },
+    "alpha073": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Max2(Rank(Ts_Decay_Linear(Ts_Delta(Div(Amount, Volume), 5), 3)), Ts_Rank(Ts_Decay_Linear(Div(Mul(Neg(1), Ts_Delta(Add(Mul(Open, 0.147155), Mul(Low, 0.852845)), 2)), Add(Mul(Open, 0.147155), Mul(Low, 0.852845))), 3), 17)))"
+    },
+    "alpha074": {
+      "status": "ok",
+      "fqa": "Cond(Less(Rank(Ts_Corr(Close, Ts_Sum(Ts_Mean(Volume, 30), 37), 15)), Rank(Ts_Corr(Rank(Add(Mul(High, 0.0261), Mul(Div(Amount, Volume), 0.9739))), Rank(Volume), 11))), Neg(1), 0)"
+    },
+    "alpha075": {
+      "status": "ok",
+      "fqa": "Less(Rank(Ts_Corr(Div(Amount, Volume), Volume, 4.24304)), Rank(Ts_Corr(Rank(Low), Rank(Ts_Mean(Volume, 50)), 12.4413)))"
+    },
+    "alpha076": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 144: '.sector), '"
+      ]
+    },
+    "alpha077": {
+      "status": "ok",
+      "fqa": "Min2(Rank(Ts_Decay_Linear(Sub(Add(Div(Add(High, Low), 2), High), Add(Div(Amount, Volume), High)), 20)), Rank(Ts_Decay_Linear(Ts_Corr(Div(Add(High, Low), 2), Ts_Mean(Volume, 40), 3), 6)))"
+    },
+    "alpha078": {
+      "status": "ok",
+      "fqa": "Power(Rank(Ts_Corr(Ts_Sum(Add(Mul(Low, 0.352), Mul(Div(Amount, Volume), 0.648)), 20), Ts_Sum(Ts_Mean(Volume, 40), 20), 7)), Rank(Ts_Corr(Rank(Div(Amount, Volume)), Rank(Volume), 6)))"
+    },
+    "alpha079": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 102: '.sector), '"
+      ]
+    },
+    "alpha080": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 115: '.industry)'"
+      ]
+    },
+    "alpha081": {
+      "status": "ok",
+      "fqa": "Cond(Less(Rank(Log(Ts_Prod(Rank(Rank(Power(Ts_Corr(Div(Amount, Volume), Ts_Sum(Ts_Mean(Volume, 10), 50), 8), 4))), 15))), Rank(Ts_Corr(Rank(Div(Amount, Volume)), Rank(Volume), 5))), Neg(1), 0)"
+    },
+    "alpha082": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 139: '.sector),\\n'"
+      ]
+    },
+    "alpha083": {
+      "status": "ok",
+      "fqa": "Div(Mul(Rank(Ts_Delay(Div(Sub(High, Low), Div(Ts_Sum(Close, 5), 5)), 2)), Rank(Rank(Volume))), Div(Div(Sub(High, Low), Div(Ts_Sum(Close, 5), 5)), Sub(Div(Amount, Volume), Close)))"
+    },
+    "alpha084": {
+      "status": "ok",
+      "fqa": "Mul(Sign(Ts_Rank(Sub(Div(Amount, Volume), Ts_Max(Div(Amount, Volume), 15)), 21)), Power(Abs(Ts_Rank(Sub(Div(Amount, Volume), Ts_Max(Div(Amount, Volume), 15)), 21)), 1))"
+    },
+    "alpha085": {
+      "status": "ok",
+      "fqa": "Power(Rank(Ts_Corr(Add(Mul(High, 0.876), Mul(Close, 0.124)), Ts_Mean(Volume, 30), 10)), Rank(Ts_Corr(Ts_Rank(Div(Add(High, Low), 2), 4), Ts_Rank(Volume, 10), 7)))"
+    },
+    "alpha086": {
+      "status": "ok",
+      "fqa": "Mul(Less(Ts_Rank(Ts_Corr(Close, Ts_Sum(Ts_Mean(Volume, 20), 14.7444), 6.00049), 20.4195), Rank(Sub(Sub(Add(Open, Close), Div(Amount, Volume)), Open))), Neg(1))"
+    },
+    "alpha087": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 210: '.industry)'"
+      ]
+    },
+    "alpha088": {
+      "status": "ok",
+      "fqa": "Min2(Rank(Ts_Decay_Linear(Sub(Add(Rank(Open), Rank(Low)), Add(Rank(High), Rank(Close))), 8)), Ts_Rank(Ts_Decay_Linear(Ts_Corr(Ts_Rank(Close, 8), Ts_Rank(Ts_Mean(Volume, 60), 21), 8), 7), 3))"
+    },
+    "alpha089": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 207: '.industry)'"
+      ]
+    },
+    "alpha090": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 93: '.subindust'"
+      ]
+    },
+    "alpha091": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 85: '.industry)'"
+      ]
+    },
+    "alpha092": {
+      "status": "ok",
+      "fqa": "Min2(Ts_Rank(Ts_Decay_Linear(Cond(Less(Add(Div(Add(High, Low), 2), Close), Add(Low, Open)), 1, 0), 15), 19), Ts_Rank(Ts_Decay_Linear(Ts_Corr(Rank(Low), Rank(Ts_Mean(Volume, 30)), 8), 7), 7))"
+    },
+    "alpha093": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 61: '.industry)'"
+      ]
+    },
+    "alpha094": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Power(Rank(Sub(Div(Amount, Volume), Ts_Min(Div(Amount, Volume), 12))), Ts_Rank(Ts_Corr(Ts_Rank(Div(Amount, Volume), 20), Ts_Rank(Ts_Mean(Volume, 60), 4), 18), 3)))"
+    },
+    "alpha095": {
+      "status": "ok",
+      "fqa": "Cond(Less(Rank(Sub(Open, Ts_Min(Open, 12))), Ts_Rank(Power(Rank(Ts_Corr(Ts_Sum(Div(Add(High, Low), 2), 19), Ts_Sum(Ts_Mean(Volume, 40), 19), 13)), 5), 12)), 1, 0)"
+    },
+    "alpha096": {
+      "status": "ok",
+      "fqa": "Mul(Max2(Ts_Rank(Ts_Decay_Linear(Ts_Corr(Rank(Div(Amount, Volume)), Rank(Volume), 3.83878), 4.16783), 8.38151), Ts_Rank(Ts_Decay_Linear(Ts_Argmax(Ts_Corr(Ts_Rank(Close, 7.45404), Ts_Rank(Ts_Mean(Volume, 60), 4.13242), 3.65459), 12.6556), 14.0365), 13.4143)), Neg(1))"
+    },
+    "alpha097": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 96: '.industry\\n'"
+      ]
+    },
+    "alpha098": {
+      "status": "ok",
+      "fqa": "Sub(Rank(Ts_Decay_Linear(Ts_Corr(Div(Amount, Volume), Ts_Sum(Ts_Mean(Volume, 5), 26.4719), 4.58418), 7.18088)), Rank(Ts_Decay_Linear(Ts_Rank(Ts_Argmin(Ts_Corr(Rank(Open), Rank(Ts_Mean(Volume, 15)), 20.8187), 8.62571), 6.95668), 8.07206)))"
+    },
+    "alpha099": {
+      "status": "ok",
+      "fqa": "Cond(Less(Rank(Ts_Corr(Ts_Sum(Div(Add(High, Low), 2), 19), Ts_Sum(Ts_Mean(Volume, 60), 19), 8)), Rank(Ts_Corr(Low, Volume, 6))), Neg(1), 0)"
+    },
+    "alpha100": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 156: '.subindust'"
+      ]
+    },
+    "alpha101": {
+      "status": "ok",
+      "fqa": "Div(Sub(Close, Open), Add(Sub(High, Low), 0.001))"
+    },
+    "alpha_custom_argmax_recent": {
+      "status": "ok",
+      "fqa": "Sub(1, Rank(Ts_Argmax(Close, 20)))"
+    },
+    "alpha_custom_argmin_recent": {
+      "status": "ok",
+      "fqa": "Rank(Ts_Argmin(Close, 20))"
+    },
+    "alpha_custom_decaylinear_mom": {
+      "status": "ok",
+      "fqa": "Rank(Ts_Decay_Linear(TS_Return(Close, 1), 10))"
+    },
+    "alpha_custom_kurt_filter": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Rank(Ts_Kurt(TS_Return(Close, 1), 20)))"
+    },
+    "alpha_custom_skew_reversal": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Rank(Ts_Skew(TS_Return(Close, 1), 20)))"
+    },
+    "alpha_custom_zscore_5d": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Zscore(Close, 5))"
+    }
+  },
+  "gtja191": {
+    "gtja_001": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Corr(Rank(Ts_Delta(Log(Volume), 1)), Rank(Div(Sub(Close, Open), Open)), 6))"
+    },
+    "gtja_002": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Delta(Div(Sub(Sub(Close, Low), Sub(High, Close)), Sub(High, Low)), 1))"
+    },
+    "gtja_003": {
+      "status": "deferred",
+      "reasons": [
+        "comparison '=' has no FQA operator"
+      ]
+    },
+    "gtja_004": {
+      "status": "ok",
+      "fqa": "Cond(Less(Add(Ts_Mean(Close, 8), Ts_Std(Close, 8)), Ts_Mean(Close, 2)), Neg(1), Cond(Less(Ts_Mean(Close, 2), Sub(Ts_Mean(Close, 8), Ts_Std(Close, 8))), 1, Cond(Geq(Div(Volume, Ts_Mean(Volume, 20)), 1), 1, Neg(1))))"
+    },
+    "gtja_005": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Max(Ts_Corr(Ts_Rank(Volume, 5), Ts_Rank(High, 5), 5), 3))"
+    },
+    "gtja_006": {
+      "status": "ok",
+      "fqa": "Mul(Rank(Sign(Ts_Delta(Add(Mul(Open, 0.85), Mul(High, 0.15)), 4))), Neg(1))"
+    },
+    "gtja_007": {
+      "status": "ok",
+      "fqa": "Mul(Add(Rank(Ts_Max(Sub(Div(Amount, Volume), Close), 3)), Rank(Ts_Min(Sub(Div(Amount, Volume), Close), 3))), Rank(Ts_Delta(Volume, 3)))"
+    },
+    "gtja_008": {
+      "status": "ok",
+      "fqa": "Rank(Mul(Ts_Delta(Add(Mul(Div(Add(High, Low), 2), 0.2), Mul(Div(Amount, Volume), 0.8)), 4), Neg(1)))"
+    },
+    "gtja_009": {
+      "status": "ok",
+      "fqa": "Ts_Sma(Div(Mul(Sub(Div(Add(High, Low), 2), Div(Add(Ts_Delay(High, 1), Ts_Delay(Low, 1)), 2)), Sub(High, Low)), Volume), 7, 2)"
+    },
+    "gtja_010": {
+      "status": "deferred",
+      "reasons": [
+        "arity mismatch: MAX(1 args)"
+      ]
+    },
+    "gtja_011": {
+      "status": "ok",
+      "fqa": "Ts_Sum(Mul(Div(Sub(Sub(Mul(2, Close), Low), High), Sub(High, Low)), Volume), 6)"
+    },
+    "gtja_012": {
+      "status": "ok",
+      "fqa": "Mul(Rank(Sub(Open, Div(Ts_Sum(Div(Amount, Volume), 10), 10))), Mul(Neg(1), Rank(Abs(Sub(Close, Div(Amount, Volume))))))"
+    },
+    "gtja_013": {
+      "status": "ok",
+      "fqa": "Sub(Power(Mul(High, Low), 0.5), Div(Amount, Volume))"
+    },
+    "gtja_014": {
+      "status": "ok",
+      "fqa": "Sub(Close, Ts_Delay(Close, 5))"
+    },
+    "gtja_015": {
+      "status": "ok",
+      "fqa": "Sub(Div(Open, Ts_Delay(Close, 1)), 1)"
+    },
+    "gtja_016": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Max(Rank(Ts_Corr(Rank(Volume), Rank(Div(Amount, Volume)), 5)), 5))"
+    },
+    "gtja_017": {
+      "status": "ok",
+      "fqa": "Power(Rank(Sub(Div(Amount, Volume), Ts_Max(Div(Amount, Volume), 15))), Ts_Delta(Close, 5))"
+    },
+    "gtja_018": {
+      "status": "ok",
+      "fqa": "Div(Close, Ts_Delay(Close, 5))"
+    },
+    "gtja_019": {
+      "status": "deferred",
+      "reasons": [
+        "parse: expected '(', got ('id', 'VWAP')"
+      ]
+    },
+    "gtja_020": {
+      "status": "ok",
+      "fqa": "Mul(Div(Sub(Div(Amount, Volume), Ts_Delay(Div(Amount, Volume), 6)), Ts_Delay(Div(Amount, Volume), 6)), 100)"
+    },
+    "gtja_021": {
+      "status": "ok",
+      "fqa": "Ts_Slope(Ts_Mean(Close, 6), 6)"
+    },
+    "gtja_022": {
+      "status": "ok",
+      "fqa": "Ts_Sma(Sub(Div(Sub(Close, Ts_Mean(Close, 6)), Ts_Mean(Close, 6)), Ts_Delay(Div(Sub(Close, Ts_Mean(Close, 6)), Ts_Mean(Close, 6)), 3)), 12, 1)"
+    },
+    "gtja_023": {
+      "status": "ok",
+      "fqa": "Mul(Div(Ts_Sma(Cond(Greater(Close, Ts_Delay(Close, 1)), Ts_Std(Close, 20), 0), 20, 1), Add(Ts_Sma(Cond(Greater(Close, Ts_Delay(Close, 1)), Ts_Std(Close, 20), 0), 20, 1), Ts_Sma(Cond(Sub(1, Greater(Close, Ts_Delay(Close, 1))), Ts_Std(Close, 20), 0), 20, 1))), 100)"
+    },
+    "gtja_024": {
+      "status": "ok",
+      "fqa": "Ts_Sma(Sub(Close, Ts_Delay(Close, 5)), 5, 1)"
+    },
+    "gtja_025": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Rank(Mul(Ts_Delta(Close, 7), Sub(1, Rank(Ts_Decay_Linear(Div(Volume, Ts_Mean(Volume, 20)), 9)))))), Add(1, Rank(Ts_Sum(TS_Return(Close, 1), 250))))"
+    },
+    "gtja_026": {
+      "status": "ok",
+      "fqa": "Add(Sub(Ts_Mean(Close, 7), Close), Ts_Corr(Div(Amount, Volume), Ts_Delay(Close, 5), 230))"
+    },
+    "gtja_027": {
+      "status": "ok",
+      "fqa": "Ts_Wma(Add(Mul(Sub(Div(Close, Ts_Delay(Close, 3)), 1), 100), Mul(Sub(Div(Close, Ts_Delay(Close, 6)), 1), 100)), 12)"
+    },
+    "gtja_028": {
+      "status": "ok",
+      "fqa": "Sub(Mul(3, Ts_Sma(Mul(Div(Sub(Close, Ts_Min(Low, 9)), Sub(Ts_Max(High, 9), Ts_Min(Low, 9))), 100), 3, 1)), Mul(2, Ts_Sma(Ts_Sma(Mul(Div(Sub(Close, Ts_Min(Low, 9)), Sub(Ts_Max(High, 9), Ts_Min(Low, 9))), 100), 3, 1), 3, 1)))"
+    },
+    "gtja_029": {
+      "status": "ok",
+      "fqa": "Mul(Div(Sub(Close, Ts_Delay(Close, 6)), Ts_Delay(Close, 6)), Volume)"
+    },
+    "gtja_030": {
+      "status": "deferred",
+      "reasons": [
+        "unknown operator: REGRESI"
+      ]
+    },
+    "gtja_031": {
+      "status": "ok",
+      "fqa": "Mul(Div(Sub(Close, Ts_Mean(Close, 12)), Ts_Mean(Close, 12)), 100)"
+    },
+    "gtja_032": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Ts_Sum(Rank(Ts_Corr(Rank(High), Rank(Volume), 3)), 3))"
+    },
+    "gtja_033": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Add(Mul(Neg(1), Ts_Min(Low, 5)), Ts_Delay(Ts_Min(Low, 5), 5)), Rank(Div(Sub(Ts_Sum(TS_Return(Close, 1), 240), Ts_Sum(TS_Return(Close, 1), 20)), 220))), Ts_Rank(Volume, 5))"
+    },
+    "gtja_034": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Close, 12), Close)"
+    },
+    "gtja_035": {
+      "status": "ok",
+      "fqa": "Mul(Min2(Rank(Ts_Decay_Linear(Ts_Delta(Open, 1), 15)), Rank(Ts_Decay_Linear(Ts_Corr(Volume, Add(Mul(Open, 0.65), Mul(Close, 0.35)), 17), 7))), Neg(1))"
+    },
+    "gtja_036": {
+      "status": "ok",
+      "fqa": "Rank(Ts_Sum(Ts_Corr(Rank(Volume), Rank(Div(Amount, Volume)), 6), 2))"
+    },
+    "gtja_037": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Rank(Sub(Mul(Ts_Sum(Open, 5), Ts_Sum(TS_Return(Close, 1), 5)), Ts_Delay(Mul(Ts_Sum(Open, 5), Ts_Sum(TS_Return(Close, 1), 5)), 10))))"
+    },
+    "gtja_038": {
+      "status": "ok",
+      "fqa": "Cond(Less(Ts_Mean(High, 20), High), Mul(Neg(1), Ts_Delta(High, 2)), 0)"
+    },
+    "gtja_039": {
+      "status": "ok",
+      "fqa": "Mul(Sub(Rank(Ts_Decay_Linear(Ts_Delta(Close, 2), 8)), Rank(Ts_Decay_Linear(Ts_Corr(Add(Mul(Div(Amount, Volume), 0.3), Mul(Open, 0.7)), Ts_Sum(Ts_Mean(Volume, 180), 37), 14), 12))), Neg(1))"
+    },
+    "gtja_040": {
+      "status": "deferred",
+      "reasons": [
+        "comparison '<=' has no FQA operator"
+      ]
+    },
+    "gtja_041": {
+      "status": "ok",
+      "fqa": "Mul(Rank(Ts_Max(Ts_Delta(Div(Amount, Volume), 3), 5)), Neg(1))"
+    },
+    "gtja_042": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Rank(Ts_Std(High, 10))), Ts_Corr(High, Volume, 10))"
+    },
+    "gtja_043": {
+      "status": "ok",
+      "fqa": "Ts_Sum(Cond(Greater(Close, Ts_Delay(Close, 1)), Volume, Cond(Less(Close, Ts_Delay(Close, 1)), Neg(Volume), 0)), 6)"
+    },
+    "gtja_044": {
+      "status": "ok",
+      "fqa": "Add(Ts_Rank(Ts_Decay_Linear(Ts_Corr(Low, Ts_Mean(Volume, 10), 7), 6), 4), Ts_Rank(Ts_Decay_Linear(Ts_Delta(Div(Amount, Volume), 3), 10), 15))"
+    },
+    "gtja_045": {
+      "status": "ok",
+      "fqa": "Mul(Rank(Ts_Delta(Add(Mul(Close, 0.6), Mul(Open, 0.4)), 1)), Rank(Ts_Corr(Div(Amount, Volume), Ts_Mean(Volume, 150), 15)))"
+    },
+    "gtja_046": {
+      "status": "ok",
+      "fqa": "Div(Add(Add(Add(Ts_Mean(Close, 3), Ts_Mean(Close, 6)), Ts_Mean(Close, 12)), Ts_Mean(Close, 24)), Mul(4, Close))"
+    },
+    "gtja_047": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 78: ' @res:   -'"
+      ]
+    },
+    "gtja_048": {
+      "status": "ok",
+      "fqa": "Div(Mul(Mul(Neg(1), Rank(Add(Add(Sign(Sub(Close, Ts_Delay(Close, 1))), Sign(Sub(Ts_Delay(Close, 1), Ts_Delay(Close, 2)))), Sign(Sub(Ts_Delay(Close, 2), Ts_Delay(Close, 3)))))), Ts_Sum(Volume, 5)), Ts_Sum(Volume, 20))"
+    },
+    "gtja_049": {
+      "status": "deferred",
+      "reasons": [
+        "parse: trailing tokens: [('op', '>'), ('op', '='), ('op', '('), ('id', 'DELAY'), ('op', '('), ('id', 'H'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '+'), ('id', 'DELAY'), ('op', '('), ('id', 'L'), ('op', ','), ('num', '1'), ('op', ')'), ('op', ')'), ('id', 'part'), ('op', '='), ('id', 'MAX'), ('op', '('), ('op', '|'), ('id', 'H'), ('op', '-'), ('id', 'DELAY'), ('op', '('), ('id', 'H'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '|'), ('op', ','), ('op', '|'), ('id', 'L'), ('op', '-'), ('id', 'DELAY'), ('op', '('), ('id', 'L'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '|'), ('op', ')'), ('id', 'SUM'), ('op', '('), ('op', '('), ('op', '!'), ('id', 'cond'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ')'), ('op', ','), ('num', '12'), ('op', ')'), ('op', '/'), ('op', '('), ('id', 'SUM'), ('op', '('), ('op', '('), ('op', '!'), ('id', 'cond'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ')'), ('op', ','), ('num', '12'), ('op', ')'), ('op', '+'), ('id', 'SUM'), ('op', '('), ('op', '('), ('id', 'cond'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ')'), ('op', ','), ('num', '12'), ('op', ')'), ('op', ')')]"
+      ]
+    },
+    "gtja_050": {
+      "status": "deferred",
+      "reasons": [
+        "parse: trailing tokens: [('op', '<'), ('op', '='), ('op', '('), ('id', 'DELAY'), ('op', '('), ('id', 'H'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '+'), ('id', 'DELAY'), ('op', '('), ('id', 'L'), ('op', ','), ('num', '1'), ('op', ')'), ('op', ')'), ('id', 'cond2'), ('op', '='), ('op', '('), ('id', 'H'), ('op', '+'), ('id', 'L'), ('op', ')'), ('op', '>'), ('op', '='), ('op', '('), ('id', 'DELAY'), ('op', '('), ('id', 'H'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '+'), ('id', 'DELAY'), ('op', '('), ('id', 'L'), ('op', ','), ('num', '1'), ('op', ')'), ('op', ')'), ('id', 'part'), ('op', '='), ('id', 'MAX'), ('op', '('), ('op', '|'), ('id', 'H'), ('op', '-'), ('id', 'DELAY'), ('op', '('), ('id', 'H'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '|'), ('op', ','), ('op', '|'), ('id', 'L'), ('op', '-'), ('id', 'DELAY'), ('op', '('), ('id', 'L'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '|'), ('op', ')'), ('id', 'SUM'), ('op', '('), ('op', '!'), ('id', 'cond1'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ','), ('num', '12'), ('op', ')'), ('op', '/'), ('op', '('), ('id', 'SUM'), ('op', '('), ('op', '!'), ('id', 'cond1'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ','), ('num', '12'), ('op', ')'), ('op', '+'), ('id', 'SUM'), ('op', '('), ('op', '!'), ('id', 'cond2'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ','), ('num', '12'), ('op', ')'), ('op', ')'), ('op', '-'), ('id', 'SUM'), ('op', '('), ('op', '!'), ('id', 'cond2'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ','), ('num', '12'), ('op', ')'), ('op', '/'), ('op', '('), ('id', 'SUM'), ('op', '('), ('op', '!'), ('id', 'cond2'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ','), ('num', '12'), ('op', ')'), ('op', '+'), ('id', 'SUM'), ('op', '('), ('op', '!'), ('id', 'cond1'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ','), ('num', '12'), ('op', ')'), ('op', ')')]"
+      ]
+    },
+    "gtja_051": {
+      "status": "deferred",
+      "reasons": [
+        "parse: trailing tokens: [('op', '<'), ('op', '='), ('op', '('), ('id', 'DELAY'), ('op', '('), ('id', 'H'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '+'), ('id', 'DELAY'), ('op', '('), ('id', 'L'), ('op', ','), ('num', '1'), ('op', ')'), ('op', ')'), ('id', 'cond2'), ('op', '='), ('op', '('), ('id', 'H'), ('op', '+'), ('id', 'L'), ('op', ')'), ('op', '>'), ('op', '='), ('op', '('), ('id', 'DELAY'), ('op', '('), ('id', 'H'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '+'), ('id', 'DELAY'), ('op', '('), ('id', 'L'), ('op', ','), ('num', '1'), ('op', ')'), ('op', ')'), ('id', 'part'), ('op', '='), ('id', 'MAX'), ('op', '('), ('op', '|'), ('id', 'H'), ('op', '-'), ('id', 'DELAY'), ('op', '('), ('id', 'H'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '|'), ('op', ','), ('op', '|'), ('id', 'L'), ('op', '-'), ('id', 'DELAY'), ('op', '('), ('id', 'L'), ('op', ','), ('num', '1'), ('op', ')'), ('op', '|'), ('op', ')'), ('id', 'SUM'), ('op', '('), ('op', '!'), ('id', 'cond1'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ','), ('num', '12'), ('op', ')'), ('op', '/'), ('op', '('), ('id', 'SUM'), ('op', '('), ('op', '!'), ('id', 'cond1'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ','), ('num', '12'), ('op', ')'), ('op', '+'), ('id', 'SUM'), ('op', '('), ('op', '!'), ('id', 'cond2'), ('op', '?'), ('id', 'part'), ('op', ':'), ('num', '0'), ('op', ','), ('num', '12'), ('op', ')'), ('op', ')')]"
+      ]
+    },
+    "gtja_052": {
+      "status": "ok",
+      "fqa": "Mul(Div(Ts_Sum(Max2(Sub(High, Ts_Delay(Div(Add(Add(High, Low), Close), 3), 1)), 0), 26), Ts_Sum(Max2(Sub(Ts_Delay(Div(Add(Add(High, Low), Close), 3), 1), Low), 0), 26)), 100)"
+    },
+    "gtja_053": {
+      "status": "ok",
+      "fqa": "Mul(Div(Ts_Count(Greater(Close, Ts_Delay(Close, 1)), 12), 12), 100)"
+    },
+    "gtja_054": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected token ('op', '|')"
+      ]
+    },
+    "gtja_055": {
+      "status": "deferred",
+      "reasons": [
+        "parse: expected ')', got ('id', 'TR')"
+      ]
+    },
+    "gtja_056": {
+      "status": "ok",
+      "fqa": "Less(Rank(Sub(Open, Ts_Min(Open, 12))), Rank(Power(Rank(Ts_Corr(Ts_Sum(Div(Add(High, Low), 2), 19), Ts_Sum(Ts_Mean(Volume, 40), 19), 13)), 5)))"
+    },
+    "gtja_057": {
+      "status": "ok",
+      "fqa": "Ts_Sma(Mul(Div(Sub(Close, Ts_Min(Low, 9)), Sub(Ts_Max(High, 9), Ts_Min(Low, 9))), 100), 3, 1)"
+    },
+    "gtja_058": {
+      "status": "ok",
+      "fqa": "Mul(Div(Ts_Count(Greater(Close, Ts_Delay(Close, 1)), 20), 20), 100)"
+    },
+    "gtja_059": {
+      "status": "deferred",
+      "reasons": [
+        "comparison '=' has no FQA operator"
+      ]
+    },
+    "gtja_060": {
+      "status": "ok",
+      "fqa": "Ts_Sum(Mul(Div(Sub(Sub(Close, Low), Sub(High, Close)), Sub(High, Low)), Volume), 20)"
+    },
+    "gtja_061": {
+      "status": "ok",
+      "fqa": "Mul(Max2(Rank(Ts_Decay_Linear(Ts_Delta(Div(Amount, Volume), 1), 12)), Rank(Ts_Decay_Linear(Rank(Ts_Corr(Low, Ts_Mean(Volume, 80), 8)), 17))), Neg(1))"
+    },
+    "gtja_062": {
+      "status": "deferred",
+      "reasons": [
+        "benchmark/amount field: TURN"
+      ]
+    },
+    "gtja_063": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 94: ' @res:   0'"
+      ]
+    },
+    "gtja_064": {
+      "status": "ok",
+      "fqa": "Mul(Max2(Rank(Ts_Decay_Linear(Ts_Corr(Rank(Div(Amount, Volume)), Rank(Volume), 4), 4)), Rank(Ts_Decay_Linear(Ts_Max(Ts_Corr(Rank(Close), Rank(Ts_Mean(Volume, 60)), 4), 13), 14))), Neg(1))"
+    },
+    "gtja_065": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 19: ' @res:'"
+      ]
+    },
+    "gtja_066": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 39: ' @res:'"
+      ]
+    },
+    "gtja_067": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected token ('op', '|')"
+      ]
+    },
+    "gtja_068": {
+      "status": "ok",
+      "fqa": "Ts_Sma(Div(Mul(Sub(Div(Add(High, Low), 2), Div(Add(Ts_Delay(High, 1), Ts_Delay(Low, 1)), 2)), Sub(High, Low)), Volume), 15, 2)"
+    },
+    "gtja_069": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 134: '; S_DBM = '"
+      ]
+    },
+    "gtja_070": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 13: ' @res:'"
+      ]
+    },
+    "gtja_071": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 41: ' @res:'"
+      ]
+    },
+    "gtja_072": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 64: ' @res:'"
+      ]
+    },
+    "gtja_073": {
+      "status": "ok",
+      "fqa": "Sub(Mul(Neg(1), Ts_Rank(Ts_Decay_Linear(Ts_Decay_Linear(Ts_Corr(Close, Volume, 10), 16), 4), 5)), Rank(Ts_Decay_Linear(Ts_Corr(Div(Amount, Volume), Ts_Mean(Volume, 30), 4), 3)))"
+    },
+    "gtja_074": {
+      "status": "ok",
+      "fqa": "Add(Rank(Ts_Corr(Ts_Sum(Add(Mul(Low, 0.35), Mul(Div(Amount, Volume), 0.65)), 20), Ts_Sum(Ts_Mean(Volume, 40), 20), 7)), Rank(Ts_Corr(Rank(Div(Amount, Volume)), Rank(Volume), 6)))"
+    },
+    "gtja_075": {
+      "status": "deferred",
+      "reasons": [
+        "parse: expected ')', got ('op', '&')"
+      ]
+    },
+    "gtja_076": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 108: ' @res:'"
+      ]
+    },
+    "gtja_077": {
+      "status": "ok",
+      "fqa": "Min2(Rank(Ts_Decay_Linear(Sub(Add(Div(Add(High, Low), 2), High), Add(Div(Amount, Volume), High)), 20)), Rank(Ts_Decay_Linear(Ts_Corr(Div(Add(High, Low), 2), Ts_Mean(Volume, 40), 3), 6)))"
+    },
+    "gtja_078": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected token ('op', '|')"
+      ]
+    },
+    "gtja_079": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected token ('op', '|')"
+      ]
+    },
+    "gtja_080": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 44: ' @res:'"
+      ]
+    },
+    "gtja_081": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 16: ' @res:'"
+      ]
+    },
+    "gtja_082": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 64: ' @res:'"
+      ]
+    },
+    "gtja_083": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Rank(Ts_Cov(Rank(High), Rank(Volume), 5)))"
+    },
+    "gtja_084": {
+      "status": "ok",
+      "fqa": "Ts_Sum(Cond(Greater(Close, Ts_Delay(Close, 1)), Volume, Cond(Less(Close, Ts_Delay(Close, 1)), Neg(Volume), 0)), 20)"
+    },
+    "gtja_085": {
+      "status": "ok",
+      "fqa": "Mul(Ts_Rank(Div(Volume, Ts_Mean(Volume, 20)), 20), Ts_Rank(Mul(Neg(1), Ts_Delta(Close, 7)), 8))"
+    },
+    "gtja_086": {
+      "status": "deferred",
+      "reasons": [
+        "parse: trailing tokens: [('id', 'part2'), ('op', '='), ('op', '('), ('id', 'DELAY'), ('op', '('), ('id', 'C'), ('op', ','), ('num', '10'), ('op', ')'), ('op', '-'), ('id', 'C'), ('op', ')'), ('op', '/'), ('num', '10'), ('id', 'if'), ('op', '('), ('num', '0.25'), ('op', '<'), ('op', '('), ('id', 'part1'), ('op', '-'), ('id', 'part2'), ('op', ')'), ('op', ')'), ('op', '-'), ('num', '1'), ('id', 'elif'), ('op', '('), ('op', '('), ('id', 'part1'), ('op', '-'), ('id', 'part2'), ('op', ')'), ('op', '<'), ('num', '0'), ('op', ')'), ('num', '1'), ('id', 'else'), ('op', '-'), ('num', '1'), ('op', '*'), ('op', '('), ('id', 'C'), ('op', '-'), ('id', 'DELAY'), ('op', '('), ('id', 'C'), ('op', ','), ('num', '1'), ('op', ')'), ('op', ')')]"
+      ]
+    },
+    "gtja_087": {
+      "status": "ok",
+      "fqa": "Mul(Add(Rank(Ts_Decay_Linear(Ts_Delta(Div(Amount, Volume), 4), 7)), Ts_Rank(Ts_Decay_Linear(Div(Sub(Add(Mul(Low, 0.9), Mul(Low, 0.1)), Div(Amount, Volume)), Sub(Open, Div(Add(High, Low), 2))), 11), 7)), Neg(1))"
+    },
+    "gtja_088": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 43: ' @res:'"
+      ]
+    },
+    "gtja_089": {
+      "status": "ok",
+      "fqa": "Mul(2, Sub(Sub(Ts_Sma(Close, 13, 2), Ts_Sma(Close, 27, 2)), Ts_Sma(Sub(Ts_Sma(Close, 13, 2), Ts_Sma(Close, 27, 2)), 10, 2)))"
+    },
+    "gtja_090": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 44: ' @res:'"
+      ]
+    },
+    "gtja_091": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Neg(1), Rank(Sub(Close, Ts_Max(Close, 5)))), Rank(Ts_Corr(Ts_Mean(Volume, 40), Low, 5)))"
+    },
+    "gtja_092": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected token ('op', '|')"
+      ]
+    },
+    "gtja_093": {
+      "status": "ok",
+      "fqa": "Ts_Sum(Cond(Geq(Open, Ts_Delay(Open, 1)), 0, Max2(Sub(Open, Low), Sub(Open, Ts_Delay(Open, 1)))), 20)"
+    },
+    "gtja_094": {
+      "status": "ok",
+      "fqa": "Ts_Sum(Cond(Greater(Close, Ts_Delay(Close, 1)), Volume, Cond(Less(Close, Ts_Delay(Close, 1)), Neg(Volume), 0)), 30)"
+    },
+    "gtja_095": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 14: ' @res:'"
+      ]
+    },
+    "gtja_096": {
+      "status": "ok",
+      "fqa": "Ts_Sma(Ts_Sma(Mul(Div(Sub(Close, Ts_Min(Low, 9)), Sub(Ts_Max(High, 9), Ts_Min(Low, 9))), 100), 3, 1), 3, 1)"
+    },
+    "gtja_097": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 14: ' @res:'"
+      ]
+    },
+    "gtja_098": {
+      "status": "deferred",
+      "reasons": [
+        "parse: trailing tokens: [('id', 'cond'), ('op', '<'), ('op', '='), ('num', '0.05'), ('op', '?'), ('op', '-'), ('num', '1'), ('op', '*'), ('op', '('), ('id', 'C'), ('op', '-'), ('id', 'TSMIN'), ('op', '('), ('id', 'C'), ('op', ','), ('num', '100'), ('op', ')'), ('op', ')'), ('op', ':'), ('op', '-'), ('num', '1'), ('op', '*'), ('id', 'DELTA'), ('op', '('), ('id', 'C'), ('op', ','), ('num', '3'), ('op', ')')]"
+      ]
+    },
+    "gtja_099": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 53: ' @res:'"
+      ]
+    },
+    "gtja_100": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 14: ' @res:'"
+      ]
+    },
+    "gtja_101": {
+      "status": "ok",
+      "fqa": "Mul(Less(Rank(Ts_Corr(Close, Ts_Sum(Ts_Mean(Volume, 30), 37), 15)), Rank(Ts_Corr(Rank(Add(Mul(High, 0.1), Mul(Div(Amount, Volume), 0.9))), Rank(Volume), 11))), Neg(1))"
+    },
+    "gtja_102": {
+      "status": "ok",
+      "fqa": "Mul(Div(Ts_Sma(Ts_Max(Sub(Volume, Ts_Delay(Volume, 1)), 0), 6, 1), Ts_Sma(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 6, 1)), 100)"
+    },
+    "gtja_103": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 28: ' @res:'"
+      ]
+    },
+    "gtja_104": {
+      "status": "ok",
+      "fqa": "Mul(Neg(1), Mul(Ts_Delta(Ts_Corr(High, Volume, 5), 5), Rank(Ts_Std(Close, 20))))"
+    },
+    "gtja_105": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 41: ' @res:'"
+      ]
+    },
+    "gtja_106": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 21: ' @res:'"
+      ]
+    },
+    "gtja_107": {
+      "status": "ok",
+      "fqa": "Mul(Mul(Mul(Neg(1), Rank(Sub(Open, Ts_Delay(High, 1)))), Rank(Sub(Open, Ts_Delay(Close, 1)))), Rank(Sub(Open, Ts_Delay(Low, 1))))"
+    },
+    "gtja_108": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 78: ' @res:'"
+      ]
+    },
+    "gtja_109": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 47: ' @res:'"
+      ]
+    },
+    "gtja_110": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 72: ' @res:'"
+      ]
+    },
+    "gtja_111": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 102: ' @res:'"
+      ]
+    },
+    "gtja_112": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 303: ' @res:'"
+      ]
+    },
+    "gtja_113": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 120: ' @res:'"
+      ]
+    },
+    "gtja_114": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 133: ' @res:'"
+      ]
+    },
+    "gtja_115": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 131: ' @res:'"
+      ]
+    },
+    "gtja_116": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 26: ' @res:'"
+      ]
+    },
+    "gtja_117": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 87: ' @res:'"
+      ]
+    },
+    "gtja_118": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 38: ' @res:'"
+      ]
+    },
+    "gtja_119": {
+      "status": "ok",
+      "fqa": "Sub(Rank(Ts_Decay_Linear(Ts_Corr(Div(Amount, Volume), Ts_Sum(Ts_Mean(Volume, 5), 26), 5), 7)), Rank(Ts_Decay_Linear(Ts_Rank(Ts_Min(Ts_Corr(Rank(Open), Rank(Ts_Mean(Volume, 15)), 21), 9), 7), 8)))"
+    },
+    "gtja_120": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 45: ' @res:'"
+      ]
+    },
+    "gtja_121": {
+      "status": "ok",
+      "fqa": "Mul(Power(Rank(Sub(Div(Amount, Volume), Ts_Min(Div(Amount, Volume), 12))), Ts_Rank(Ts_Corr(Ts_Rank(Div(Amount, Volume), 20), Ts_Rank(Ts_Mean(Volume, 60), 2), 18), 3)), Neg(1))"
+    },
+    "gtja_122": {
+      "status": "deferred",
+      "reasons": [
+        "parse: expected ')', got ('op', '(')"
+      ]
+    },
+    "gtja_123": {
+      "status": "ok",
+      "fqa": "Mul(Less(Rank(Ts_Corr(Ts_Sum(Div(Add(High, Low), 2), 20), Ts_Sum(Ts_Mean(Volume, 60), 20), 9)), Rank(Ts_Corr(Low, Volume, 6))), Neg(1))"
+    },
+    "gtja_124": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 54: ' @res:'"
+      ]
+    },
+    "gtja_125": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 123: ' @res:'"
+      ]
+    },
+    "gtja_126": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 18: ' @res:'"
+      ]
+    },
+    "gtja_127": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 59: ' @res:'"
+      ]
+    },
+    "gtja_128": {
+      "status": "deferred",
+      "reasons": [
+        "arity mismatch: SUMIF(3 args)",
+        "arity mismatch: SUMIF(3 args)"
+      ]
+    },
+    "gtja_129": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 60: ' @res:'"
+      ]
+    },
+    "gtja_130": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 126: ' @res:'"
+      ]
+    },
+    "gtja_131": {
+      "status": "ok",
+      "fqa": "Power(Rank(Ts_Delta(Div(Amount, Volume), 1)), Ts_Rank(Ts_Corr(Close, Ts_Mean(Volume, 50), 18), 18))"
+    },
+    "gtja_132": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 15: ' @res:'"
+      ]
+    },
+    "gtja_133": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 59: ' @res:'"
+      ]
+    },
+    "gtja_134": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 46: ' @res:'"
+      ]
+    },
+    "gtja_135": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 40: ' @res:'"
+      ]
+    },
+    "gtja_136": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 53: ' @res:'"
+      ]
+    },
+    "gtja_137": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 26: '; conditio'"
+      ]
+    },
+    "gtja_138": {
+      "status": "deferred",
+      "reasons": [
+        "parse: expected ')', got ('id', 'L')"
+      ]
+    },
+    "gtja_139": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 29: ' @res:'"
+      ]
+    },
+    "gtja_140": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 168: ' @res:'"
+      ]
+    },
+    "gtja_141": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 54: ' @res:'"
+      ]
+    },
+    "gtja_142": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 113: ' @res:'"
+      ]
+    },
+    "gtja_143": {
+      "status": "deferred",
+      "reasons": [
+        "benchmark/amount field: SELF",
+        "benchmark/amount field: SELF"
+      ]
+    },
+    "gtja_144": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 114: ' @res:'"
+      ]
+    },
+    "gtja_145": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 52: ' @res:'"
+      ]
+    },
+    "gtja_146": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 146: ' @res:'"
+      ]
+    },
+    "gtja_147": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 36: ' @res:'"
+      ]
+    },
+    "gtja_148": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 87: ' @res:'"
+      ]
+    },
+    "gtja_149": {
+      "status": "deferred",
+      "reasons": [
+        "benchmark/amount field: BMK",
+        "benchmark/amount field: BMK",
+        "benchmark/amount field: BMK",
+        "benchmark/amount field: BMK",
+        "benchmark/amount field: BMK",
+        "benchmark/amount field: BMK"
+      ]
+    },
+    "gtja_150": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 25: ' @res:'"
+      ]
+    },
+    "gtja_151": {
+      "status": "ok",
+      "fqa": "Ts_Sma(Sub(Close, Ts_Delay(Close, 20)), 20, 1)"
+    },
+    "gtja_152": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 122: ' @res:'"
+      ]
+    },
+    "gtja_153": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 61: ' @res:'"
+      ]
+    },
+    "gtja_154": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 61: ' @res:'"
+      ]
+    },
+    "gtja_155": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 77: ' @res:'"
+      ]
+    },
+    "gtja_156": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 155: ' @res:'"
+      ]
+    },
+    "gtja_157": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 123: ' @res:'"
+      ]
+    },
+    "gtja_158": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 64: ' @res:'"
+      ]
+    },
+    "gtja_159": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 21: '; part2 = '"
+      ]
+    },
+    "gtja_160": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 59: ' @res:'"
+      ]
+    },
+    "gtja_161": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 78: ' @res:'"
+      ]
+    },
+    "gtja_162": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 31: '; part2 = '"
+      ]
+    },
+    "gtja_163": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 64: ' @res:'"
+      ]
+    },
+    "gtja_164": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 212: '; conditon'"
+      ]
+    },
+    "gtja_165": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 136: ' @res:'"
+      ]
+    },
+    "gtja_166": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 310: ' @res:'"
+      ]
+    },
+    "gtja_167": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 55: ' @res:'"
+      ]
+    },
+    "gtja_168": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 27: ' @res:'"
+      ]
+    },
+    "gtja_169": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 124: ' @res:'"
+      ]
+    },
+    "gtja_170": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 140: ' @res:'"
+      ]
+    },
+    "gtja_171": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 66: ' @res:'"
+      ]
+    },
+    "gtja_172": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 256: ' @res:'"
+      ]
+    },
+    "gtja_173": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 106: '; @res:'"
+      ]
+    },
+    "gtja_174": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 48: ' @res:'"
+      ]
+    },
+    "gtja_175": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 77: ' @res:'"
+      ]
+    },
+    "gtja_176": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 91: ' @res:'"
+      ]
+    },
+    "gtja_177": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 30: ' @res:'"
+      ]
+    },
+    "gtja_178": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 44: ' @res:'"
+      ]
+    },
+    "gtja_179": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 79: ' @res:'"
+      ]
+    },
+    "gtja_180": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected token ('op', '|')"
+      ]
+    },
+    "gtja_181": {
+      "status": "deferred",
+      "reasons": [
+        "unknown field: Cprev",
+        "benchmark/amount field: BMK",
+        "benchmark/amount field: BMK",
+        "arity mismatch: SUM(1 args)"
+      ]
+    },
+    "gtja_182": {
+      "status": "deferred",
+      "reasons": [
+        "parse: expected ')', got ('op', '&')"
+      ]
+    },
+    "gtja_183": {
+      "status": "deferred",
+      "reasons": [
+        "arity mismatch: MAX(1 args)",
+        "arity mismatch: MIN(1 args)"
+      ]
+    },
+    "gtja_184": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 73: ' @res:'"
+      ]
+    },
+    "gtja_185": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 37: ' @res:'"
+      ]
+    },
+    "gtja_186": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 64: '; part2 = '"
+      ]
+    },
+    "gtja_187": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 83: ' @res:'"
+      ]
+    },
+    "gtja_188": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 54: ' @res:'"
+      ]
+    },
+    "gtja_189": {
+      "status": "deferred",
+      "reasons": [
+        "parse: unexpected character at 32: ' @res:'"
+      ]
+    },
+    "gtja_190": {
+      "status": "deferred",
+      "reasons": [
+        "parse: trailing tokens: [('op', ','), ('id', 'p2'), ('op', '='), ('op', '('), ('id', 'C'), ('op', '/'), ('id', 'C'), ('op', '-'), ('num', '19'), ('op', ')'), ('op', '^'), ('op', '('), ('num', '1'), ('op', '/'), ('num', '20'), ('op', ')'), ('op', '-'), ('num', '1')]"
+      ]
+    },
+    "gtja_191": {
+      "status": "ok",
+      "fqa": "Sub(Add(Ts_Corr(Ts_Mean(Volume, 20), Low, 5), Div(Add(High, Low), 2)), Close)"
+    }
+  },
+  "alpha158": {
+    "KMID": {
+      "status": "ok",
+      "fqa": "Div(Sub(Close, Open), Open)"
+    },
+    "KLEN": {
+      "status": "ok",
+      "fqa": "Div(Sub(High, Low), Open)"
+    },
+    "KMID2": {
+      "status": "ok",
+      "fqa": "Div(Sub(Close, Open), Add(Sub(High, Low), 0.000000000001))"
+    },
+    "KUP": {
+      "status": "ok",
+      "fqa": "Div(Sub(High, Max2(Open, Close)), Open)"
+    },
+    "KUP2": {
+      "status": "ok",
+      "fqa": "Div(Sub(High, Max2(Open, Close)), Add(Sub(High, Low), 0.000000000001))"
+    },
+    "KLOW": {
+      "status": "ok",
+      "fqa": "Div(Sub(Min2(Open, Close), Low), Open)"
+    },
+    "KLOW2": {
+      "status": "ok",
+      "fqa": "Div(Sub(Min2(Open, Close), Low), Add(Sub(High, Low), 0.000000000001))"
+    },
+    "KSFT": {
+      "status": "ok",
+      "fqa": "Div(Sub(Sub(Mul(2, Close), High), Low), Open)"
+    },
+    "KSFT2": {
+      "status": "ok",
+      "fqa": "Div(Sub(Sub(Mul(2, Close), High), Low), Add(Sub(High, Low), 0.000000000001))"
+    },
+    "OPEN0": {
+      "status": "ok",
+      "fqa": "Div(Open, Close)"
+    },
+    "HIGH0": {
+      "status": "ok",
+      "fqa": "Div(High, Close)"
+    },
+    "LOW0": {
+      "status": "ok",
+      "fqa": "Div(Low, Close)"
+    },
+    "VWAP0": {
+      "status": "ok",
+      "fqa": "Div(Div(Amount, Volume), Close)"
+    },
+    "VOLUME0": {
+      "status": "ok",
+      "fqa": "Div(Volume, Add(Volume, 0.000000000001))"
+    },
+    "ROC5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Delay(Close, 5), Close)"
+    },
+    "MA5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Close, 5), Close)"
+    },
+    "STD5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Close, 5), Close)"
+    },
+    "BETA5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Slope(Close, 5), Close)"
+    },
+    "RSQR5": {
+      "status": "ok",
+      "fqa": "Ts_Rsq(Close, 5)"
+    },
+    "RESI5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Resi(Close, 5), Close)"
+    },
+    "MAX5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Max(High, 5), Close)"
+    },
+    "MIN5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Min(Low, 5), Close)"
+    },
+    "QTLU5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 5, 0.8), Close)"
+    },
+    "QTLD5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 5, 0.2), Close)"
+    },
+    "RANK5": {
+      "status": "ok",
+      "fqa": "Ts_Rank(Close, 5)"
+    },
+    "RSV5": {
+      "status": "ok",
+      "fqa": "Div(Sub(Close, Ts_Min(Low, 5)), Add(Sub(Ts_Max(High, 5), Ts_Min(Low, 5)), 0.000000000001))"
+    },
+    "IMAX5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmax(High, 5), 5)"
+    },
+    "IMIN5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmin(Low, 5), 5)"
+    },
+    "IMXD5": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Argmax(High, 5), Ts_Argmin(Low, 5)), 5)"
+    },
+    "CORR5": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Close, Log(Add(Volume, 1)), 5)"
+    },
+    "CORD5": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 5)"
+    },
+    "CNTP5": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 5)"
+    },
+    "CNTN5": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 5)"
+    },
+    "CNTD5": {
+      "status": "ok",
+      "fqa": "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 5), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 5))"
+    },
+    "SUMP5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 5), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 5), 0.000000000001))"
+    },
+    "SUMN5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 5), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 5), 0.000000000001))"
+    },
+    "SUMD5": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 5), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 5)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 5), 0.000000000001))"
+    },
+    "VMA5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Volume, 5), Add(Volume, 0.000000000001))"
+    },
+    "VSTD5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Volume, 5), Add(Volume, 0.000000000001))"
+    },
+    "WVMA5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 5), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 5), 0.000000000001))"
+    },
+    "VSUMP5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 5), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 5), 0.000000000001))"
+    },
+    "VSUMN5": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 5), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 5), 0.000000000001))"
+    },
+    "VSUMD5": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 5), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 5)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 5), 0.000000000001))"
+    },
+    "ROC10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Delay(Close, 10), Close)"
+    },
+    "MA10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Close, 10), Close)"
+    },
+    "STD10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Close, 10), Close)"
+    },
+    "BETA10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Slope(Close, 10), Close)"
+    },
+    "RSQR10": {
+      "status": "ok",
+      "fqa": "Ts_Rsq(Close, 10)"
+    },
+    "RESI10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Resi(Close, 10), Close)"
+    },
+    "MAX10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Max(High, 10), Close)"
+    },
+    "MIN10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Min(Low, 10), Close)"
+    },
+    "QTLU10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 10, 0.8), Close)"
+    },
+    "QTLD10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 10, 0.2), Close)"
+    },
+    "RANK10": {
+      "status": "ok",
+      "fqa": "Ts_Rank(Close, 10)"
+    },
+    "RSV10": {
+      "status": "ok",
+      "fqa": "Div(Sub(Close, Ts_Min(Low, 10)), Add(Sub(Ts_Max(High, 10), Ts_Min(Low, 10)), 0.000000000001))"
+    },
+    "IMAX10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmax(High, 10), 10)"
+    },
+    "IMIN10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmin(Low, 10), 10)"
+    },
+    "IMXD10": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Argmax(High, 10), Ts_Argmin(Low, 10)), 10)"
+    },
+    "CORR10": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Close, Log(Add(Volume, 1)), 10)"
+    },
+    "CORD10": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 10)"
+    },
+    "CNTP10": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 10)"
+    },
+    "CNTN10": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 10)"
+    },
+    "CNTD10": {
+      "status": "ok",
+      "fqa": "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 10), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 10))"
+    },
+    "SUMP10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 10), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 10), 0.000000000001))"
+    },
+    "SUMN10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 10), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 10), 0.000000000001))"
+    },
+    "SUMD10": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 10), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 10)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 10), 0.000000000001))"
+    },
+    "VMA10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Volume, 10), Add(Volume, 0.000000000001))"
+    },
+    "VSTD10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Volume, 10), Add(Volume, 0.000000000001))"
+    },
+    "WVMA10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 10), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 10), 0.000000000001))"
+    },
+    "VSUMP10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 10), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 10), 0.000000000001))"
+    },
+    "VSUMN10": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 10), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 10), 0.000000000001))"
+    },
+    "VSUMD10": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 10), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 10)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 10), 0.000000000001))"
+    },
+    "ROC20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Delay(Close, 20), Close)"
+    },
+    "MA20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Close, 20), Close)"
+    },
+    "STD20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Close, 20), Close)"
+    },
+    "BETA20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Slope(Close, 20), Close)"
+    },
+    "RSQR20": {
+      "status": "ok",
+      "fqa": "Ts_Rsq(Close, 20)"
+    },
+    "RESI20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Resi(Close, 20), Close)"
+    },
+    "MAX20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Max(High, 20), Close)"
+    },
+    "MIN20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Min(Low, 20), Close)"
+    },
+    "QTLU20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 20, 0.8), Close)"
+    },
+    "QTLD20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 20, 0.2), Close)"
+    },
+    "RANK20": {
+      "status": "ok",
+      "fqa": "Ts_Rank(Close, 20)"
+    },
+    "RSV20": {
+      "status": "ok",
+      "fqa": "Div(Sub(Close, Ts_Min(Low, 20)), Add(Sub(Ts_Max(High, 20), Ts_Min(Low, 20)), 0.000000000001))"
+    },
+    "IMAX20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmax(High, 20), 20)"
+    },
+    "IMIN20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmin(Low, 20), 20)"
+    },
+    "IMXD20": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Argmax(High, 20), Ts_Argmin(Low, 20)), 20)"
+    },
+    "CORR20": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Close, Log(Add(Volume, 1)), 20)"
+    },
+    "CORD20": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 20)"
+    },
+    "CNTP20": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 20)"
+    },
+    "CNTN20": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 20)"
+    },
+    "CNTD20": {
+      "status": "ok",
+      "fqa": "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 20), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 20))"
+    },
+    "SUMP20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 20), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 20), 0.000000000001))"
+    },
+    "SUMN20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 20), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 20), 0.000000000001))"
+    },
+    "SUMD20": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 20), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 20)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 20), 0.000000000001))"
+    },
+    "VMA20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Volume, 20), Add(Volume, 0.000000000001))"
+    },
+    "VSTD20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Volume, 20), Add(Volume, 0.000000000001))"
+    },
+    "WVMA20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 20), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 20), 0.000000000001))"
+    },
+    "VSUMP20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 20), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 20), 0.000000000001))"
+    },
+    "VSUMN20": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 20), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 20), 0.000000000001))"
+    },
+    "VSUMD20": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 20), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 20)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 20), 0.000000000001))"
+    },
+    "ROC30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Delay(Close, 30), Close)"
+    },
+    "MA30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Close, 30), Close)"
+    },
+    "STD30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Close, 30), Close)"
+    },
+    "BETA30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Slope(Close, 30), Close)"
+    },
+    "RSQR30": {
+      "status": "ok",
+      "fqa": "Ts_Rsq(Close, 30)"
+    },
+    "RESI30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Resi(Close, 30), Close)"
+    },
+    "MAX30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Max(High, 30), Close)"
+    },
+    "MIN30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Min(Low, 30), Close)"
+    },
+    "QTLU30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 30, 0.8), Close)"
+    },
+    "QTLD30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 30, 0.2), Close)"
+    },
+    "RANK30": {
+      "status": "ok",
+      "fqa": "Ts_Rank(Close, 30)"
+    },
+    "RSV30": {
+      "status": "ok",
+      "fqa": "Div(Sub(Close, Ts_Min(Low, 30)), Add(Sub(Ts_Max(High, 30), Ts_Min(Low, 30)), 0.000000000001))"
+    },
+    "IMAX30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmax(High, 30), 30)"
+    },
+    "IMIN30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmin(Low, 30), 30)"
+    },
+    "IMXD30": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Argmax(High, 30), Ts_Argmin(Low, 30)), 30)"
+    },
+    "CORR30": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Close, Log(Add(Volume, 1)), 30)"
+    },
+    "CORD30": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 30)"
+    },
+    "CNTP30": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 30)"
+    },
+    "CNTN30": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 30)"
+    },
+    "CNTD30": {
+      "status": "ok",
+      "fqa": "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 30), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 30))"
+    },
+    "SUMP30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 30), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 30), 0.000000000001))"
+    },
+    "SUMN30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 30), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 30), 0.000000000001))"
+    },
+    "SUMD30": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 30), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 30)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 30), 0.000000000001))"
+    },
+    "VMA30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Volume, 30), Add(Volume, 0.000000000001))"
+    },
+    "VSTD30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Volume, 30), Add(Volume, 0.000000000001))"
+    },
+    "WVMA30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 30), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 30), 0.000000000001))"
+    },
+    "VSUMP30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 30), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 30), 0.000000000001))"
+    },
+    "VSUMN30": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 30), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 30), 0.000000000001))"
+    },
+    "VSUMD30": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 30), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 30)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 30), 0.000000000001))"
+    },
+    "ROC60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Delay(Close, 60), Close)"
+    },
+    "MA60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Close, 60), Close)"
+    },
+    "STD60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Close, 60), Close)"
+    },
+    "BETA60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Slope(Close, 60), Close)"
+    },
+    "RSQR60": {
+      "status": "ok",
+      "fqa": "Ts_Rsq(Close, 60)"
+    },
+    "RESI60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Resi(Close, 60), Close)"
+    },
+    "MAX60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Max(High, 60), Close)"
+    },
+    "MIN60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Min(Low, 60), Close)"
+    },
+    "QTLU60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 60, 0.8), Close)"
+    },
+    "QTLD60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Quantile(Close, 60, 0.2), Close)"
+    },
+    "RANK60": {
+      "status": "ok",
+      "fqa": "Ts_Rank(Close, 60)"
+    },
+    "RSV60": {
+      "status": "ok",
+      "fqa": "Div(Sub(Close, Ts_Min(Low, 60)), Add(Sub(Ts_Max(High, 60), Ts_Min(Low, 60)), 0.000000000001))"
+    },
+    "IMAX60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmax(High, 60), 60)"
+    },
+    "IMIN60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Argmin(Low, 60), 60)"
+    },
+    "IMXD60": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Argmax(High, 60), Ts_Argmin(Low, 60)), 60)"
+    },
+    "CORR60": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Close, Log(Add(Volume, 1)), 60)"
+    },
+    "CORD60": {
+      "status": "ok",
+      "fqa": "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 60)"
+    },
+    "CNTP60": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 60)"
+    },
+    "CNTN60": {
+      "status": "ok",
+      "fqa": "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 60)"
+    },
+    "CNTD60": {
+      "status": "ok",
+      "fqa": "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 60), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 60))"
+    },
+    "SUMP60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 60), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 60), 0.000000000001))"
+    },
+    "SUMN60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 60), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 60), 0.000000000001))"
+    },
+    "SUMD60": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 60), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 60)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 60), 0.000000000001))"
+    },
+    "VMA60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Mean(Volume, 60), Add(Volume, 0.000000000001))"
+    },
+    "VSTD60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Volume, 60), Add(Volume, 0.000000000001))"
+    },
+    "WVMA60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 60), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 60), 0.000000000001))"
+    },
+    "VSUMP60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 60), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 60), 0.000000000001))"
+    },
+    "VSUMN60": {
+      "status": "ok",
+      "fqa": "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 60), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 60), 0.000000000001))"
+    },
+    "VSUMD60": {
+      "status": "ok",
+      "fqa": "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 60), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 60)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 60), 0.000000000001))"
+    }
+  }
+}

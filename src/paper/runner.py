@@ -59,6 +59,8 @@ class PaperRunner:
         rebalance_days: int = 1,
         pit_strict: bool = True,
         seed: int = 0,
+        notional_floor: float = 0.0,
+        band_frac: float = 0.0,
     ) -> None:
         self.portfolio = portfolio
         self.market = market
@@ -75,6 +77,8 @@ class PaperRunner:
         self.rebalance_days = int(max(1, rebalance_days))
         self.pit_strict = bool(pit_strict)
         self.seed = int(seed)
+        self.notional_floor = float(notional_floor)
+        self.band_frac = float(band_frac)
 
     # ------------------------------------------------------------------ helpers
     def _executor_kwargs(self) -> dict:
@@ -88,6 +92,8 @@ class PaperRunner:
             max_position_pct=self.max_position_pct,
             blacklist=self.blacklist,
             seed=self.seed,
+            notional_floor=self.notional_floor,
+            band_frac=self.band_frac,
         )
 
     @staticmethod
@@ -163,7 +169,11 @@ class PaperRunner:
                         self._check_fills(d, close, fills)
 
             end_equity = ex.settle(close)
-            gross = sum(abs(sh) * float(close.get(s, 0.0)) for s, sh in ex.positions.items())
+            gross = 0.0
+            for s, sh in ex.positions.items():
+                px = close.get(s, np.nan)
+                if np.isfinite(px):
+                    gross += abs(sh) * float(px)
             self.ledger.record_day(d, ex.cash, end_equity, dict(ex.positions), fills, gross)
 
         eq = self.ledger.equity_curve()

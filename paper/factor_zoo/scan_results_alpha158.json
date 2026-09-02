@@ -1,0 +1,3323 @@
+{
+  "results": {
+    "Div(Sub(Close, Open), Open)": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.016022307045870748,
+          "icir": -2.5404919939026205
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01542014361287221,
+          "icir": -3.199427858314627
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.025350860759771804,
+          "icir": -2.699508188870488
+        }
+      },
+      "reliable": false,
+      "sec": 3.1
+    },
+    "Div(Sub(High, Low), Open)": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.04535741006452865,
+          "icir": -4.183132046352331
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02327162903118682,
+          "icir": -1.979907990480849
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.045764213696143065,
+          "icir": -3.6489322869753615
+        }
+      },
+      "reliable": false,
+      "sec": 2.7
+    },
+    "Div(Sub(Close, Open), Add(Sub(High, Low), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.038605415227218845,
+          "icir": -5.398538999679685
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.023698435577972986,
+          "icir": -3.3408379444325007
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.034735058220672486,
+          "icir": -3.2214843663096233
+        }
+      },
+      "reliable": false,
+      "sec": 2.6
+    },
+    "Div(Sub(High, Max2(Open, Close)), Open)": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.026176454176988755,
+          "icir": -2.752870836950993
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.023338354564455082,
+          "icir": -2.624033033082458
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.030251274010895342,
+          "icir": -3.386057803739632
+        }
+      },
+      "reliable": false,
+      "sec": 2.7
+    },
+    "Div(Sub(High, Max2(Open, Close)), Add(Sub(High, Low), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.008788707802141346,
+          "icir": -1.0324248646362837
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.011525281803089968,
+          "icir": -1.3920890874228227
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.005770482001635491,
+          "icir": -0.6627200730693311
+        }
+      },
+      "reliable": false,
+      "sec": 2.9
+    },
+    "Div(Sub(Min2(Open, Close), Low), Open)": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.017351587756492533,
+          "icir": -2.773596677370075
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.016676875204793308,
+          "icir": -3.510679757209896
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.028599188216354966,
+          "icir": -2.7032160447614593
+        }
+      },
+      "reliable": false,
+      "sec": 2.6
+    },
+    "Div(Sub(Min2(Open, Close), Low), Add(Sub(High, Low), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.03835630441052301,
+          "icir": -5.385833856687681
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02305814862967848,
+          "icir": -3.241001603394916
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.03413832453705726,
+          "icir": -3.0815950525954827
+        }
+      },
+      "reliable": false,
+      "sec": 2.8
+    },
+    "Div(Sub(Sub(Mul(2, Close), High), Low), Open)": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.01547681242121034,
+          "icir": -2.4607006354077443
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.014430807491222422,
+          "icir": -3.059909325535462
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.022960970616683805,
+          "icir": -2.327161072152609
+        }
+      },
+      "reliable": false,
+      "sec": 2.6
+    },
+    "Div(Sub(Sub(Mul(2, Close), High), Low), Add(Sub(High, Low), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": -0.038341093244577025,
+          "icir": -5.383220068237206
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.022914913866414605,
+          "icir": -3.227112560587046
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0337606127158147,
+          "icir": -3.0353858321257565
+        }
+      },
+      "reliable": false,
+      "sec": 2.7
+    },
+    "Div(Open, Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": 0.016022327645525046,
+          "icir": 2.5404948537154395
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.015420084381632648,
+          "icir": 3.1994174801304625
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.025350847432668758,
+          "icir": 2.6995070700381385
+        }
+      },
+      "reliable": true,
+      "sec": 2.8
+    },
+    "Div(High, Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": 0.014311083823844245,
+          "icir": 2.26991684448318
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.012314554403878873,
+          "icir": 2.5732267177113286
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.014646755572326984,
+          "icir": 1.6570749646111336
+        }
+      },
+      "reliable": false,
+      "sec": 2.7
+    },
+    "Div(Low, Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2431,
+          "rank_ic": 0.016691132119471385,
+          "icir": 2.65676284246911
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.016441923740916197,
+          "icir": 3.4715619318454483
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.028334296626372546,
+          "icir": 2.664909623422438
+        }
+      },
+      "reliable": true,
+      "sec": 2.5
+    },
+    "Div(Volume, Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2429,
+          "rank_ic": -0.02917836237135283,
+          "icir": -4.9115121055656745
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.007698122039300613,
+          "icir": -1.622092710248201
+        },
+        "test": {
+          "n_days": 966,
+          "rank_ic": 0.003644700537666896,
+          "icir": 0.7721476519000782
+        }
+      },
+      "reliable": false,
+      "sec": 2.5
+    },
+    "Div(Ts_Delay(Close, 5), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": 0.05023189424224363,
+          "icir": 4.4847578032548485
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02321491435589816,
+          "icir": 2.207097093171105
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.023300515495660448,
+          "icir": 1.9047152105697456
+        }
+      },
+      "reliable": true,
+      "sec": 2.9
+    },
+    "Div(Ts_Mean(Close, 5), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.03490709238176488,
+          "icir": 3.1281984895834247
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.022966433326046337,
+          "icir": 2.1679726656995038
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.023542906634499955,
+          "icir": 1.995522998854456
+        }
+      },
+      "reliable": true,
+      "sec": 3.1
+    },
+    "Div(Ts_Std(Close, 5), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.013450902868654005,
+          "icir": -1.27131591246852
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.007820722105906354,
+          "icir": -0.717093489603921
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.028382884307045966,
+          "icir": -2.383287890776541
+        }
+      },
+      "reliable": false,
+      "sec": 3.1
+    },
+    "Div(Ts_Slope(Close, 5), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.036978813733866474,
+          "icir": -3.432063002632258
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01908953047809371,
+          "icir": -1.7993828710477235
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01965643787788975,
+          "icir": -1.6322503932075596
+        }
+      },
+      "reliable": false,
+      "sec": 48.9
+    },
+    "Ts_Rsq(Close, 5)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.011596533541553093,
+          "icir": -1.5672507011460384
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.0004273309833772892,
+          "icir": -0.06739946814104988
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.001607941937462481,
+          "icir": 0.22279166680077236
+        }
+      },
+      "reliable": false,
+      "sec": 124.8
+    },
+    "Div(Ts_Resi(Close, 5), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.0051548360413725515,
+          "icir": 0.511424986749036
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.009766134071593303,
+          "icir": -1.0528250996787998
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.013965603204721455,
+          "icir": -1.2887406427953596
+        }
+      },
+      "reliable": false,
+      "sec": 71.8
+    },
+    "Div(Ts_Max(High, 5), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.014828964319638788,
+          "icir": 2.3217928582688057
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.012843391295710214,
+          "icir": 2.56643579962146
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.014170806928185554,
+          "icir": 1.8206799995743503
+        }
+      },
+      "reliable": false,
+      "sec": 3.5
+    },
+    "Div(Ts_Min(Low, 5), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.017394789717505143,
+          "icir": 2.774074517462542
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01711455179779096,
+          "icir": 3.40910706491344
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.031547261276970974,
+          "icir": 3.0610191811070555
+        }
+      },
+      "reliable": true,
+      "sec": 4.3
+    },
+    "Div(Ts_Quantile(Close, 5, 0.8), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.032656552751697605,
+          "icir": 2.9331944699439867
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.021664542858893212,
+          "icir": 1.9971978343071086
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.014914351923882298,
+          "icir": 1.2408525232086658
+        }
+      },
+      "reliable": false,
+      "sec": 4.9
+    },
+    "Div(Ts_Quantile(Close, 5, 0.2), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.02967026442039739,
+          "icir": 2.798257259966623
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.024138065562637437,
+          "icir": 2.43687715393744
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.03119387742681941,
+          "icir": 2.8552415610505917
+        }
+      },
+      "reliable": true,
+      "sec": 5.2
+    },
+    "Ts_Rank(Close, 5)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.030451560159909737,
+          "icir": -3.0753096066455017
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.025136605162717016,
+          "icir": -2.647410672503878
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.023673127729145833,
+          "icir": -2.3238529579787985
+        }
+      },
+      "reliable": false,
+      "sec": 4.3
+    },
+    "Div(Sub(Close, Ts_Min(Low, 5)), Add(Sub(Ts_Max(High, 5), Ts_Min(Low, 5)), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.025180518055861936,
+          "icir": -3.499856375078697
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01809899963266842,
+          "icir": -2.547256498418249
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.03346154592704589,
+          "icir": -3.138281016431046
+        }
+      },
+      "reliable": false,
+      "sec": 5.1
+    },
+    "Div(Ts_Argmax(High, 5), 5)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.03403377684354196,
+          "icir": -4.1062193678472125
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.013865097841689806,
+          "icir": -1.6626471296950296
+        },
+        "test": {
+          "n_days": 968,
+          "rank_ic": -0.014988737634479513,
+          "icir": -1.6376436827133878
+        }
+      },
+      "reliable": false,
+      "sec": 28.5
+    },
+    "Div(Ts_Argmin(Low, 5), 5)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.0248064912249134,
+          "icir": 3.042616692420887
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011979788608134445,
+          "icir": 1.5065271871729422
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.012708404447627721,
+          "icir": 1.3864709227806489
+        }
+      },
+      "reliable": false,
+      "sec": 31.4
+    },
+    "Div(Sub(Ts_Argmax(High, 5), Ts_Argmin(Low, 5)), 5)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.034833491503917166,
+          "icir": -3.898300883664021
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.016142170888549332,
+          "icir": -1.806181841081246
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.016176513095481737,
+          "icir": -1.5973490890524689
+        }
+      },
+      "reliable": false,
+      "sec": 52.6
+    },
+    "Ts_Corr(Close, Log(Add(Volume, 1)), 5)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.01784081219985888,
+          "icir": -2.502190888852384
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01303908021440545,
+          "icir": -1.8951762614382792
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01327447153071527,
+          "icir": -1.880593206461746
+        }
+      },
+      "reliable": false,
+      "sec": 4.5
+    },
+    "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 5)": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": -0.0415534789074946,
+          "icir": -5.527831529318933
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.020162219246076783,
+          "icir": -2.8178098584547415
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01886934260473835,
+          "icir": -2.427186063366183
+        }
+      },
+      "reliable": false,
+      "sec": 4.3
+    },
+    "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 5)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.03791804022199912,
+          "icir": -4.664893598476645
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.025670672215607877,
+          "icir": -3.10175699281447
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.020960485922204522,
+          "icir": -2.4034097765491538
+        }
+      },
+      "reliable": false,
+      "sec": 3.7
+    },
+    "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 5)": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.036899822269908684,
+          "icir": 4.484321530894279
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02564338821243555,
+          "icir": 3.059978052391331
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.014595762186338786,
+          "icir": 1.6038276322546552
+        }
+      },
+      "reliable": false,
+      "sec": 3.4
+    },
+    "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 5), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 5))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": -0.038038868347071285,
+          "icir": -4.604645073092816
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02608975972494971,
+          "icir": -3.1144484898753126
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.017903986509390443,
+          "icir": -1.9864535484800843
+        }
+      },
+      "reliable": false,
+      "sec": 4.2
+    },
+    "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 5), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 5), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": -0.04505419605302228,
+          "icir": -4.2959024026535
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02167676069565777,
+          "icir": -2.193792772216772
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0205780735359087,
+          "icir": -1.858013592350536
+        }
+      },
+      "reliable": false,
+      "sec": 4.3
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 5), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 5), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": 0.044979920527306094,
+          "icir": 4.2847244444646675
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02181653206695658,
+          "icir": 2.2034386807909536
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.020838442366809123,
+          "icir": 1.879175956296187
+        }
+      },
+      "reliable": true,
+      "sec": 4.0
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 5), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 5)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 5), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": -0.045126840160593276,
+          "icir": -4.2998881269209175
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02176683999050766,
+          "icir": -2.2016871461482035
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.02068476687040814,
+          "icir": -1.8629351383409813
+        }
+      },
+      "reliable": false,
+      "sec": 4.5
+    },
+    "Div(Ts_Mean(Volume, 5), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.03173895933588212,
+          "icir": 4.131918471388728
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011265563020980902,
+          "icir": 1.6526180710015725
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01262020872393261,
+          "icir": 1.797382256023688
+        }
+      },
+      "reliable": false,
+      "sec": 3.4
+    },
+    "Div(Ts_Std(Volume, 5), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2427,
+          "rank_ic": 0.0015240043679415748,
+          "icir": 0.25170194826816283
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.003395612438578809,
+          "icir": -0.6378721792807842
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.001184076294697511,
+          "icir": -0.23076042313920714
+        }
+      },
+      "reliable": false,
+      "sec": 3.3
+    },
+    "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 5), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 5), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": -0.014315239781089804,
+          "icir": -2.573384663085324
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.010145424187769116,
+          "icir": -2.3435856699411857
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.004078521159309895,
+          "icir": -0.8936304223769173
+        }
+      },
+      "reliable": false,
+      "sec": 3.8
+    },
+    "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 5), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 5), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": -0.0410260338211022,
+          "icir": -5.4598228822950645
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02027522320147848,
+          "icir": -3.1133435242362766
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.014257973779444348,
+          "icir": -2.037915607267727
+        }
+      },
+      "reliable": false,
+      "sec": 4.5
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 5), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 5), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": 0.041021031584169136,
+          "icir": 5.459160258527389
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02027546380623848,
+          "icir": 3.1133294582042876
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.014260067771675525,
+          "icir": 2.038195652267236
+        }
+      },
+      "reliable": false,
+      "sec": 4.3
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 5), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 5)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 5), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2426,
+          "rank_ic": -0.041022213738497064,
+          "icir": -5.459286604095276
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.020276119802589317,
+          "icir": -3.113423845741853
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.014260155365940769,
+          "icir": -2.0382164120139645
+        }
+      },
+      "reliable": false,
+      "sec": 5.0
+    },
+    "Div(Ts_Delay(Close, 10), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": 0.0351011825371765,
+          "icir": 2.98393112115855
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.018853507762621603,
+          "icir": 1.680709699679608
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.018770678093437222,
+          "icir": 1.5141595644504013
+        }
+      },
+      "reliable": false,
+      "sec": 3.5
+    },
+    "Div(Ts_Mean(Close, 10), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.046029759583392,
+          "icir": 3.8961499879930694
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02331202159213852,
+          "icir": 2.105334943544343
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.023284423172389344,
+          "icir": 1.890866829958419
+        }
+      },
+      "reliable": true,
+      "sec": 3.9
+    },
+    "Div(Ts_Std(Close, 10), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.008723427623653223,
+          "icir": -0.7481705649736561
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.009161427603701422,
+          "icir": -0.7691115011578631
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.03288185882241391,
+          "icir": -2.554891338727285
+        }
+      },
+      "reliable": false,
+      "sec": 3.8
+    },
+    "Div(Ts_Slope(Close, 10), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.03770912602227326,
+          "icir": -3.2542242643939043
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.018590381039650494,
+          "icir": -1.6849620814807893
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01580313487938558,
+          "icir": -1.298628593590137
+        }
+      },
+      "reliable": false,
+      "sec": 51.3
+    },
+    "Ts_Rsq(Close, 10)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.005443602131040923,
+          "icir": -0.6851631671779385
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.0038147847207904147,
+          "icir": -0.6049581366360826
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.006119230599169622,
+          "icir": -0.8791554486763735
+        }
+      },
+      "reliable": false,
+      "sec": 112.4
+    },
+    "Div(Ts_Resi(Close, 10), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.009824104970091929,
+          "icir": -0.9704663875289691
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.011314799351643484,
+          "icir": -1.1543287843165586
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01666153286197752,
+          "icir": -1.5056293300689423
+        }
+      },
+      "reliable": false,
+      "sec": 87.2
+    },
+    "Div(Ts_Max(High, 10), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.015943180705345714,
+          "icir": 2.4435541115595782
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.013919825044095476,
+          "icir": 2.593052725232346
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.012207688757570584,
+          "icir": 1.5454976607517876
+        }
+      },
+      "reliable": false,
+      "sec": 3.7
+    },
+    "Div(Ts_Min(Low, 10), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.01847810844076586,
+          "icir": 2.942244625868599
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.018924920859467204,
+          "icir": 3.49275606252461
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.03194261676670667,
+          "icir": 3.170106988051464
+        }
+      },
+      "reliable": true,
+      "sec": 3.7
+    },
+    "Div(Ts_Quantile(Close, 10, 0.8), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.04551225603302732,
+          "icir": 3.8817618902091757
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02057385093397424,
+          "icir": 1.8190215471193798
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.013538599866884556,
+          "icir": 1.085237798724193
+        }
+      },
+      "reliable": false,
+      "sec": 4.4
+    },
+    "Div(Ts_Quantile(Close, 10, 0.2), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.03967292504003105,
+          "icir": 3.5439048661843144
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02546259363775983,
+          "icir": 2.450881287957216
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.030721863301395248,
+          "icir": 2.6871118628319177
+        }
+      },
+      "reliable": true,
+      "sec": 4.3
+    },
+    "Ts_Rank(Close, 10)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.03616760996652673,
+          "icir": -3.400730946675722
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02229629758954227,
+          "icir": -2.2130276282535486
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.021625545855568504,
+          "icir": -1.9926522781816127
+        }
+      },
+      "reliable": false,
+      "sec": 4.4
+    },
+    "Div(Sub(Close, Ts_Min(Low, 10)), Add(Sub(Ts_Max(High, 10), Ts_Min(Low, 10)), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.023820856116680146,
+          "icir": -3.1968809024922225
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.018863232077234015,
+          "icir": -2.5822798099506548
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.03337639326327346,
+          "icir": -3.2537050630571955
+        }
+      },
+      "reliable": false,
+      "sec": 5.2
+    },
+    "Div(Ts_Argmax(High, 10), 10)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.025336602197957747,
+          "icir": -2.9193315874622927
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.009264803106256225,
+          "icir": -1.0464165370715728
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.008989508851369747,
+          "icir": -0.9589154210070141
+        }
+      },
+      "reliable": false,
+      "sec": 32.8
+    },
+    "Div(Ts_Argmin(Low, 10), 10)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.014177458042918789,
+          "icir": 1.67393600138068
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.008105435772701225,
+          "icir": 0.944706075825914
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.008713702593644578,
+          "icir": 0.9243312592238252
+        }
+      },
+      "reliable": false,
+      "sec": 31.8
+    },
+    "Div(Sub(Ts_Argmax(High, 10), Ts_Argmin(Low, 10)), 10)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.025523935606041916,
+          "icir": -2.7027508564465603
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.010620361116614503,
+          "icir": -1.1009956054357932
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.010476433684930897,
+          "icir": -1.020583673186709
+        }
+      },
+      "reliable": false,
+      "sec": 65.1
+    },
+    "Ts_Corr(Close, Log(Add(Volume, 1)), 10)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.017519024532362818,
+          "icir": -2.2530693648221836
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.015230690185848524,
+          "icir": -1.9393649769398964
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.02113029372793816,
+          "icir": -2.6340132912038285
+        }
+      },
+      "reliable": false,
+      "sec": 6.0
+    },
+    "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 10)": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": -0.03358070635288731,
+          "icir": -4.3007744044195775
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.0179730080657251,
+          "icir": -2.3088190136765596
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.019148677902709698,
+          "icir": -2.353124966471729
+        }
+      },
+      "reliable": false,
+      "sec": 4.9
+    },
+    "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 10)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.026275417306421682,
+          "icir": -3.148778670537659
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01848014065503511,
+          "icir": -2.0793076399411228
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01556544664536626,
+          "icir": -1.7831718169414352
+        }
+      },
+      "reliable": false,
+      "sec": 3.5
+    },
+    "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 10)": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.024960960358068416,
+          "icir": 2.984979065951903
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.017600801890815667,
+          "icir": 2.016824042685539
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.006657661568266913,
+          "icir": 0.7161771798272313
+        }
+      },
+      "reliable": false,
+      "sec": 3.5
+    },
+    "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 10), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 10))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": -0.025984999581059175,
+          "icir": -3.08653717412953
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.018565380079089547,
+          "icir": -2.096281026086568
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.011064712160993516,
+          "icir": -1.2172341454209876
+        }
+      },
+      "reliable": false,
+      "sec": 4.4
+    },
+    "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 10), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 10), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": -0.029833821651142095,
+          "icir": -2.6953700633298845
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.015975398157219954,
+          "icir": -1.4892483240883578
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01666938440731418,
+          "icir": -1.4616297111703822
+        }
+      },
+      "reliable": false,
+      "sec": 4.3
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 10), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 10), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": 0.029830324069156453,
+          "icir": 2.6950167577437365
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.015973933560127333,
+          "icir": 1.4890701442704841
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01666315051367298,
+          "icir": 1.4610118253223985
+        }
+      },
+      "reliable": false,
+      "sec": 5.1
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 10), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 10)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 10), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": -0.02983232918454553,
+          "icir": -2.6952027296470233
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.015974119077760692,
+          "icir": -1.489101048755136
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0166659397400987,
+          "icir": -1.4612866252688306
+        }
+      },
+      "reliable": false,
+      "sec": 4.9
+    },
+    "Div(Ts_Mean(Volume, 10), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.04052704954134942,
+          "icir": 4.994768289223503
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.015967473376516265,
+          "icir": 2.272223471672488
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.015329862530152024,
+          "icir": 2.0632297125986043
+        }
+      },
+      "reliable": false,
+      "sec": 3.3
+    },
+    "Div(Ts_Std(Volume, 10), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2422,
+          "rank_ic": 0.01606144320117124,
+          "icir": 2.422457545580717
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0016551853013692735,
+          "icir": 0.2896471301142861
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.000935069899360279,
+          "icir": 0.16105031927738955
+        }
+      },
+      "reliable": false,
+      "sec": 3.6
+    },
+    "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 10), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 10), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": -0.015780401525593048,
+          "icir": -2.627555663953142
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.006245009426685693,
+          "icir": -1.2978778602063699
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.003988597596098498,
+          "icir": -0.8092566879702232
+        }
+      },
+      "reliable": false,
+      "sec": 4.4
+    },
+    "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 10), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 10), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": -0.035412337422662164,
+          "icir": -4.579735985484239
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.016807218625233693,
+          "icir": -2.3577590536137105
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01549921063345814,
+          "icir": -2.155335622805836
+        }
+      },
+      "reliable": false,
+      "sec": 4.0
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 10), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 10), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": 0.035412336615126966,
+          "icir": 4.5797358832302
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.016807218625233693,
+          "icir": 2.3577590536137105
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01549921063345814,
+          "icir": 2.155335622805836
+        }
+      },
+      "reliable": false,
+      "sec": 4.5
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 10), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 10)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 10), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2421,
+          "rank_ic": -0.035412336615126966,
+          "icir": -4.5797358832302
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.016807218625233693,
+          "icir": -2.3577590536137105
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01549921063345814,
+          "icir": -2.155335622805836
+        }
+      },
+      "reliable": false,
+      "sec": 4.9
+    },
+    "Div(Ts_Delay(Close, 20), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": 0.029745813222465986,
+          "icir": 2.462236398304526
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.013272040716990034,
+          "icir": 1.112825676154212
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.020867661239987432,
+          "icir": 1.5904348791072902
+        }
+      },
+      "reliable": true,
+      "sec": 2.9
+    },
+    "Div(Ts_Mean(Close, 20), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.03773603188245592,
+          "icir": 3.017142579449521
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0195176586786617,
+          "icir": 1.670016562361093
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.023274461993413317,
+          "icir": 1.8119286792272604
+        }
+      },
+      "reliable": true,
+      "sec": 3.6
+    },
+    "Div(Ts_Std(Close, 20), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.008714440053794782,
+          "icir": -0.6990465447525643
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.0032071045767752197,
+          "icir": -0.2549435140575068
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.029405351777407714,
+          "icir": -2.1395571595270666
+        }
+      },
+      "reliable": false,
+      "sec": 3.4
+    },
+    "Div(Ts_Slope(Close, 20), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.020633761735390423,
+          "icir": -1.7128785312995178
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.012107199617013795,
+          "icir": -1.0343379074073298
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.015797537112963566,
+          "icir": -1.2430879772744738
+        }
+      },
+      "reliable": false,
+      "sec": 55.2
+    },
+    "Ts_Rsq(Close, 20)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.0044989977488159635,
+          "icir": -0.5662970576738797
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0009394933508578164,
+          "icir": 0.15087863543671284
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0005646068816874104,
+          "icir": -0.08035655117973191
+        }
+      },
+      "reliable": false,
+      "sec": 115.5
+    },
+    "Div(Ts_Resi(Close, 20), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.030796686917167825,
+          "icir": -2.95965432744351
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.016204748424457245,
+          "icir": -1.661221622745646
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.015324234804426294,
+          "icir": -1.3746587099159902
+        }
+      },
+      "reliable": false,
+      "sec": 70.9
+    },
+    "Div(Ts_Max(High, 20), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.016562039941735274,
+          "icir": 2.4758353744630663
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.013893698562893325,
+          "icir": 2.316632663552934
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01177220066396469,
+          "icir": 1.3719439392293333
+        }
+      },
+      "reliable": false,
+      "sec": 3.5
+    },
+    "Div(Ts_Min(Low, 20), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.01971678666820486,
+          "icir": 3.1312592924113636
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.019780467562345253,
+          "icir": 3.2098984283696708
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.031387774826722094,
+          "icir": 3.0902137112164993
+        }
+      },
+      "reliable": true,
+      "sec": 3.4
+    },
+    "Div(Ts_Quantile(Close, 20, 0.8), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.03872088060549169,
+          "icir": 3.107479199758639
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.018689722928841985,
+          "icir": 1.5825371337178857
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.018259249819297583,
+          "icir": 1.4048050924188042
+        }
+      },
+      "reliable": false,
+      "sec": 4.1
+    },
+    "Div(Ts_Quantile(Close, 20, 0.2), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.035127641212493184,
+          "icir": 2.972479976712476
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.020056029387028926,
+          "icir": 1.8079724336707046
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.028405631019601658,
+          "icir": 2.343890792001854
+        }
+      },
+      "reliable": true,
+      "sec": 3.9
+    },
+    "Ts_Rank(Close, 20)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.0294381489167191,
+          "icir": -2.615704644183733
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01634745596264369,
+          "icir": -1.5292720680329153
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.020712056417796432,
+          "icir": -1.8274277486224246
+        }
+      },
+      "reliable": false,
+      "sec": 4.0
+    },
+    "Div(Sub(Close, Ts_Min(Low, 20)), Add(Sub(Ts_Max(High, 20), Ts_Min(Low, 20)), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.02320130142359535,
+          "icir": -3.033919661270426
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01750898409355338,
+          "icir": -2.2724773197333907
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.03279967404510529,
+          "icir": -3.3034434952382545
+        }
+      },
+      "reliable": false,
+      "sec": 4.8
+    },
+    "Div(Ts_Argmax(High, 20), 20)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.018605102652883627,
+          "icir": -2.079870464600485
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.00524157298948258,
+          "icir": -0.5531422366258799
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.013160814481018107,
+          "icir": -1.3356109360889648
+        }
+      },
+      "reliable": false,
+      "sec": 29.9
+    },
+    "Div(Ts_Argmin(Low, 20), 20)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.005022087204966534,
+          "icir": 0.5802696272881994
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.007893794756803255,
+          "icir": 0.8651309564990098
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.008757197962942349,
+          "icir": 0.8828924323434316
+        }
+      },
+      "reliable": false,
+      "sec": 29.5
+    },
+    "Div(Sub(Ts_Argmax(High, 20), Ts_Argmin(Low, 20)), 20)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.015472530104226032,
+          "icir": -1.5887619284019519
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.007922170952089812,
+          "icir": -0.7738485251291073
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.012330025365011448,
+          "icir": -1.1402816955719972
+        }
+      },
+      "reliable": false,
+      "sec": 54.1
+    },
+    "Ts_Corr(Close, Log(Add(Volume, 1)), 20)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.019475446287516417,
+          "icir": -2.4506992383364437
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.013014294693685311,
+          "icir": -1.3971960069974945
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01637401292431665,
+          "icir": -1.8255391359906445
+        }
+      },
+      "reliable": false,
+      "sec": 4.0
+    },
+    "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 20)": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": -0.02938791412971709,
+          "icir": -3.7446349894534507
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.015400875341688859,
+          "icir": -1.793110200426691
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.019474941755989367,
+          "icir": -2.2908452586624546
+        }
+      },
+      "reliable": false,
+      "sec": 4.2
+    },
+    "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 20)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.01862778833359813,
+          "icir": -2.178869557736854
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.014251190376968927,
+          "icir": -1.470846650043748
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.015827052997368894,
+          "icir": -1.7335949431571807
+        }
+      },
+      "reliable": false,
+      "sec": 3.2
+    },
+    "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 20)": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.01690683406780911,
+          "icir": 2.035404689305091
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.013544695228790914,
+          "icir": 1.5068724336332224
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.004398154094674813,
+          "icir": 0.44164208531057525
+        }
+      },
+      "reliable": false,
+      "sec": 3.4
+    },
+    "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 20), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 20))": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": -0.01812491637292693,
+          "icir": -2.137110455935961
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.014318326118025637,
+          "icir": -1.521684477738445
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.010091265548396072,
+          "icir": -1.0485928329252774
+        }
+      },
+      "reliable": false,
+      "sec": 4.6
+    },
+    "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 20), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 20), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": -0.025433055843868846,
+          "icir": -2.2410366025494977
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.011900265795714479,
+          "icir": -1.04211988513266
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.017596215797574,
+          "icir": -1.4330959932341476
+        }
+      },
+      "reliable": false,
+      "sec": 3.9
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 20), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 20), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": 0.025432387842562736,
+          "icir": 2.240986697569835
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011898795620612877,
+          "icir": 1.04198812592016
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.017595130149919525,
+          "icir": 1.4329912300195693
+        }
+      },
+      "reliable": false,
+      "sec": 3.9
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 20), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 20)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 20), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": -0.02543263439373234,
+          "icir": -2.2410027631932254
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01189957860298259,
+          "icir": -1.0420578333226822
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.017595857099952563,
+          "icir": -1.433056901976233
+        }
+      },
+      "reliable": false,
+      "sec": 5.0
+    },
+    "Div(Ts_Mean(Volume, 20), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.04296880071532408,
+          "icir": 4.991925006656043
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01791401301069974,
+          "icir": 2.3729434171927117
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.0180529760835214,
+          "icir": 2.293367323804356
+        }
+      },
+      "reliable": false,
+      "sec": 3.2
+    },
+    "Div(Ts_Std(Volume, 20), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2412,
+          "rank_ic": 0.023140110323179065,
+          "icir": 3.1373149483982714
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0065147978161248276,
+          "icir": 1.0193401834314064
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.005564105594192561,
+          "icir": 0.828604634501972
+        }
+      },
+      "reliable": false,
+      "sec": 3.2
+    },
+    "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 20), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 20), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": -0.016250564760810042,
+          "icir": -2.5371285655965687
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.007159031087541262,
+          "icir": -1.2057274314099362
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0033109101307397335,
+          "icir": -0.6416209590315061
+        }
+      },
+      "reliable": false,
+      "sec": 4.0
+    },
+    "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 20), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 20), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": -0.0363864716510924,
+          "icir": -4.588130679044909
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.014113234084834215,
+          "icir": -1.8774842954442017
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.016999428799668138,
+          "icir": -2.168353086157214
+        }
+      },
+      "reliable": false,
+      "sec": 4.1
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 20), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 20), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": 0.0363864716510924,
+          "icir": 4.588130679044909
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.014113234084834215,
+          "icir": 1.8774842954442017
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.016999428799668138,
+          "icir": 2.168353086157214
+        }
+      },
+      "reliable": false,
+      "sec": 3.9
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 20), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 20)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 20), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2411,
+          "rank_ic": -0.0363864716510924,
+          "icir": -4.588130679044909
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.014113234084834215,
+          "icir": -1.8774842954442017
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.016999428799668138,
+          "icir": -2.168353086157214
+        }
+      },
+      "reliable": false,
+      "sec": 4.5
+    },
+    "Div(Ts_Delay(Close, 30), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": 0.029639456792493434,
+          "icir": 2.4962697226151116
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.012057668139614824,
+          "icir": 0.9606013512446867
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.020252515007524185,
+          "icir": 1.4692064499324489
+        }
+      },
+      "reliable": true,
+      "sec": 2.7
+    },
+    "Div(Ts_Mean(Close, 30), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": 0.03636118186580263,
+          "icir": 2.8775799652778282
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.017368328558344172,
+          "icir": 1.4135202179840647
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.023076048349793793,
+          "icir": 1.725516883574834
+        }
+      },
+      "reliable": true,
+      "sec": 3.4
+    },
+    "Div(Ts_Std(Close, 30), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.005237869078183094,
+          "icir": -0.4199862412256476
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.005783330223645326,
+          "icir": -0.44976758703146547
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.02690487656797301,
+          "icir": -1.8736878867294136
+        }
+      },
+      "reliable": false,
+      "sec": 3.2
+    },
+    "Div(Ts_Slope(Close, 30), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.02050301945815484,
+          "icir": -1.7425709714461761
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.007556669222892558,
+          "icir": -0.6091334935303151
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.014567873479356086,
+          "icir": -1.078888482109639
+        }
+      },
+      "reliable": false,
+      "sec": 54.2
+    },
+    "Ts_Rsq(Close, 30)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.003557762161757816,
+          "icir": -0.4569314857910583
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.00564415522195054,
+          "icir": -0.9088507574441381
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.0030622856619352953,
+          "icir": 0.4132111169226092
+        }
+      },
+      "reliable": false,
+      "sec": 116.7
+    },
+    "Div(Ts_Resi(Close, 30), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.02855769199292886,
+          "icir": -2.7014883408625288
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.016571783921272724,
+          "icir": -1.6737424112832282
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.015760987445109877,
+          "icir": -1.3936392931558834
+        }
+      },
+      "reliable": false,
+      "sec": 61.8
+    },
+    "Div(Ts_Max(High, 30), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": 0.017241398018192744,
+          "icir": 2.543378296153804
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.013383796398567575,
+          "icir": 2.0441461105050953
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.011473181245426739,
+          "icir": 1.2402025018064862
+        }
+      },
+      "reliable": false,
+      "sec": 3.0
+    },
+    "Div(Ts_Min(Low, 30), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": 0.02044741736441596,
+          "icir": 3.2416069335504463
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02058556936170359,
+          "icir": 3.02499536227335
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.030684718548711347,
+          "icir": 2.9469339073336256
+        }
+      },
+      "reliable": true,
+      "sec": 2.9
+    },
+    "Div(Ts_Quantile(Close, 30, 0.8), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": 0.03657460440687101,
+          "icir": 2.9036592024451076
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0157599537732442,
+          "icir": 1.2823248281297654
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.018343886279429945,
+          "icir": 1.3636777413987538
+        }
+      },
+      "reliable": false,
+      "sec": 4.0
+    },
+    "Div(Ts_Quantile(Close, 30, 0.2), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": 0.03463332253206479,
+          "icir": 2.8875418147001723
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.019350105973482863,
+          "icir": 1.6365704155748957
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.026483121980430267,
+          "icir": 2.0970873021266754
+        }
+      },
+      "reliable": true,
+      "sec": 3.6
+    },
+    "Ts_Rank(Close, 30)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.027298049828085404,
+          "icir": -2.3860910320608233
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.015321283246857319,
+          "icir": -1.3691963425520233
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.019594186033163763,
+          "icir": -1.6564863977379878
+        }
+      },
+      "reliable": false,
+      "sec": 3.8
+    },
+    "Div(Sub(Close, Ts_Min(Low, 30)), Add(Sub(Ts_Max(High, 30), Ts_Min(Low, 30)), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.02164259314304275,
+          "icir": -2.8151231018761633
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.017224171193927308,
+          "icir": -2.1194946223982436
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.032493097273333625,
+          "icir": -3.321112804136235
+        }
+      },
+      "reliable": false,
+      "sec": 4.3
+    },
+    "Div(Ts_Argmax(High, 30), 30)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.017176164234923734,
+          "icir": -1.943175648080543
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.00643625330648296,
+          "icir": -0.6416358479198072
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01269993012098734,
+          "icir": -1.237007214781815
+        }
+      },
+      "reliable": false,
+      "sec": 25.3
+    },
+    "Div(Ts_Argmin(Low, 30), 30)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": 0.002896816153102643,
+          "icir": 0.3384940965016124
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0050829231537353045,
+          "icir": 0.5326745293121247
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.009872782693574774,
+          "icir": 0.9609780059860774
+        }
+      },
+      "reliable": false,
+      "sec": 25.2
+    },
+    "Div(Sub(Ts_Argmax(High, 30), Ts_Argmin(Low, 30)), 30)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.01410374076934873,
+          "icir": -1.483939096833392
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.005889951240988019,
+          "icir": -0.5385354527959841
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.012593129501162904,
+          "icir": -1.1121385732580487
+        }
+      },
+      "reliable": false,
+      "sec": 47.0
+    },
+    "Ts_Corr(Close, Log(Add(Volume, 1)), 30)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.017409059289836697,
+          "icir": -2.172915400529429
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.014845740175257843,
+          "icir": -1.544211605809581
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.011303537797294786,
+          "icir": -1.1895945700482815
+        }
+      },
+      "reliable": false,
+      "sec": 3.5
+    },
+    "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 30)": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": -0.02870033689560275,
+          "icir": -3.7696127047408305
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01623284901784646,
+          "icir": -1.8410916549389609
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01952513181753986,
+          "icir": -2.2740462875099015
+        }
+      },
+      "reliable": false,
+      "sec": 3.8
+    },
+    "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 30)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.015696157296310066,
+          "icir": -1.8060803153424778
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.012366300840277995,
+          "icir": -1.1928674011574438
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01753076895602557,
+          "icir": -1.8578941410918715
+        }
+      },
+      "reliable": false,
+      "sec": 3.1
+    },
+    "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 30)": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": 0.014103888578628722,
+          "icir": 1.7063530136001939
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011882098033399712,
+          "icir": 1.2958130861829855
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.004000996967567714,
+          "icir": 0.3787635755413763
+        }
+      },
+      "reliable": false,
+      "sec": 3.1
+    },
+    "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 30), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 30))": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": -0.015059953414745472,
+          "icir": -1.7687233109680698
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.012514724233545943,
+          "icir": -1.2671889097580067
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.010884897131707046,
+          "icir": -1.081502294099188
+        }
+      },
+      "reliable": false,
+      "sec": 3.6
+    },
+    "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 30), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 30), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": -0.025267980113327662,
+          "icir": -2.252170762696568
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.012135738080861339,
+          "icir": -1.0055932166673098
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.019216685649235257,
+          "icir": -1.4935696355585586
+        }
+      },
+      "reliable": false,
+      "sec": 3.8
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 30), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 30), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": 0.025267117372741173,
+          "icir": 2.252096247218534
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.012135252094308201,
+          "icir": 1.005558914946066
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.019215803867725173,
+          "icir": 1.4934885089379641
+        }
+      },
+      "reliable": false,
+      "sec": 3.6
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 30), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 30)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 30), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": -0.02526744558531032,
+          "icir": -2.25212274989959
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.012135562522868178,
+          "icir": -1.005581230469827
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.019216350726452475,
+          "icir": -1.493534572803295
+        }
+      },
+      "reliable": false,
+      "sec": 4.3
+    },
+    "Div(Ts_Mean(Volume, 30), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": 0.04392536239623257,
+          "icir": 4.96288009536647
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.019903086941825614,
+          "icir": 2.551412527260581
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.02044538868763432,
+          "icir": 2.458717400538719
+        }
+      },
+      "reliable": true,
+      "sec": 3.0
+    },
+    "Div(Ts_Std(Volume, 30), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2402,
+          "rank_ic": 0.028228469990347293,
+          "icir": 3.593536296910984
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.00845901805156909,
+          "icir": 1.2420835246357003
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.010167273731778085,
+          "icir": 1.385826243804348
+        }
+      },
+      "reliable": false,
+      "sec": 3.0
+    },
+    "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 30), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 30), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": -0.014709026296948284,
+          "icir": -2.2235711190175262
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.0026900303927859183,
+          "icir": -0.3869446999204422
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0023461777840694197,
+          "icir": -0.4420150279681117
+        }
+      },
+      "reliable": false,
+      "sec": 3.8
+    },
+    "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 30), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 30), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": -0.03645042031361312,
+          "icir": -4.551653606476858
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.018722932784063694,
+          "icir": -2.3608498418051966
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01907665802582913,
+          "icir": -2.2685990390892874
+        }
+      },
+      "reliable": false,
+      "sec": 3.7
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 30), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 30), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": 0.03645042031361312,
+          "icir": 4.551653606476858
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.018722932784063694,
+          "icir": 2.3608498418051966
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01907665802582913,
+          "icir": 2.2685990390892874
+        }
+      },
+      "reliable": false,
+      "sec": 3.6
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 30), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 30)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 30), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2401,
+          "rank_ic": -0.03645042031361312,
+          "icir": -4.551653606476858
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.018722932784063694,
+          "icir": -2.3608498418051966
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01907665802582913,
+          "icir": -2.2685990390892874
+        }
+      },
+      "reliable": false,
+      "sec": 4.3
+    },
+    "Div(Ts_Delay(Close, 60), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2371,
+          "rank_ic": 0.022887933802749033,
+          "icir": 1.9542568527730626
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011159687620498578,
+          "icir": 0.8601093846398316
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.011770350063526207,
+          "icir": 0.8372041732916727
+        }
+      },
+      "reliable": false,
+      "sec": 2.6
+    },
+    "Div(Ts_Mean(Close, 60), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.03401669843794144,
+          "icir": 2.6912961179421733
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01694108074178505,
+          "icir": 1.3095245253090546
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.020832864984754583,
+          "icir": 1.4681817300084423
+        }
+      },
+      "reliable": true,
+      "sec": 2.9
+    },
+    "Div(Ts_Std(Close, 60), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.0004594331385913709,
+          "icir": -0.036767630706794466
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.001311303802156724,
+          "icir": -0.10107027883394856
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.02746711652855106,
+          "icir": -1.7981682793195535
+        }
+      },
+      "reliable": false,
+      "sec": 2.9
+    },
+    "Div(Ts_Slope(Close, 60), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.01446549784039611,
+          "icir": -1.2401511511562169
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.007297395027864157,
+          "icir": -0.5591174259565354
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.009740564714925681,
+          "icir": -0.7007326286299806
+        }
+      },
+      "reliable": false,
+      "sec": 52.2
+    },
+    "Ts_Rsq(Close, 60)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.0005559780733279307,
+          "icir": 0.07299409342299072
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.0020537739606162793,
+          "icir": 0.3067468187273798
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.0012037962961033361,
+          "icir": 0.16101417565416704
+        }
+      },
+      "reliable": false,
+      "sec": 138.4
+    },
+    "Div(Ts_Resi(Close, 60), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.029128270772176296,
+          "icir": -2.5914097904347395
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.014348423076673781,
+          "icir": -1.2638224874046733
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0192229231208344,
+          "icir": -1.566322242319727
+        }
+      },
+      "reliable": false,
+      "sec": 68.0
+    },
+    "Div(Ts_Max(High, 60), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.017460952168839552,
+          "icir": 2.5222065391170085
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.015038867488747547,
+          "icir": 2.1326488171222167
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.007976554553291578,
+          "icir": 0.755127432394059
+        }
+      },
+      "reliable": false,
+      "sec": 3.8
+    },
+    "Div(Ts_Min(Low, 60), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.02127316409324697,
+          "icir": 3.376038862418842
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.021367825858315412,
+          "icir": 2.644066724614059
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.030521526106466128,
+          "icir": 2.7937771099033024
+        }
+      },
+      "reliable": true,
+      "sec": 4.3
+    },
+    "Div(Ts_Quantile(Close, 60, 0.8), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.031815598135866055,
+          "icir": 2.495156519854598
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.016562208202651654,
+          "icir": 1.317740151541033
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.014085900919584914,
+          "icir": 0.9826459416291048
+        }
+      },
+      "reliable": false,
+      "sec": 5.8
+    },
+    "Div(Ts_Quantile(Close, 60, 0.2), Close)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.031589653718322626,
+          "icir": 2.614594676185636
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.01812891086574871,
+          "icir": 1.425283521417434
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.02572624894238363,
+          "icir": 1.9347363410885827
+        }
+      },
+      "reliable": true,
+      "sec": 4.5
+    },
+    "Ts_Rank(Close, 60)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.02490288093587101,
+          "icir": -2.134715284750935
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.016105402835028176,
+          "icir": -1.3549392860734215
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.016700065865912956,
+          "icir": -1.3296239845781843
+        }
+      },
+      "reliable": false,
+      "sec": 3.9
+    },
+    "Div(Sub(Close, Ts_Min(Low, 60)), Add(Sub(Ts_Max(High, 60), Ts_Min(Low, 60)), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.020780351787154684,
+          "icir": -2.6561433352355235
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.01849187949263918,
+          "icir": -2.068248132700198
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.03118573851975626,
+          "icir": -3.2687523416495425
+        }
+      },
+      "reliable": false,
+      "sec": 4.4
+    },
+    "Div(Ts_Argmax(High, 60), 60)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.00863850526603819,
+          "icir": -0.9961999321286256
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.008550610405335429,
+          "icir": -0.7881828128106274
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.007170567594286033,
+          "icir": -0.6778866479558276
+        }
+      },
+      "reliable": false,
+      "sec": 27.3
+    },
+    "Div(Ts_Argmin(Low, 60), 60)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.0010446877825457126,
+          "icir": 0.127209052316635
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.006351524567423585,
+          "icir": 0.6560925146877592
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.005918545685336273,
+          "icir": 0.5661977326257747
+        }
+      },
+      "reliable": false,
+      "sec": 30.2
+    },
+    "Div(Sub(Ts_Argmax(High, 60), Ts_Argmin(Low, 60)), 60)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.006094232030923012,
+          "icir": -0.6585768363174858
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.009096784697950633,
+          "icir": -0.7855110884448042
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.007163246921679258,
+          "icir": -0.6240864928028613
+        }
+      },
+      "reliable": false,
+      "sec": 56.5
+    },
+    "Ts_Corr(Close, Log(Add(Volume, 1)), 60)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.012164680061535918,
+          "icir": -1.500942206271613
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.008370659361572773,
+          "icir": -0.8382355686193501
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0013784109426555717,
+          "icir": -0.13662611565782273
+        }
+      },
+      "reliable": false,
+      "sec": 3.7
+    },
+    "Ts_Corr(Div(Close, Ts_Delay(Close, 1)), Log(Add(Div(Volume, Ts_Delay(Volume, 1)), 1)), 60)": {
+      "windows": {
+        "train": {
+          "n_days": 2371,
+          "rank_ic": -0.024881646448539407,
+          "icir": -3.416432704341918
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.015028970493494616,
+          "icir": -1.707461930817906
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.016884410104599828,
+          "icir": -1.8971024977048385
+        }
+      },
+      "reliable": false,
+      "sec": 4.2
+    },
+    "Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 60)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.008067856935248238,
+          "icir": -0.8931556107236645
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.007909614345580887,
+          "icir": -0.671074203482351
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.0117134312616942,
+          "icir": -1.2284687845189015
+        }
+      },
+      "reliable": false,
+      "sec": 3.5
+    },
+    "Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 60)": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.005599861808470887,
+          "icir": 0.6764451698337652
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.008594178270273775,
+          "icir": 0.930229558094669
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.006178014413318977,
+          "icir": -0.557241347679271
+        }
+      },
+      "reliable": false,
+      "sec": 3.3
+    },
+    "Sub(Ts_Mean(Greater(Close, Ts_Delay(Close, 1)), 60), Ts_Mean(Less(Close, Ts_Delay(Close, 1)), 60))": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": -0.006988602758951278,
+          "icir": -0.8041113760279317
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.009058370582998713,
+          "icir": -0.8415972250088477
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.002437570517559047,
+          "icir": -0.23628643459098347
+        }
+      },
+      "reliable": false,
+      "sec": 4.0
+    },
+    "Div(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 60), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 60), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2371,
+          "rank_ic": -0.018695329732725495,
+          "icir": -1.6836855158351098
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.011525069568195408,
+          "icir": -0.9039758268505981
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.01192782055465607,
+          "icir": -0.9104378014244583
+        }
+      },
+      "reliable": false,
+      "sec": 4.2
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 60), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 60), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2371,
+          "rank_ic": 0.018694979428451598,
+          "icir": 1.6836507469917494
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.011525373885196378,
+          "icir": 0.9039967113491421
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.011927588923058296,
+          "icir": 0.9104174745247963
+        }
+      },
+      "reliable": false,
+      "sec": 3.9
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Close, Ts_Delay(Close, 1)), 0), 60), Ts_Sum(Max2(Sub(Ts_Delay(Close, 1), Close), 0), 60)), Add(Ts_Sum(Abs(Sub(Close, Ts_Delay(Close, 1))), 60), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2371,
+          "rank_ic": -0.018695143249006688,
+          "icir": -1.6836673854693385
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.011524974637887686,
+          "icir": -0.9039662431250343
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.011927763519315186,
+          "icir": -0.910432483408698
+        }
+      },
+      "reliable": false,
+      "sec": 4.7
+    },
+    "Div(Ts_Mean(Volume, 60), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.04636436843338612,
+          "icir": 5.08662929418238
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.023877315203555606,
+          "icir": 2.897157056569807
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.02477578283416015,
+          "icir": 2.8279870939978933
+        }
+      },
+      "reliable": true,
+      "sec": 3.0
+    },
+    "Div(Ts_Std(Volume, 60), Add(Volume, 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2372,
+          "rank_ic": 0.03467063656806339,
+          "icir": 4.051706837270664
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.014387472874677489,
+          "icir": 1.9185772346961802
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.01734710816176771,
+          "icir": 2.1213388343089563
+        }
+      },
+      "reliable": false,
+      "sec": 3.0
+    },
+    "Div(Ts_Std(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 60), Add(Ts_Mean(Mul(Abs(Sub(Div(Close, Ts_Delay(Close, 1)), 1)), Volume), 60), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2371,
+          "rank_ic": -0.01311568058555312,
+          "icir": -1.874293301722081
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.007011058294540853,
+          "icir": -0.8125993906040655
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.0009218250226511596,
+          "icir": 0.15827953294382285
+        }
+      },
+      "reliable": false,
+      "sec": 3.9
+    },
+    "Div(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 60), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 60), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2371,
+          "rank_ic": -0.03544965698322949,
+          "icir": -4.38437988072997
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02393682836144326,
+          "icir": -2.8684033867944723
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.020127783118293063,
+          "icir": -2.496635577787299
+        }
+      },
+      "reliable": false,
+      "sec": 4.1
+    },
+    "Div(Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 60), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 60), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2371,
+          "rank_ic": 0.03544965698322949,
+          "icir": 4.38437988072997
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": 0.02393682836144326,
+          "icir": 2.8684033867944723
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": 0.020127783118293063,
+          "icir": 2.496635577787299
+        }
+      },
+      "reliable": true,
+      "sec": 3.7
+    },
+    "Div(Sub(Ts_Sum(Max2(Sub(Volume, Ts_Delay(Volume, 1)), 0), 60), Ts_Sum(Max2(Sub(Ts_Delay(Volume, 1), Volume), 0), 60)), Add(Ts_Sum(Abs(Sub(Volume, Ts_Delay(Volume, 1))), 60), 0.000000000001))": {
+      "windows": {
+        "train": {
+          "n_days": 2371,
+          "rank_ic": -0.03544965698322949,
+          "icir": -4.38437988072997
+        },
+        "val": {
+          "n_days": 486,
+          "rank_ic": -0.02393682836144326,
+          "icir": -2.8684033867944723
+        },
+        "test": {
+          "n_days": 969,
+          "rank_ic": -0.020127783118293063,
+          "icir": -2.496635577787299
+        }
+      },
+      "reliable": false,
+      "sec": 4.5
+    }
+  },
+  "errors": {}
+}

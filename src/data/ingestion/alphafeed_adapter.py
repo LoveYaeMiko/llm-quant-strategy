@@ -81,9 +81,34 @@ class AlphaFeedAdapter:
         return {symbol: group.reset_index(drop=True) for symbol, group in df.groupby("symbol", sort=False)}
 
     def fetch_quotes(self, universes: str = "CN_Stock") -> pd.DataFrame:
-        """Full-market membership cross-check (no ipo/out dates)."""
+        """Full-market snapshot (实时快照): price/amount per symbol, one call."""
         with RateLimiters.alphafeed_quote:
             return self.client.quotes.get(universes=universes, to_dataframe=True)
+
+    # -- intraday family (分钟K线 / 日内走势 / 盘口), rate-limited at 60/min ---
+
+    def fetch_minute_klines(
+        self, symbols, period: str = "1m", count: int = 240
+    ) -> Dict[str, pd.DataFrame]:
+        """Batch minute klines (近一年, ≤10000 bars/symbol/call)."""
+        with RateLimiters.alphafeed_minute_batch:
+            return self.client.klines.batch(
+                symbols=list(symbols), period=period, count=int(count),
+                to_dataframe=True,
+            )
+
+    def fetch_intraday(self, symbols, period: str = "1m", count: int = 240) -> Dict[str, pd.DataFrame]:
+        """Batch 日内走势 (intraday trend per symbol)."""
+        with RateLimiters.alphafeed_minute_batch:
+            return self.client.klines.intraday_batch(
+                symbols=list(symbols), period=period, count=int(count),
+                to_dataframe=True,
+            )
+
+    def fetch_depth(self, symbols) -> Dict[str, object]:
+        """Batch 盘口 (market depth) snapshots."""
+        with RateLimiters.alphafeed_depth_batch:
+            return self.client.depth.batch(list(symbols))
 
 
 def _factor_columns(d: pd.DataFrame, default_date_col: str) -> str:
