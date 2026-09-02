@@ -399,6 +399,7 @@ def build_shadow_status(
     benchmark: pd.Series | None = None,
     book_long_pct: float | None = None,
     book_short_pct: float | None = None,
+    book_cash: float | None = None,
 ) -> dict[str, Any]:
     """Build the ``outputs/shadow_status.json`` payload PAICC consumes."""
     last_date, cash, positions = ledger.latest_state()
@@ -464,7 +465,10 @@ def build_shadow_status(
     positions_out.sort(key=lambda p: -abs(p["weight"]))
 
     # --- daily equity / benchmark / excess curves ----------------------------
-    initial_cash = float(pcfg.get("initial_cash", 100_000.0))
+    # The HS300 benchmark line scales to the account's own starting capital, so
+    # each track's chart compares its equity against "the same money in the
+    # index" (2M for A, 100k for B, 50k for C) rather than one shared 100k base.
+    initial_cash = float(book_cash if book_cash is not None else pcfg.get("initial_cash", 100_000.0))
     equity_curve_out: list[dict[str, Any]] = []
     benchmark_out: list[dict[str, Any]] = []
     excess_out: list[dict[str, Any]] = []

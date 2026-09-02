@@ -260,7 +260,7 @@ shadow:
   refresh_benchmark: true             # 运行前抓取 HS300 指数基准（失败保留旧缓存）
   benchmark_cache: "data/benchmark/hs300_index.csv"
   # 双资金轨（2026-09）：每个账户独立账本/状态/日报，文件按 name 后缀。
-  # 10 万轨必须用成本治理（notional_floor + band_frac），200 万轨治理可选。
+  # 10 万/5 万轨必须用成本治理（notional_floor + band_frac），200 万轨治理可选。
   accounts:
     - name: "A_200W"
       cash: 2000000
@@ -282,6 +282,17 @@ shadow:
       short_pct: 0.0
       rebalance_days: 10              # B 网格最优：10 日调仓
       notional_floor: 2000            # 微尘下限
+      band_frac: 0.001                # 带宽调仓
+    - name: "C_5W"
+      cash: 50000
+      alpha_source: "ml"
+      ml_artifacts: ["lgbm"]          # 同工件；C 轨特征缓存与 B 轨（同截面）复用
+      ml_ensemble: true
+      universe: "hs300_500"           # 模型训练截面（同 B 轨结论）
+      long_pct: 0.05                  # 5%×长多（15 名 × 单票 5% 上限 = 75% 仓位，每股 ~2500 元）
+      short_pct: 0.0                  # 2026 空腿纯拖累，5 万轨同样长多
+      rebalance_days: 10              # 按 A/B 路线：10 日调仓最优（网格验证后写回）
+      notional_floor: 2000            # 微尘下限（50k 时 2500/名 > 2000 可成交）
       band_frac: 0.001                # 带宽调仓
 
 # =====================================================================

@@ -1580,10 +1580,17 @@ def _refresh_shadow_data(cfg, symbols) -> dict:
     Returns the meta dict embedded into ``shadow_status.json``. Hoisted out of
     :func:`_shadow_cycle` so multi-account runs refresh the union universe ONCE
     per invocation instead of once per account.
+
+    The research-report (sentiment) sweep only feeds the factor-pool overlay —
+    the ML artifact books do not consume it. When every account runs
+    ``alpha_source: ml`` the sweep is skipped (it re-fetches the full per-symbol
+    history and costs ~40 min for the 800-name universe).
     """
     from .paper.shadow import refresh_benchmark, refresh_pead, refresh_price, refresh_sentiment
 
     shadow = cfg.section("shadow")
+    accounts = list(shadow.get("accounts", []) or [])
+    pool_accounts = [a for a in accounts if str(a.get("alpha_source", "pool")) == "pool"]
     meta: dict = {}
     if bool(shadow.get("refresh_data", True)):
         print("shadow: refreshing price data (incremental) ...")
@@ -1591,9 +1598,11 @@ def _refresh_shadow_data(cfg, symbols) -> dict:
     if bool(shadow.get("refresh_pead", True)):
         print("shadow: refreshing PEAD profit (current year) ...")
         meta["pead_fetched"] = refresh_pead(cfg, symbols)
-    if bool(shadow.get("refresh_sentiment", True)):
+    if bool(shadow.get("refresh_sentiment", True)) and pool_accounts:
         print("shadow: refreshing research reports (heavy; same-day cache skip) ...")
         meta["sentiment"] = refresh_sentiment(cfg, symbols)
+    elif bool(shadow.get("refresh_sentiment", True)):
+        meta["sentiment"] = {"skipped": "all accounts ML — research reports feed the pool overlay only"}
     if bool(shadow.get("refresh_benchmark", True)):
         print("shadow: refreshing HS300 benchmark index ...")
         meta["benchmark"] = refresh_benchmark(cfg)
@@ -1664,9 +1673,21 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
         cfg, ledger, market, result, overlays or {}, meta, benchmark=benchmark,
         book_long_pct=(float(account.get("long_pct")) if account and "long_pct" in account else None),
         book_short_pct=(float(account.get("short_pct")) if account and "short_pct" in account else None),
+        book_cash=(float(account.get("cash")) if account and "cash" in account else None),
     )
     if account:
         status["account_name"] = account["name"]
+        status["account_config"] = {
+            "cash": float(account.get("cash", 0)),
+            "alpha_source": str(account.get("alpha_source", "ml")),
+            "ml_artifacts": list(account.get("ml_artifacts", [])),
+            "universe": str(account.get("universe", "hs300")),
+            "long_pct": float(account.get("long_pct", 0.10)),
+            "short_pct": float(account.get("short_pct", 0.0)),
+            "rebalance_days": int(account.get("rebalance_days", 10)),
+            "notional_floor": float(account.get("notional_floor", 0.0)),
+            "band_frac": float(account.get("band_frac", 0.0)),
+        }
     # the latest trading day's fills → the report's 当日成交 section
     fills = ledger.fills()
     last_day = str(fills["date"].max()) if len(fills) else None
@@ -1766,9 +1787,23 @@ def _calibrate_cycle(cfg, symbols, window_start, window_end, seed, auto_apply):
 
     from .paper import PaperLedger
 
-    ledger = PaperLedger(str(ROOT / str(cfg.section("shadow").get("ledger_db", "outputs/shadow_ledger.sqlite"))))
-    fills = ledger.fills()
-    ledger.close()
+    # Cost calibration recomputes on the *accumulated* fills of ALL shadow
+    # ledgers (dual-track accounts + the legacy single ledger) — one cost model
+    # must price the whole deployment, not just one account's history.
+    fills = pd.DataFrame()
+    for p in sorted((ROOT / "outputs").glob("shadow_ledger*.sqlite")):
+        try:
+            ledger = PaperLedger(str(p))
+            f = ledger.fills()
+            ledger.close()
+        except Exception:  # noqa: BLE001 — a corrupt/half-open ledger must not kill calibration
+            continue
+        if len(f):
+            fills = pd.concat([fills, f], ignore_index=True)
+    if fills.empty:
+        ledger = PaperLedger(str(ROOT / str(cfg.section("shadow").get("ledger_db", "outputs/shadow_ledger.sqlite"))))
+        fills = ledger.fills()
+        ledger.close()
 
     from . import calibration
 
@@ -2151,47 +2186,12 @@ def _render_autopilot_report(status, decision, state, extra, risk_cfg=None) -> s
     return "\n".join(lines) + "\n"
 
 
-def cmd_autopilot(args) -> int:
-    """自动闭环 — shadow → 周期任务(回校/衰减监控/重挖) → 风险闸门 → 持久化。
-
-    The single daily entry point that makes the shadow self-adjusting:
-
-    1. advance the shadow ledger (honouring the last kill-switch decision);
-    2. on a cadence, re-run §7 calibration (auto-apply) and score factor decay
-       (optionally re-mining), so the gate below sees the *freshest* decay flag;
-    3. evaluate the risk gate → normal / de_risk / halt;
-    4. persist the decision so the *next* run (and a bare ``shadow`` run) honours it.
-
-    Live order execution is deliberately NOT part of this loop — the shadow never
-    places real orders; the closed loop only adjusts the paper book and config.
-
-    Returns non-zero when a periodic task failed (so the scheduler can surface
-    it), even though the kill-switch itself never crashes the run.
+def _autopilot_pool_tasks(cfg, acfg, args, symbols, state, today) -> tuple[dict, bool]:
+    """Legacy pool-strategy periodic tasks: §7 re-calibration + factor-decay
+    monitor + event-driven re-mine. Only relevant when an account runs the
+    factor-pool book (``alpha_source: pool``); ML accounts iterate their model
+    via ``cli.py weekly`` instead.
     """
-    cfg = load_config()
-    acfg = cfg.section("autopilot")
-    if not bool(acfg.get("enabled", True)):
-        print("autopilot disabled (autopilot.enabled=false) — run `shadow` directly")
-        return 0
-
-    from .autopilot.risk_gate import evaluate_risk_gate
-    from .autopilot.state import ControlState
-    from .paper.shadow import resolve_shadow_universe
-
-    symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg)
-    state_file = str(ROOT / str(acfg.get("state_file", "outputs/autopilot_state.json")))
-    state = ControlState.load(state_file)
-    today = pd.Timestamp.today().date().isoformat()
-
-    # 1. shadow cycle, honouring the last decision
-    start = args.start or str(cfg.section("shadow").get("start_date", "2026-01-01"))
-    status, _ = _shadow_cycle(
-        cfg, symbols, start, args.end, args.seed, args.skip_refresh,
-        control_scale=state.gross_scale,
-    )
-
-    # 2. periodic tasks — run *before* the gate so a freshly-detected factor
-    # decay de-risks on this evaluation instead of one run later.
     extra: dict[str, str] = {}
     had_failure = False
 
@@ -2249,13 +2249,6 @@ def cmd_autopilot(args) -> int:
         else:
             extra["monitor"] = "not due"
 
-        # A persisted decay flag pins the book at de_risk, and a re-mine is the
-        # only path to clear it — so make it *event-driven*: when the flag is up,
-        # attempt a replacement on its own cooldown instead of waiting out the
-        # calendar (which would strand the book at half gross for up to
-        # ``remine_interval_days``). The monitor re-scores on the fixed research
-        # window, so re-running it daily adds nothing; only a re-mine changes the
-        # pool, hence the remine is what reacts to the event.
         if state.factor_decayed:
             if bool(acfg.get("auto_remine", False)):
                 cooldown = int(acfg.get("remine_cooldown_days", 5))
@@ -2268,11 +2261,8 @@ def cmd_autopilot(args) -> int:
                         state.last_remine = today
                         extra["remine"] = rem.get("note", "ran")
                         if rem.get("accepted"):
-                            # the decayed pool was replaced — clear the flag so the
-                            # gate (and the next monitor pass) re-score the *new*
-                            # pool rather than pinning de-risk on a dead pool.
                             state.factor_decayed = False
-                            state.decay_detail = {}  # stale per-factor detail, now wrong pool
+                            state.decay_detail = {}
                             extra["remine"] += " — decay flag cleared"
                     except Exception as exc:  # noqa: BLE001
                         had_failure = True
@@ -2287,43 +2277,113 @@ def cmd_autopilot(args) -> int:
         extra["monitor"] = "disabled"
         extra["remine"] = "disabled"
 
-    # 3. risk gate (sees the freshest factor_decayed / drawdown)
-    old_mode, old_scale = state.mode, state.gross_scale
+    return extra, had_failure
+
+
+def cmd_autopilot(args) -> int:
+    """自动闭环（双资金轨）— 逐账户影子推进 → 风险闸门 → 持久化。
+
+    The single daily entry point that makes the dual-track shadow self-adjusting:
+
+    1. per account, advance its shadow ledger (honouring the account's last
+       kill-switch decision) with the ML artifact book;
+    2. per account, evaluate the risk gate → normal / de_risk / halt and persist
+       the decision (``autopilot_state_<name>.json``) so the next run honours it;
+    3. model iteration is owned by ``cli.py weekly`` (retrain + trailing-Sharpe
+       promote gate); the factor-pool-specific §7/decay/re-mine tasks only run
+       for accounts still configured with ``alpha_source: pool``.
+
+    Live order execution is deliberately NOT part of this loop — the shadow never
+    places real orders; the closed loop only adjusts the paper book and config.
+
+    Returns non-zero when a periodic task failed (so the scheduler can surface
+    it), even though the kill-switch itself never crashes the run.
+    """
+    cfg = load_config()
+    acfg = cfg.section("autopilot")
+    if not bool(acfg.get("enabled", True)):
+        print("autopilot disabled (autopilot.enabled=false) — run `shadow` directly")
+        return 0
+
+    from .autopilot.risk_gate import evaluate_risk_gate
+    from .autopilot.state import ControlState
+    from .paper.shadow import resolve_shadow_universe
+
+    shadow = cfg.section("shadow")
+    accounts = list(shadow.get("accounts", []) or [])
+    if not accounts:
+        accounts = [None]
+    start = args.start or str(shadow.get("start_date", "2026-01-01"))
+    today = pd.Timestamp.today().date().isoformat()
     risk_cfg = dict(acfg.get("risk_gate", {}) or {})
-    decision = evaluate_risk_gate(status, state, risk_cfg, now=pd.Timestamp(today))
-    # Persist the freshest reasons every run — a hold must not leave the last
-    # change's stale reason in the state file (the panel/email read state.reason).
-    state.reason = " | ".join(decision.reasons)
-    if decision.changed:
-        state.mode = decision.mode
-        state.gross_scale = decision.gross_scale
-        state.since_date = today
-        _emit_alert(cfg, {
-            "ts": today,
-            "event": "mode_change",
-            "from": {"mode": old_mode, "gross_scale": old_scale},
-            "to": {"mode": decision.mode, "gross_scale": decision.gross_scale},
-            "reasons": decision.reasons,
-        })
-    state.last_evaluated = today
-    extra["kill_switch"] = f"{state.mode} (×{state.gross_scale:g})"
-    state.extra = dict(extra)
+    default_state_file = str(ROOT / str(acfg.get("state_file", "outputs/autopilot_state.json")))
 
-    # 4. persist + report
-    state.save(state_file)
-    report_path = ROOT / str(acfg.get("report_md", "outputs/autopilot_report.md"))
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(
-        _render_autopilot_report(status, decision, state, extra, risk_cfg), encoding="utf-8"
-    )
+    had_failure = False
+    for account in accounts:
+        name = account["name"] if account else "default"
+        source = str(account.get("alpha_source", "ml")) if account else "pool"
+        state_file = (
+            default_state_file.replace(".json", f"_{name}.json") if account
+            else default_state_file
+        )
+        state = ControlState.load(state_file)
+        uni_name = account.get("universe") if account else None
+        symbols = list(args.symbols) if args.symbols else resolve_shadow_universe(cfg, uni_name)
 
-    print("\n=== AUTOPILOT ===")
-    print(f"  control={state.mode} (gross x{state.gross_scale:g})  changed={decision.changed}")
-    for r in decision.reasons:
-        print(f"    - {r}")
-    for k, v in extra.items():
-        print(f"  {k}: {v}")
-    print(f"  wrote {report_path}  (state {state_file})")
+        # 1. shadow cycle, honouring the account's last decision
+        status, _ = _shadow_cycle(
+            cfg, symbols, start, args.end, args.seed, args.skip_refresh,
+            control_scale=state.gross_scale,
+            account=account,
+        )
+
+        # 2. periodic tasks (pool accounts only) — run *before* the gate so a
+        # freshly-detected factor decay de-risks on this evaluation.
+        if source == "pool":
+            extra, failed = _autopilot_pool_tasks(cfg, acfg, args, symbols, state, today)
+            had_failure = had_failure or failed
+        else:
+            extra = {"model_update": "weekly (cli.py weekly — retrain + promote gate)"}
+
+        # 3. risk gate (sees the freshest factor_decayed / drawdown)
+        old_mode, old_scale = state.mode, state.gross_scale
+        decision = evaluate_risk_gate(status, state, risk_cfg, now=pd.Timestamp(today))
+        # Persist the freshest reasons every run — a hold must not leave the last
+        # change's stale reason in the state file (the panel/email read state.reason).
+        state.reason = " | ".join(decision.reasons)
+        if decision.changed:
+            state.mode = decision.mode
+            state.gross_scale = decision.gross_scale
+            state.since_date = today
+            _emit_alert(cfg, {
+                "account": name,
+                "ts": today,
+                "event": "mode_change",
+                "from": {"mode": old_mode, "gross_scale": old_scale},
+                "to": {"mode": decision.mode, "gross_scale": decision.gross_scale},
+                "reasons": decision.reasons,
+            })
+        state.last_evaluated = today
+        extra["kill_switch"] = f"{state.mode} (×{state.gross_scale:g})"
+        state.extra = dict(extra)
+
+        # 4. persist + per-account report
+        state.save(state_file)
+        report_path = ROOT / str(acfg.get("report_md", "outputs/autopilot_report.md"))
+        if account:
+            report_path = report_path.with_name(report_path.stem + f"_{name}.md")
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(
+            _render_autopilot_report(status, decision, state, extra, risk_cfg), encoding="utf-8"
+        )
+
+        print(f"\n=== AUTOPILOT [{name}] ===")
+        print(f"  control={state.mode} (gross x{state.gross_scale:g})  changed={decision.changed}")
+        for r in decision.reasons:
+            print(f"    - {r}")
+        for k, v in extra.items():
+            print(f"  {k}: {v}")
+        print(f"  wrote {report_path}  (state {state_file})")
     return 1 if had_failure else 0
 
 
