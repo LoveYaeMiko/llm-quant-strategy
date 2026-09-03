@@ -322,6 +322,10 @@ shadow:
       pb_max_hold: 40                 # 最长持有 40 交易日（动量衰减回收）
       pb_entry_gate: 0.0              # 市场环境过滤器：60 日均权趋势 > 0 才开新仓
       pb_exit_gate: -0.03             # 市场趋势 < -3% 全簿清仓（"停止交易"规则化）
+      pb_use_intraday: true           # AlphaFeed 分钟K日内特征包（data/intraday/daily_features.parquet）
+      pb_tail_vol_max: 0.5            # 尾盘 30 分钟量比 ≤ 0.5 才入场（日内网格唯一正增益项：年化 +21.2% vs +20.8%）
+      pb_vwap_filter: 0.0             # 真实VWAP回调过滤（网格验证为负增益，关闭）
+      pb_stop_rv: false               # RV 止损（网格验证为负增益，关闭）
 
 # =====================================================================
 # 红线监控阈值 (red_lines) — 影子盘逐日输出的四条红线 + PAICC 量化面板展示。
