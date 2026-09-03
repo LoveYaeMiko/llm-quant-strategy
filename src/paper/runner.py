@@ -117,7 +117,8 @@ class PaperRunner:
             px = float(close.get(f.symbol, np.nan))
             if not np.isfinite(px):
                 raise RuntimeError(f"PIT violation: no close for {f.symbol} on {d}")
-            if not (px * (1.0 - slip) - 1e-9 <= f.price <= px * (1.0 + slip) + 1e-9):
+            # one 0.01 tick of tolerance for tick quantization of fill prices
+            if not (px * (1.0 - slip) - 0.011 - 1e-9 <= f.price <= px * (1.0 + slip) + 0.011 + 1e-9):
                 raise RuntimeError(
                     f"PIT violation: fill price {f.price:.4f} for {f.symbol} outside "
                     f"[{px * (1 - slip):.4f}, {px * (1 + slip):.4f}] on {d}"
@@ -131,6 +132,7 @@ class PaperRunner:
             return {"error": "no trading dates in window", "metrics": {}, "equity": {}, "resumed": False}
 
         ex = OrderExecutor(**self._executor_kwargs())
+        rets = prices.pct_change(fill_method=None)  # limit-lock legality gate
         last_date, saved_cash, saved_positions = self.ledger.latest_state()
         resumed = last_date is not None
         if resumed:
@@ -163,7 +165,7 @@ class PaperRunner:
                     targets = pd.DataFrame(
                         [{s: weights.get(s, 0.0) for s in universe}], index=[d]
                     )
-                    res = ex.execute(targets, prices.loc[[d]], equity=mtm)
+                    res = ex.execute(targets, prices.loc[[d]], equity=mtm, limit_locked=rets.loc[d])
                     fills = res.fills
                     if self.pit_strict:
                         self._check_fills(d, close, fills)

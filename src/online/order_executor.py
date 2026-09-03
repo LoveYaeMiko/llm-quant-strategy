@@ -113,6 +113,7 @@ class OrderExecutor:
         prices: pd.DataFrame,
         *,
         equity: Optional[float] = None,
+        limit_locked: Optional[pd.Series] = None,
     ) -> OrderResult:
         """Execute weight targets against a price panel.
 
@@ -120,6 +121,13 @@ class OrderExecutor:
         optimizer); ``prices`` is ``date x symbol`` close prices. Each row is a
         rebalance: deltas are turned into fills at the row's price, positions are
         capped, and cash is updated.
+
+        A-share legality: buys must be whole 100-share board lots (odd lots are
+        only allowed when closing a position entirely), fills land on the 0.01
+        tick, and no fill may execute against a limit-locked bar — buying into a
+        limit-up close / selling into a limit-down close is queue-uncertain and
+        is deferred to the next rebalance (``limit_locked`` = the day's
+        close-to-close returns per symbol).
         """
         result = OrderResult(positions=self.positions)
         equity = equity if equity is not None else self.cash
@@ -130,6 +138,7 @@ class OrderExecutor:
             row = targets.loc[date].dropna()
             prices_row = prices.loc[date] if date in prices.index else prices.iloc[0]
             px = prices_row.reindex(row.index).fillna(0.0)
+            locked = limit_locked
             for symbol in row.index:
                 if symbol in self.blacklist:
                     continue
@@ -144,6 +153,56 @@ class OrderExecutor:
                 delta = target_shares - current
                 if abs(delta) < 1e-9:
                     continue
+                # limit-lock legality — defer the trade to the next rebalance
+                if locked is not None:
+                    lv = locked.get(symbol, np.nan)
+                    if np.isfinite(lv):
+                        lim = 0.20 if symbol[:3] in ("688", "689", "300", "301") else 0.10
+                        if delta > 0 and lv >= lim - 0.005:
+                            continue  # buying into a limit-up close
+                        if delta < 0 and lv <= -(lim - 0.005):
+                            continue  # selling into a limit-down close
+                # board lot — whole 100-share lots; odd lots only when closing out
+                if delta > 0:
+                    if current < 0:
+                        # covering a short: the cover itself may close entirely
+                        # (odd lot OK), but any overshoot into a new long must be
+                        # a whole lot
+                        new_shares = current + delta
+                        if new_shares >= 0:
+                            long_lots = np.floor(new_shares / 100.0) * 100.0
+                            delta = -current + long_lots
+                            if delta <= 0:
+                                continue
+                        else:
+                            rounded_new = -np.ceil(abs(new_shares) / 100.0) * 100.0
+                            if rounded_new <= current:
+                                continue  # rounding would re-deepen the short
+                            delta = rounded_new - current
+                    else:
+                        delta = np.floor(delta / 100.0) * 100.0
+                        if delta <= 0:
+                            continue
+                elif delta < 0:
+                    if current > 0:
+                        new_shares = current + delta
+                        if new_shares > 0:
+                            rounded_new = np.ceil(new_shares / 100.0) * 100.0
+                            if rounded_new >= current:
+                                continue  # nothing sellable after lot rounding
+                            delta = rounded_new - current
+                        else:
+                            # flips through zero: close the long entirely (odd
+                            # lot OK), the overshoot (a new short) must be whole
+                            short_lots = np.floor(-new_shares / 100.0) * 100.0
+                            delta = -current - short_lots
+                            if delta >= 0:
+                                continue
+                    else:
+                        # adding to a short — whole lots
+                        delta = -np.floor(abs(delta) / 100.0) * 100.0
+                        if delta >= 0:
+                            continue
                 # cost governance — exits always execute (closing is one fill);
                 # entries/adjustments skip when too small to be worth the fees
                 is_exit = abs(target_w) < 1e-12
@@ -156,7 +215,9 @@ class OrderExecutor:
                         if abs(target_w - current_w) < self.band_frac:
                             continue
                 side = "buy" if delta > 0 else "sell"
-                fill_price = self._quote(price, side)
+                # fill on the 0.01 tick nearest the quoted price (tick
+                # quantization; the PIT band check tolerates one tick)
+                fill_price = float(round(self._quote(price, side), 2))
                 fee = self._fee(abs(delta) * fill_price, side)
                 self.cash -= delta * fill_price + fee
                 new_shares = current + delta

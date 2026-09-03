@@ -1712,6 +1712,7 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
                 "notional_floor": float(account.get("notional_floor", 0.0)),
                 "band_frac": float(account.get("band_frac", 0.0)),
                 "rebalance_days": int(account.get("rebalance_days", runner_kwargs.get("rebalance_days", 1))),
+                "max_position_pct": float(account.get("max_position_pct", runner_kwargs.get("max_position_pct", 0.05))),
             }
         )
     runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=seed, **runner_kwargs)

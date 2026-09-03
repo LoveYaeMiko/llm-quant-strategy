@@ -18,44 +18,49 @@ def _prices(px: dict[str, float], date: str = "2024-01-02") -> pd.DataFrame:
 
 
 def test_notional_floor_skips_dust_but_not_exits():
-    ex = OrderExecutor(cash=100_000, seed=1, notional_floor=3000)
-    ex.restore(100_000, {"AAA": 5})  # 5 shares at 1000 = 5% weight (at the cap)
-    # tiny adjustment: +0.1 share (~100 yuan) below the floor → skipped
+    ex = OrderExecutor(cash=2_000_000, seed=1, notional_floor=3000)
+    ex.restore(2_000_000, {"AAA": 100})  # 100 shares at 1000 = 5% weight (at the cap)
+    # tiny adjustment: +2 shares (~2k yuan) below the floor → skipped
     t = _targets({"AAA": 0.051})
-    r = ex.execute(t, _prices({"AAA": 1000.0}), equity=100_000)
+    r = ex.execute(t, _prices({"AAA": 1000.0}), equity=2_000_000)
     assert len(r.fills) == 0
-    assert ex.positions["AAA"] == 5  # untouched
-    # exit always executes regardless of size
+    assert ex.positions["AAA"] == 100  # untouched
+    # exit always executes regardless of size (odd lot allowed on full close)
     t2 = _targets({"AAA": 0.0})
-    r2 = ex.execute(t2, _prices({"AAA": 1000.0}), equity=100_000)
+    r2 = ex.execute(t2, _prices({"AAA": 1000.0}), equity=2_000_000)
     assert len(r2.fills) == 1
     assert "AAA" not in ex.positions
 
 
 def test_notional_floor_allows_large_entry():
-    ex = OrderExecutor(cash=100_000, seed=1, notional_floor=3000)
-    t = _targets({"BBB": 0.05})  # 5k notional > floor
-    r = ex.execute(t, _prices({"BBB": 100.0}), equity=100_000)
+    ex = OrderExecutor(cash=2_000_000, seed=1, notional_floor=3000)
+    t = _targets({"BBB": 0.05})  # 1000 shares / 100k notional > floor
+    r = ex.execute(t, _prices({"BBB": 100.0}), equity=2_000_000)
     assert len(r.fills) == 1
     assert "BBB" in ex.positions
+    assert ex.positions["BBB"] % 100 == 0
 
 
 def test_band_rebalancing_holds_small_drift():
-    ex = OrderExecutor(cash=100_000, seed=1, band_frac=0.002)
-    ex.restore(100_000, {"AAA": 5})  # 5% weight at 1000
-    # target 4.9% — drift 0.1% inside the 0.2% band → held
-    r = ex.execute(_targets({"AAA": 0.049}), _prices({"AAA": 1000.0}), equity=100_000)
+    ex = OrderExecutor(cash=2_000_000, seed=1, band_frac=0.002)
+    ex.restore(2_000_000, {"AAA": 200})  # 2 board lots at 1000 (10% weight)
+    # target 9.9% — drift 0.1% inside the band → held
+    r = ex.execute(_targets({"AAA": 0.099}), _prices({"AAA": 1000.0}), equity=2_000_000)
     assert len(r.fills) == 0
-    # target 4.0% — drift 1.0% outside the band → traded
-    r2 = ex.execute(_targets({"AAA": 0.04}), _prices({"AAA": 1000.0}), equity=100_000)
+    # target 5.0% — drift 5% outside the band → one lot sold (board-lot rounding)
+    r2 = ex.execute(_targets({"AAA": 0.05}), _prices({"AAA": 1000.0}), equity=2_000_000)
     assert len(r2.fills) == 1
+    assert ex.positions["AAA"] == 100
 
 
-def test_defaults_keep_legacy_behaviour():
-    ex = OrderExecutor(cash=100_000, seed=1)
-    t = _targets({"AAA": 0.001})  # tiny fill with no governance → still trades
-    r = ex.execute(t, _prices({"AAA": 1000.0}), equity=100_000)
-    assert len(r.fills) == 1
+def test_board_lot_rounds_tiny_fills_away():
+    ex = OrderExecutor(cash=2_000_000, seed=1)
+    t = _targets({"AAA": 0.001})  # 2 shares → rounds to 0, no fill
+    r = ex.execute(t, _prices({"AAA": 1000.0}), equity=2_000_000)
+    assert len(r.fills) == 0
+    t2 = _targets({"AAA": 0.05})  # 100 shares → a whole lot
+    r2 = ex.execute(t2, _prices({"AAA": 1000.0}), equity=2_000_000)
+    assert len(r2.fills) == 1
 
 
 if __name__ == "__main__":

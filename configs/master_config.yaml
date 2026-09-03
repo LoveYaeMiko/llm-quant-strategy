@@ -280,6 +280,7 @@ shadow:
       universe: "hs300_500"           # 模型在 hs300_500 截面训练；HS300 内排序 alpha 不足（+0.8% vs +13.5% 年化）
       long_pct: 0.05                  # 5%×多头，去空腿（B 网格：+26.3%/Sharpe 1.88/maxDD 10.1%）
       short_pct: 0.0
+      max_position_pct: 0.08          # 自检修复：100 股整手下单笔名义 ~6667 元（0.05 上限时 5000 元，40 元以上股票买不进整手）
       rebalance_days: 10              # B 网格最优：10 日调仓
       notional_floor: 2000            # 微尘下限
       band_frac: 0.001                # 带宽调仓
@@ -289,16 +290,19 @@ shadow:
       ml_artifacts: ["lgbm"]          # 同工件；C 轨特征缓存与 B 轨（同截面）复用
       ml_ensemble: true
       universe: "hs300_500"           # 模型训练截面（同 B 轨结论）
-      long_pct: 0.05                  # 5%×长多（15 名 × 单票 5% 上限 = 75% 仓位，每股 ~2500 元）
+      long_pct: 0.05                  # 5%×长多（15 名，每股 ~3333 元）
       short_pct: 0.0                  # 2026 空腿纯拖累，5 万轨同样长多
+      max_position_pct: 0.08          # 自检修复：100 股整手下单笔名义 ~3333 元（0.05 时 2500 元，>25 元股票买不进整手）
       rebalance_days: 10              # 按 A/B 路线：10 日调仓最优（网格验证后写回）
-      notional_floor: 2000            # 微尘下限（50k 时 2500/名 > 2000 可成交）
+      notional_floor: 1000            # 自检修复：50k×5% 档在 800 名全截面（40 名）下每股仅 1250 元，
+                                      # 2000 下限会导致整轨停摆；1000 下限两截面口径下均可成交
       band_frac: 0.001                # 带宽调仓
     - name: "D_5W"
       cash: 50000
       alpha_source: "pullback"        # Martin Luk 回撤买入纪律（日线版，ML 扫描 + 改良）
       universe: "hs300_500"           # 动量/ML 截面同 B/C
       rebalance_days: 1               # 逐日评估止损/追踪/入场
+      max_position_pct: 0.20          # 自检修复：6 槽 × 16.7% 设计需要 0.20 上限（0.05 会把 D 压成 6×5%=30% 仓位）
       notional_floor: 2000            # 每股 ~8333 元（50k/6 槽）
       band_frac: 0.0
       pb_rank_source: "ml"            # 强势股扫描器 = ML 工件截面排名（2026 A 股原始动量回撤失效，ML 扫描为改良版）

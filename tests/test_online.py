@@ -94,12 +94,18 @@ def test_order_executor_fills_and_caps(market):
         columns=symbols,
     )
     prices = market.price_panel.reindex(dates)
-    ex = OrderExecutor(cash=100_000.0, max_position_pct=0.05, seed=0)
+    ex = OrderExecutor(cash=2_000_000.0, max_position_pct=0.05, seed=0)
     res = ex.execute(targets, prices)
     assert len(res.fills) > 0
-    # every position within the cap
+    # every position within the cap *at the price it was established* (the cap
+    # is enforced per execution day; the loosest bound is the window-min price),
+    # and every position a whole 100-share board lot
     for sym, shares in res.positions.items():
-        assert abs(shares) <= 0.05 * 100_000.0 / prices.loc[dates[-1], sym] + 1e-6
+        assert abs(shares) <= 0.05 * 2_000_000.0 / prices[sym].min() + 1e-6
+        assert abs(shares) % 100 == 0
+    for f in res.fills:
+        assert abs(f.shares) % 100 == 0  # entries are whole lots (no full closes here)
+        assert round(f.price * 100, 6) % 1 == 0  # 0.01 tick
 
 
 def test_order_executor_blacklist(market):
