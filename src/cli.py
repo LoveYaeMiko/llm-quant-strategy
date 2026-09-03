@@ -1544,8 +1544,9 @@ def cmd_paper(args) -> int:
     return 0
 
 
-def _build_account_portfolio(cfg, market, symbols, account, control_scale=None):
-    """Per-account portfolio: ML artifact book or the factor-pool book.
+def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, ledger=None):
+    """Per-account portfolio: ML artifact book, the pullback (Martin Luk style)
+    book, or the factor-pool book.
 
     ``account`` (a ``shadow.accounts`` entry) selects the signal source and the
     book shape: the 10W track runs half-size deciles + cost governance, the 2M
@@ -1570,6 +1571,50 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None):
             cfg=cfg,
             n_jobs=max(2, (os.cpu_count() or 4) - 2),
         ), None
+    if source == "pullback":
+        from .paper.pullback_book import PullbackParams, PullbackPortfolio
+
+        rank_source = str(account.get("pb_rank_source", "momentum"))
+        scores = None
+        if rank_source == "ml":
+            # the ML artifact is the "strong-stock scanner" (validated A-share
+            # cross-sectional alpha); reuse the cached feature frame from
+            # MLBookPortfolio so the daily run stays fast.
+            import os
+
+            from .ml import load_artifact, score_artifact
+            from .paper.ml_book import _feature_frame, _resolve_artifact
+
+            meta_path, model_path = _resolve_artifact("lgbm", "")
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            frame = _feature_frame(market, meta, cfg, n_jobs=max(2, (os.cpu_count() or 4) - 2))
+            assert list(frame.columns) == meta["features"], "artifact columns out of sync"
+            scores = score_artifact(load_artifact(model_path), frame)
+
+        params = PullbackParams(
+            k=int(account.get("pb_k", 8)),
+            rank_source=rank_source,
+            rank_min=float(account.get("pb_rank_min", 0.8)),
+            mom_window=int(account.get("pb_mom_window", 63)),
+            mom_long_rank_min=float(account.get("pb_mom_long_rank_min", 0.0)),
+            bounce_confirm=bool(account.get("pb_bounce_confirm", False)),
+            ema_fast=int(account.get("pb_ema_fast", 9)),
+            ema_zone=int(account.get("pb_ema_zone", 21)),
+            zone_band=float(account.get("pb_zone_band", 0.02)),
+            pullback_min=float(account.get("pb_pullback_min", 0.03)),
+            vol_shrink=bool(account.get("pb_vol_shrink", True)),
+            atr_mult=float(account.get("pb_atr_mult", 1.5)),
+            stop_lo=float(account.get("pb_stop_lo", 0.025)),
+            stop_hi=float(account.get("pb_stop_hi", 0.04)),
+            breakeven_r=float(account.get("pb_breakeven_r", 1.0)),
+            trail_r=float(account.get("pb_trail_r", 1.5)),
+            exit_into_strength_r=float(account.get("pb_exit_into_strength_r", 0.0)),
+            max_hold=int(account.get("pb_max_hold", 40)),
+            entry_gate=float(account.get("pb_entry_gate", 0.0)),
+            exit_gate=float(account.get("pb_exit_gate", -0.03)),
+            trend_days=int(account.get("pb_trend_days", 60)),
+        )
+        return PullbackPortfolio(market, params, symbols=symbols, ledger=ledger, scores=scores), None
     portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
     return portfolio, overlays
 
@@ -1643,18 +1688,22 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     market = _build_market_for_paper(cfg, symbols, start, None, seed=seed)
     latest = pd.Timestamp(market.price_panel.index.max()).date().isoformat()
     end = end or latest
-    if account:
-        portfolio, overlays = _build_account_portfolio(cfg, market, symbols, account, control_scale)
-    else:
-        portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
 
     from .paper import PaperLedger, PaperRunner
 
     # ledger/status/report all anchor to ROOT (not the process CWD) so the daily
     # scheduler, a bare `shadow` run and the autopilot read the *same* ledger.
+    # Created BEFORE the portfolio so stateful books (the pullback book) can
+    # seed their open lots from the resumable fills history.
     base = str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite"))
     ledger_path = base if not suffix else base.replace(".sqlite", f"{suffix}.sqlite")
     ledger = PaperLedger(str(ROOT / ledger_path))
+
+    if account:
+        portfolio, overlays = _build_account_portfolio(cfg, market, symbols, account, control_scale, ledger=ledger)
+    else:
+        portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
+
     runner_kwargs = paper_runner_kwargs(cfg)
     if account:
         runner_kwargs.update(
@@ -1688,6 +1737,26 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
             "notional_floor": float(account.get("notional_floor", 0.0)),
             "band_frac": float(account.get("band_frac", 0.0)),
         }
+        if str(account.get("alpha_source", "ml")) == "pullback":
+            status["account_config"]["pullback"] = {
+                "k": int(account.get("pb_k", 8)),
+                "rank_source": str(account.get("pb_rank_source", "momentum")),
+                "rank_min": float(account.get("pb_rank_min", 0.8)),
+                "ema_fast": int(account.get("pb_ema_fast", 9)),
+                "ema_zone": int(account.get("pb_ema_zone", 21)),
+                "zone_band": float(account.get("pb_zone_band", 0.02)),
+                "pullback_min": float(account.get("pb_pullback_min", 0.03)),
+                "vol_shrink": bool(account.get("pb_vol_shrink", True)),
+                "atr_mult": float(account.get("pb_atr_mult", 1.5)),
+                "stop_lo": float(account.get("pb_stop_lo", 0.025)),
+                "stop_hi": float(account.get("pb_stop_hi", 0.04)),
+                "breakeven_r": float(account.get("pb_breakeven_r", 1.0)),
+                "trail_r": float(account.get("pb_trail_r", 1.5)),
+                "exit_into_strength_r": float(account.get("pb_exit_into_strength_r", 0.0)),
+                "max_hold": int(account.get("pb_max_hold", 40)),
+                "entry_gate": float(account.get("pb_entry_gate", 0.0)),
+                "exit_gate": float(account.get("pb_exit_gate", -0.03)),
+            }
     # the latest trading day's fills → the report's 当日成交 section
     fills = ledger.fills()
     last_day = str(fills["date"].max()) if len(fills) else None

@@ -294,6 +294,30 @@ shadow:
       rebalance_days: 10              # 按 A/B 路线：10 日调仓最优（网格验证后写回）
       notional_floor: 2000            # 微尘下限（50k 时 2500/名 > 2000 可成交）
       band_frac: 0.001                # 带宽调仓
+    - name: "D_5W"
+      cash: 50000
+      alpha_source: "pullback"        # Martin Luk 回撤买入纪律（日线版，ML 扫描 + 改良）
+      universe: "hs300_500"           # 动量/ML 截面同 B/C
+      rebalance_days: 1               # 逐日评估止损/追踪/入场
+      notional_floor: 2000            # 每股 ~8333 元（50k/6 槽）
+      band_frac: 0.0
+      pb_rank_source: "ml"            # 强势股扫描器 = ML 工件截面排名（2026 A 股原始动量回撤失效，ML 扫描为改良版）
+      pb_rank_min: 0.8                # 排名前 20% 才有入场资格
+      pb_k: 6                         # 6 个等权槽位（网格最优：2026 +6.4% 年化 / Sharpe 1.34 / maxDD 2.2%）
+      pb_ema_fast: 21                 # 慢追踪 EMA(21)（网格最优：让利润跑得更远）
+      pb_ema_zone: 21                 # 回调区间 EMA(21)
+      pb_zone_band: 0.02              # |收盘/EMA21 - 1| ≤ 2%
+      pb_pullback_min: 0.03           # 距 10 日高点至少回落 3%（真实回调）
+      pb_vol_shrink: true             # 缩量回调确认（5 日均量 < 20 日均量）
+      pb_atr_mult: 1.5                # ATR 自适应止损 1.5×ATR20
+      pb_stop_lo: 0.025               # 止损下限 2.5%
+      pb_stop_hi: 0.04                # 止损上限 4%
+      pb_breakeven_r: 1.0             # +1R 后止损上移至成本
+      pb_trail_r: 1.5                 # +1.5R 后启用追踪
+      pb_exit_into_strength_r: 3.0    # +3R 且乖离 EMA21>8% 冲高离场（锁定 parabolic 利润）
+      pb_max_hold: 40                 # 最长持有 40 交易日（动量衰减回收）
+      pb_entry_gate: 0.0              # 市场环境过滤器：60 日均权趋势 > 0 才开新仓
+      pb_exit_gate: -0.03             # 市场趋势 < -3% 全簿清仓（"停止交易"规则化）
 
 # =====================================================================
 # 红线监控阈值 (red_lines) — 影子盘逐日输出的四条红线 + PAICC 量化面板展示。
