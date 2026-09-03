@@ -49,6 +49,12 @@ class OrderResult:
         }
 
 
+def _board_lot(symbol: str) -> int:
+    """Minimum board lot: STAR Market (688/689) trades 200-share min in 1-share
+    increments above it; everywhere else it is 100-share multiples."""
+    return 200 if symbol[:3] in ("688", "689") else 100
+
+
 class OrderExecutor:
     """Deterministic execution against a ``(date, symbol)`` price panel."""
 
@@ -162,7 +168,10 @@ class OrderExecutor:
                             continue  # buying into a limit-up close
                         if delta < 0 and lv <= -(lim - 0.005):
                             continue  # selling into a limit-down close
-                # board lot — whole 100-share lots; odd lots only when closing out
+                # board lot — STAR Market (688) is 200-share min in 1-share
+                # increments; elsewhere whole 100-share lots, odd lots only when
+                # closing out
+                lot = _board_lot(symbol)
                 if delta > 0:
                     if current < 0:
                         # covering a short: the cover itself may close entirely
@@ -170,37 +179,53 @@ class OrderExecutor:
                         # a whole lot
                         new_shares = current + delta
                         if new_shares >= 0:
-                            long_lots = np.floor(new_shares / 100.0) * 100.0
-                            delta = -current + long_lots
+                            if lot == 200:
+                                long_delta = np.floor(new_shares) if new_shares >= lot else 0.0
+                            else:
+                                long_delta = np.floor(new_shares / lot) * lot
+                            delta = -current + long_delta
                             if delta <= 0:
                                 continue
                         else:
-                            rounded_new = -np.ceil(abs(new_shares) / 100.0) * 100.0
+                            rounded_new = -np.ceil(abs(new_shares) / lot) * lot
                             if rounded_new <= current:
                                 continue  # rounding would re-deepen the short
                             delta = rounded_new - current
                     else:
-                        delta = np.floor(delta / 100.0) * 100.0
-                        if delta <= 0:
-                            continue
+                        if lot == 200:
+                            delta = np.floor(delta)
+                            if delta < lot:
+                                continue
+                        else:
+                            delta = np.floor(delta / lot) * lot
+                            if delta <= 0:
+                                continue
                 elif delta < 0:
                     if current > 0:
                         new_shares = current + delta
                         if new_shares > 0:
-                            rounded_new = np.ceil(new_shares / 100.0) * 100.0
-                            if rounded_new >= current:
-                                continue  # nothing sellable after lot rounding
-                            delta = rounded_new - current
+                            if lot == 200:
+                                if new_shares < lot:
+                                    delta = -current  # can't keep <200 — close out
+                                else:
+                                    delta = np.floor(new_shares) - current
+                                    if delta >= 0:
+                                        continue
+                            else:
+                                rounded_new = np.ceil(new_shares / lot) * lot
+                                if rounded_new >= current:
+                                    continue  # nothing sellable after lot rounding
+                                delta = rounded_new - current
                         else:
                             # flips through zero: close the long entirely (odd
                             # lot OK), the overshoot (a new short) must be whole
-                            short_lots = np.floor(-new_shares / 100.0) * 100.0
+                            short_lots = np.floor(-new_shares / lot) * lot
                             delta = -current - short_lots
                             if delta >= 0:
                                 continue
                     else:
                         # adding to a short — whole lots
-                        delta = -np.floor(abs(delta) / 100.0) * 100.0
+                        delta = -np.floor(abs(delta) / lot) * lot
                         if delta >= 0:
                             continue
                 # cost governance — exits always execute (closing is one fill);

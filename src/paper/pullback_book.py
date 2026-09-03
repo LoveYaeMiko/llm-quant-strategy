@@ -71,6 +71,10 @@ class PullbackParams:
     entry_gate: float = 0.0       # market 60d trend must exceed this to enter
     exit_gate: float = -0.03      # below this → liquidate the whole book
     trend_days: int = 60
+    # intraday (AlphaFeed minute klines) enhancements — 0/False = off
+    vwap_filter: float = 0.0      # entry requires |close/daily_VWAP - 1| <= this
+    stop_rv: bool = False         # stop width = max(ATR20, RV20) — realized vol
+    tail_vol_max: float = 0.0     # entry requires last-30min volume share <= this
 
 
 class PullbackPortfolio:
@@ -84,6 +88,7 @@ class PullbackPortfolio:
         symbols: Optional[list[str]] = None,
         ledger=None,
         scores: Optional[pd.Series] = None,
+        intraday: Optional[dict[str, pd.DataFrame]] = None,
     ) -> None:
         self.p = params or PullbackParams()
         close_wide = market.price_panel
@@ -121,6 +126,20 @@ class PullbackPortfolio:
             self._rank = wide.rank(axis=1, pct=True)
         else:
             self._rank = self._mom_rank
+
+        # intraday enhancements (true VWAP / realized vol / tail volume)
+        self._vwap_gap = None
+        self._rv20 = None
+        self._tail_vol = None
+        if intraday:
+            for key, frame in intraday.items():
+                f = frame.reindex(index=close_wide.index, columns=syms)
+                if key == "vwap_gap":
+                    self._vwap_gap = f
+                elif key == "rv":
+                    self._rv20 = f.rolling(20, min_periods=10).mean()
+                elif key == "tail_vol":
+                    self._tail_vol = f
         self._vol5 = vol_wide.rolling(5, min_periods=5).mean()
         self._vol20 = vol_wide.rolling(20, min_periods=20).mean()
 
@@ -197,9 +216,17 @@ class PullbackPortfolio:
             atr_pct = float(self._atr_pct.loc[d, symbol])
         except Exception:  # noqa: BLE001
             atr_pct = np.nan
-        if not np.isfinite(atr_pct) or atr_pct <= 0:
+        vol_pct = atr_pct
+        if self.p.stop_rv and self._rv20 is not None:
+            try:
+                rv_pct = float(self._rv20.loc[d, symbol])
+            except Exception:  # noqa: BLE001
+                rv_pct = np.nan
+            if np.isfinite(rv_pct) and rv_pct > 0:
+                vol_pct = max(vol_pct, rv_pct) if np.isfinite(vol_pct) else rv_pct
+        if not np.isfinite(vol_pct) or vol_pct <= 0:
             return self.p.stop_lo
-        return float(np.clip(self.p.atr_mult * atr_pct, self.p.stop_lo, self.p.stop_hi))
+        return float(np.clip(self.p.atr_mult * vol_pct, self.p.stop_lo, self.p.stop_hi))
 
     # ---------------------------------------------------------------- signals
     def _entry_candidates(self, d: pd.Timestamp) -> pd.DataFrame:
@@ -226,6 +253,10 @@ class PullbackPortfolio:
             mask &= (px > self._prev_close.loc[d]).fillna(False)
         if self.p.vol_shrink:
             mask &= (vol5 < vol20).fillna(False)
+        if self.p.vwap_filter > 0 and self._vwap_gap is not None:
+            mask &= (self._vwap_gap.loc[d].abs() <= self.p.vwap_filter).fillna(False)
+        if self.p.tail_vol_max > 0 and self._tail_vol is not None:
+            mask &= (self._tail_vol.loc[d] <= self.p.tail_vol_max).fillna(False)
         cand = pd.DataFrame(
             {
                 "symbol": px.index[mask],

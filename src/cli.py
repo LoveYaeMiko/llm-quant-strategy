@@ -1576,6 +1576,7 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
 
         rank_source = str(account.get("pb_rank_source", "momentum"))
         scores = None
+        intraday = None
         if rank_source == "ml":
             # the ML artifact is the "strong-stock scanner" (validated A-share
             # cross-sectional alpha); reuse the cached feature frame from
@@ -1590,6 +1591,10 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
             frame = _feature_frame(market, meta, cfg, n_jobs=max(2, (os.cpu_count() or 4) - 2))
             assert list(frame.columns) == meta["features"], "artifact columns out of sync"
             scores = score_artifact(load_artifact(model_path), frame)
+        if bool(account.get("pb_use_intraday", False)):
+            from .data.intraday import load_intraday_frames
+
+            intraday = load_intraday_frames(cfg, symbols)
 
         params = PullbackParams(
             k=int(account.get("pb_k", 8)),
@@ -1613,8 +1618,11 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
             entry_gate=float(account.get("pb_entry_gate", 0.0)),
             exit_gate=float(account.get("pb_exit_gate", -0.03)),
             trend_days=int(account.get("pb_trend_days", 60)),
+            vwap_filter=float(account.get("pb_vwap_filter", 0.0)),
+            stop_rv=bool(account.get("pb_stop_rv", False)),
+            tail_vol_max=float(account.get("pb_tail_vol_max", 0.0)),
         )
-        return PullbackPortfolio(market, params, symbols=symbols, ledger=ledger, scores=scores), None
+        return PullbackPortfolio(market, params, symbols=symbols, ledger=ledger, scores=scores, intraday=intraday), None
     portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
     return portfolio, overlays
 
@@ -1774,6 +1782,13 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     status_path.parent.mkdir(parents=True, exist_ok=True)
     status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     report_path.write_text(render_shadow_report(status, trades=trades), encoding="utf-8")
+    # local trade archive — every fill is saved as CSV next to the status
+    # (the ledger SQLite is the system of record; the CSV is the human-readable
+    # compliance/audit trail, rewritable on every run)
+    if len(fills):
+        archive_cols = ["seq", "date", "symbol", "side", "shares", "price", "commission", "notional"]
+        archive_cols = [c for c in archive_cols if c in fills.columns]
+        fills[archive_cols].to_csv(status_path.with_name(f"trades{suffix}.csv"), index=False)
     return status, ledger_path
 
 

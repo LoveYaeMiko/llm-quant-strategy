@@ -65,10 +65,19 @@ def legality_audit(account: str, path: str, market) -> dict:
     flips = int((grp > 1).sum())
     out["same_day_flips"] = flips
 
-    # board lot: 100-share multiples
-    odd = fills[np.abs(fills["shares"]) % 100 != 0]
+    # board lot: 100-share multiples (main/ChiNext), 200-share min (STAR) —
+    # STAR trades in 1-share increments above 200, so only non-STAR symbols
+    # are checked against the 100-multiple rule
+    non_star = ~fills["symbol"].str.startswith(("688", "689"))
+    odd = fills[non_star & (np.abs(fills["shares"]) % 100 != 0)]
+    star_viol = 0
+    for _, f in fills.iterrows():
+        sym = str(f["symbol"])
+        if sym[:3] in ("688", "689") and f["side"] == "buy" and abs(f["shares"]) < 200:
+            star_viol += 1
     out["odd_lot_fills"] = int(len(odd))
     out["odd_lot_notional"] = float(odd["notional"].abs().sum()) if len(odd) else 0.0
+    out["star_lot_violations"] = star_viol
 
     # price tick 0.01
     tick_off = fills[(fills["price"] * 100).round(3) % 1 != 0]
@@ -120,6 +129,7 @@ def main() -> int:
         print(f"  T+1 same-day flip: {r['same_day_flips']}")
         print(f"  odd-lot fills (not 100-share): {r['odd_lot_fills']} "
               f"(notional {r['odd_lot_notional']:,.0f})")
+        print(f"  STAR(688) <200-share buys: {r.get('star_lot_violations', '?')}")
         print(f"  off-tick fills: {r['off_tick_fills']}")
         print(f"  limit-locked fills: {r['limit_locked_fills']} "
               f"{r['limit_locked_examples']}")

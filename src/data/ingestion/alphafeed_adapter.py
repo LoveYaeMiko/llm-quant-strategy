@@ -88,14 +88,22 @@ class AlphaFeedAdapter:
     # -- intraday family (分钟K线 / 日内走势 / 盘口), rate-limited at 60/min ---
 
     def fetch_minute_klines(
-        self, symbols, period: str = "1m", count: int = 240
+        self, symbols, period: str = "1m", count: int = 240,
+        start=None, end=None,
     ) -> Dict[str, pd.DataFrame]:
-        """Batch minute klines (近一年, ≤10000 bars/symbol/call)."""
+        """Batch minute klines (近一年, ≤10000 bars/symbol/call), optional window."""
+        kwargs: dict = {
+            "symbols": list(symbols),
+            "period": period,
+            "count": int(count),
+            "to_dataframe": True,
+        }
+        if start is not None:
+            kwargs["start_time"] = _to_ms(start)
+        if end is not None:
+            kwargs["end_time"] = _to_ms(end)
         with RateLimiters.alphafeed_minute_batch:
-            return self.client.klines.batch(
-                symbols=list(symbols), period=period, count=int(count),
-                to_dataframe=True,
-            )
+            return self.client.klines.batch(**kwargs)
 
     def fetch_intraday(self, symbols, period: str = "1m", count: int = 240) -> Dict[str, pd.DataFrame]:
         """Batch 日内走势 (intraday trend per symbol)."""
