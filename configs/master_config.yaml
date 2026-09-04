@@ -341,6 +341,15 @@ live:
   account: "D_5W"                    # 实时执行账户（须为 pullback 账户）
   poll_seconds: 60                   # 轮询间隔（秒）
 
+# D 轨模型长期自优化闭环（月度滚动重训 + 平行挑战者 + 前向晋升闸门）
+# —— 替代原周六 §7 校准与周日周度任务；详见 docs/D_MODEL_CYCLE.md
+d_model_cycle:
+  enabled: true
+  challenger_ledger: "outputs/shadow_ledger_D_5W_CH.sqlite"  # 挑战者独立账本
+  margin_pp: 0.3                     # 晋升边际：挑战者需超现役 +0.3pp/月
+  min_fills: 5                       # 晋升前提：评估窗至少 5 笔挑战者成交
+  window_days: 30                    # 前向评估窗（自然日）
+
 # =====================================================================
 # 红线监控阈值 (red_lines) — 影子盘逐日输出的四条红线 + PAICC 量化面板展示。
 # 原硬编码于 src/paper/shadow.py 的 10/20 阈值移入配置，改阈值无需改代码。

@@ -1685,6 +1685,37 @@ def cmd_live(args) -> int:
     return trader.run()
 
 
+def cmd_dcycle(args) -> int:
+    """D 轨模型长期自优化闭环 — refit / challenger / decide / audit-cost。
+
+    Replaces the Saturday §7 calibrate (``audit-cost`` — the real A-share cost
+    structure is regulatory-fixed, only drift is alerted) and the Sunday weekly
+    (monthly rolling refit + parallel challenger + forward promotion gate).
+    """
+    from .d_cycle import (
+        audit_cost_consistency, decide_promotion, refit_challenger, run_challenger,
+    )
+
+    cfg = load_config()
+    if args.mode == "refit":
+        r = refit_challenger(cfg)
+        print(json.dumps(r, ensure_ascii=False, indent=2, default=str))
+        return 0 if r.get("ok") else 1
+    if args.mode == "challenger":
+        r = run_challenger(cfg)
+        print(json.dumps(r, ensure_ascii=False, indent=2, default=str))
+        return 0 if r.get("ok") else 1
+    if args.mode == "decide":
+        r = decide_promotion(cfg)
+        print(json.dumps(r, ensure_ascii=False, indent=2, default=str))
+        return 0 if r.get("ok") else 1
+    if args.mode == "audit-cost":
+        r = audit_cost_consistency(cfg)
+        print(json.dumps(r, ensure_ascii=False, indent=2, default=str))
+        return 0 if r.get("ok") else 1
+    return 1
+
+
 def _refresh_shadow_data(cfg, symbols) -> dict:
     """Refresh price/PEAD/sentiment/benchmark once for the shadow loop.
 
@@ -2859,6 +2890,17 @@ def main(argv: list[str] | None = None) -> int:
         help="周度自动闭环 — 纳入当周数据重训，尾部 Sharpe 改善才 promote（PAICC 周日调度）",
     )
     p_w.set_defaults(func=_cmd_weekly)
+
+    p_dc = sub.add_parser(
+        "dcycle",
+        help="D 轨模型自优化闭环 — refit(月度滚动重训)/challenger(每日平行影子)/decide(前向晋升闸门)/audit-cost(成本一致性)",
+    )
+    p_dc.add_argument(
+        "mode",
+        choices=["refit", "challenger", "decide", "audit-cost"],
+        help="refit=月度滚动重训挑战者 | challenger=推进挑战者账本 | decide=晋升闸门 | audit-cost=成本一致性检查",
+    )
+    p_dc.set_defaults(func=cmd_dcycle)
 
     args = parser.parse_args(argv)
     try:
