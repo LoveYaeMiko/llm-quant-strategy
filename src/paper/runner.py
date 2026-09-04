@@ -150,6 +150,29 @@ class PaperRunner:
             mtm = ex.settle(close)
 
             fills: list[Fill] = []
+            # intraday stop sweep (minute-bar based, times < 15:00) — executes
+            # stop breaches during the day, before the close rebalance. T+1 is
+            # safe by construction: positions were entered at an earlier close.
+            exiter = getattr(self.portfolio, "intraday_exits", None)
+            if exiter is not None:
+                for sig in exiter(d):
+                    shares = ex.positions.get(sig["symbol"], 0.0)
+                    if abs(shares) < 1e-9:
+                        continue
+                    px = float(sig["price"])
+                    fill_px = float(np.floor(px * (1.0 - self.slippage_bps / 10_000.0) * 100.0) / 100.0)
+                    if fill_px <= 0:
+                        continue
+                    notional = abs(shares) * fill_px
+                    fee = ex._fee(notional, "sell")
+                    ex.cash += notional - fee
+                    ex.positions.pop(sig["symbol"], None)
+                    fills.append(Fill(
+                        date=str(d.date()), symbol=sig["symbol"], side="sell",
+                        shares=-abs(shares), price=fill_px, commission=float(fee),
+                        notional=float(notional), time=str(sig.get("time", "")),
+                    ))
+
             if (i - start_idx) % self.rebalance_days == 0:
                 weights = self.portfolio.compute_weights(self.symbols, d)
                 if weights:
@@ -166,9 +189,9 @@ class PaperRunner:
                         [{s: weights.get(s, 0.0) for s in universe}], index=[d]
                     )
                     res = ex.execute(targets, prices.loc[[d]], equity=mtm, limit_locked=rets.loc[d])
-                    fills = res.fills
                     if self.pit_strict:
-                        self._check_fills(d, close, fills)
+                        self._check_fills(d, close, res.fills)
+                    fills.extend(res.fills)
 
             end_equity = ex.settle(close)
             gross = 0.0

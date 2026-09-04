@@ -157,6 +157,31 @@ def build_intraday_frames(cfg: Config, symbols: list[str]) -> dict[str, pd.DataF
     return wide
 
 
+def make_minute_provider(cfg: Config):
+    """Lazy per-symbol minute-bar loader: ``(date, symbol) → bars of that day``.
+
+    Bars after 15:00 are excluded (the close bar belongs to the close rebalance,
+    not the intraday sweep). Per-symbol parquets are cached in memory on first
+    access — a pullback book touches only its held names.
+    """
+    cache: dict[str, pd.DataFrame | None] = {}
+
+    def provider(date, symbol: str) -> pd.DataFrame | None:
+        if symbol not in cache:
+            df = _symbol_minutes(cfg, symbol)
+            cache[symbol] = df if len(df) else None
+        df = cache.get(symbol)
+        if df is None or df.empty:
+            return None
+        d = pd.Timestamp(date).normalize()
+        day = df[df["timestamp"].dt.normalize() == d]
+        if len(day) == 0:
+            return day
+        return day[day["timestamp"].dt.time < pd.Timestamp("15:00").time()]
+
+    return provider
+
+
 def load_intraday_frames(cfg: Config, symbols: list[str] | None = None) -> dict[str, pd.DataFrame]:
     """Load the cached rollup parquet (fetch first with ``scripts/fetch_intraday.py``)."""
     path = _intraday_dir(cfg) / "daily_features.parquet"

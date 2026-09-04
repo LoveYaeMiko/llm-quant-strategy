@@ -302,7 +302,7 @@ shadow:
       alpha_source: "pullback"        # Martin Luk 回撤买入纪律（日线版，ML 扫描 + 改良）
       universe: "hs300_500"           # 动量/ML 截面同 B/C
       rebalance_days: 1               # 逐日评估止损/追踪/入场
-      max_position_pct: 0.25          # 满仓化网格最优：0.25 上限（+26.5% 年化 vs 0.20 时 +25.6%；0.30 集中度损害 Sharpe）
+      max_position_pct: 0.40          # 满仓化网格 v5 最优：0.40（年化 +33.2%/Sharpe 1.59/maxDD 6.6%；0.50+ 集中度损害）
       notional_floor: 2000            # 每股 ~8333 元（50k/6 槽）
       band_frac: 0.0
       pb_rank_source: "ml"            # 强势股扫描器 = ML 工件截面排名（2026 A 股原始动量回撤失效，ML 扫描为改良版）
@@ -323,6 +323,10 @@ shadow:
       pb_entry_gate: 0.0              # 市场环境过滤器：60 日均权趋势 > 0 才开新仓
       pb_exit_gate: -0.03             # 市场趋势 < -3% 全簿清仓（"停止交易"规则化）
       pb_use_intraday: true           # AlphaFeed 分钟K日内特征包（data/intraday/daily_features.parquet）
+      pb_intraday_stops: true         # 日内止损执行：分钟K逐 bar 检测破位（<15:00），当场卖出并记录成交时刻
+      pb_stop_trigger: "close"        # 确认式触发（分钟收盘破位而非插针最低价——v7 网格：年化 9.4%→21.2%）
+      pb_stop_open_minutes: 30        # 开盘 30 分钟豁免（集合竞价/开盘异动不扫损）
+      pb_stop_buffer: 0.0             # 触发缓冲（v7 网格 0.5% 缓冲略逊，关闭）
       pb_tail_vol_max: 0.5            # 尾盘 30 分钟量比 ≤ 0.5 才入场（日内网格唯一正增益项：年化 +21.2% vs +20.8%）
       pb_vwap_filter: 0.0             # 真实VWAP回调过滤（网格验证为负增益，关闭）
       pb_stop_rv: false               # RV 止损（网格验证为负增益，关闭）

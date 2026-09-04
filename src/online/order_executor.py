@@ -31,6 +31,7 @@ class Fill:
     price: float
     commission: float
     notional: float
+    time: str = ""  # intraday fill timestamp (HH:MM), "" for close fills
 
 
 @dataclass

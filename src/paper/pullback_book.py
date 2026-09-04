@@ -78,6 +78,10 @@ class PullbackParams:
     open30_max: float = 0.0       # entry requires open-30min return <= this (0=off)
     range_max: float = 0.0        # entry requires intraday range <= this (0=off)
     full_invest: bool = False     # size each open name 1/n — always fully invested
+    # intraday stop execution (minute bars < 15:00)
+    stop_trigger: str = "low"     # "low" = any wick breach | "close" = confirmed
+    stop_buffer: float = 0.0      # trigger threshold = stop × (1 - buffer)
+    stop_open_minutes: int = 0    # ignore the first N minutes (open-auction noise)
 
 
 class PullbackPortfolio:
@@ -92,6 +96,7 @@ class PullbackPortfolio:
         ledger=None,
         scores: Optional[pd.Series] = None,
         intraday: Optional[dict[str, pd.DataFrame]] = None,
+        minute_provider=None,
     ) -> None:
         self.p = params or PullbackParams()
         close_wide = market.price_panel
@@ -169,6 +174,8 @@ class PullbackPortfolio:
         self._dates = close_wide.index.sort_values()
         self._date_pos = {d: i for i, d in enumerate(self._dates)}
         self._open: dict[str, _OpenLot] = {}
+        self._minute_provider = minute_provider
+        self._reentry_block: dict[str, pd.Timestamp] = {}
         if ledger is not None:
             self._seed_from_ledger(ledger)
 
@@ -279,6 +286,39 @@ class PullbackPortfolio:
         )
         return cand.sort_values("rank", ascending=False)
 
+    # ------------------------------------------------------- intraday exits
+    def intraday_exits(self, date) -> list[dict]:
+        """Stop breaches DURING the trading day, from minute bars (times < 15:00).
+
+        Returns ``[{symbol, time, price}]`` — ``price`` is the stop level capped
+        by the breaching bar's low. The lots are removed from the book and
+        blocked from same-day re-entry (the close book then never re-buys them).
+        """
+        if self._minute_provider is None or not self._open:
+            return []
+        exits = []
+        for sym in list(self._open):
+            lot = self._open[sym]
+            bars = self._minute_provider(pd.Timestamp(date), sym)
+            if bars is None or len(bars) == 0 or "low" not in bars.columns:
+                continue
+            if self.p.stop_open_minutes > 0:
+                cut = pd.Timestamp("09:30") + pd.Timedelta(minutes=self.p.stop_open_minutes)
+                bars = bars[bars["timestamp"].dt.time >= cut.time()]
+            trigger_col = "close" if self.p.stop_trigger == "close" else "low"
+            thr = lot.stop * (1.0 - self.p.stop_buffer)
+            hit = bars[bars[trigger_col] <= thr]
+            if hit.empty:
+                continue
+            bar = hit.iloc[0]
+            price = min(float(lot.stop), float(bar["low"]))
+            ts = bar.get("timestamp")
+            t_str = str(ts.time() if hasattr(ts, "time") else ts)
+            exits.append({"symbol": sym, "time": t_str, "price": float(price)})
+            self._open.pop(sym)
+            self._reentry_block[sym] = pd.Timestamp(date)
+        return exits
+
     # --------------------------------------------------------------- weights
     def compute_weights(self, symbols, date) -> dict[str, float]:
         d = pd.Timestamp(date)
@@ -338,6 +378,9 @@ class PullbackPortfolio:
                     sym = str(row["symbol"])
                     if sym in held:
                         continue
+                    blocked = self._reentry_block.get(sym)
+                    if blocked is not None and blocked >= d:
+                        continue  # intraday-exited today — no same-day re-entry
                     px = float(row["px"])
                     stop_dist = self._stop_dist(sym, d)
                     self._open[sym] = _OpenLot(

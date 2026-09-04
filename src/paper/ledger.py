@@ -73,6 +73,11 @@ class PaperLedger:
             """
         )
         self._conn.commit()
+        # migration: intraday fills carry their bar timestamp
+        cols = [r[1] for r in self._conn.execute("PRAGMA table_info(fills)").fetchall()]
+        if "time" not in cols:
+            self._conn.execute("ALTER TABLE fills ADD COLUMN time TEXT NOT NULL DEFAULT ''")
+            self._conn.commit()
 
     # ------------------------------------------------------------------ write
     def record_day(
@@ -111,11 +116,11 @@ class PaperLedger:
             )
             self._conn.execute("DELETE FROM fills WHERE date = ?", (d,))
             self._conn.executemany(
-                "INSERT INTO fills (date, symbol, side, shares, price, commission, notional) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO fills (date, symbol, side, shares, price, commission, notional, time) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     (d, f.symbol, f.side, float(f.shares), float(f.price),
-                     float(f.commission), float(f.notional))
+                     float(f.commission), float(f.notional), str(getattr(f, "time", "") or ""))
                     for f in fill_rows
                 ],
             )

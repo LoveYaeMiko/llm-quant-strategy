@@ -1595,6 +1595,11 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
             from .data.intraday import load_intraday_frames
 
             intraday = load_intraday_frames(cfg, symbols)
+        minute_provider = None
+        if bool(account.get("pb_intraday_stops", False)):
+            from .data.intraday import make_minute_provider
+
+            minute_provider = make_minute_provider(cfg)
 
         params = PullbackParams(
             k=int(account.get("pb_k", 8)),
@@ -1624,8 +1629,14 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
             open30_max=float(account.get("pb_open30_max", 0.0)),
             range_max=float(account.get("pb_range_max", 0.0)),
             full_invest=bool(account.get("pb_full_invest", False)),
+            stop_trigger=str(account.get("pb_stop_trigger", "low")),
+            stop_buffer=float(account.get("pb_stop_buffer", 0.0)),
+            stop_open_minutes=int(account.get("pb_stop_open_minutes", 0)),
         )
-        return PullbackPortfolio(market, params, symbols=symbols, ledger=ledger, scores=scores, intraday=intraday), None
+        return PullbackPortfolio(
+            market, params, symbols=symbols, ledger=ledger, scores=scores,
+            intraday=intraday, minute_provider=minute_provider,
+        ), None
     portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
     return portfolio, overlays
 
@@ -1789,7 +1800,7 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     # (the ledger SQLite is the system of record; the CSV is the human-readable
     # compliance/audit trail, rewritable on every run)
     if len(fills):
-        archive_cols = ["seq", "date", "symbol", "side", "shares", "price", "commission", "notional"]
+        archive_cols = ["seq", "date", "time", "symbol", "side", "shares", "price", "commission", "notional"]
         archive_cols = [c for c in archive_cols if c in fills.columns]
         fills[archive_cols].to_csv(status_path.with_name(f"trades{suffix}.csv"), index=False)
     return status, ledger_path
