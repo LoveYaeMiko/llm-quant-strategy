@@ -88,12 +88,19 @@ class PaperLedger:
         positions: dict[str, float],
         fills: Iterable[Fill],
         gross_exposure: float,
+        protect_after: int | None = None,
     ) -> None:
         """Persist one day's end-of-day state plus its execution fills.
 
         Idempotent on ``date`` (``INSERT OR REPLACE``) so a re-run of the same
         day overwrites rather than duplicates — the resume guard in the runner
         skips already-recorded dates, this is a second line of defence.
+
+        ``protect_after`` is the highest fill ``seq`` observed for this date at
+        the start of the close run: live fills appended by the real-time trader
+        WHILE the close run is processing get seqs above it and survive the
+        delete, so a mid-day manual run can never drop a live fill. ``None``
+        (the legacy behaviour) deletes every row for the date first.
         """
         d = str(pd.Timestamp(date).date())
         fill_rows = list(fills)
@@ -114,7 +121,12 @@ class PaperLedger:
                 "INSERT INTO positions (date, symbol, shares) VALUES (?, ?, ?)",
                 [(d, s, float(v)) for s, v in positions.items()],
             )
-            self._conn.execute("DELETE FROM fills WHERE date = ?", (d,))
+            if protect_after is None:
+                self._conn.execute("DELETE FROM fills WHERE date = ?", (d,))
+            else:
+                self._conn.execute(
+                    "DELETE FROM fills WHERE date = ? AND seq <= ?", (d, int(protect_after))
+                )
             self._conn.executemany(
                 "INSERT INTO fills (date, symbol, side, shares, price, commission, notional, time) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -174,6 +186,44 @@ class PaperLedger:
     def fills(self) -> pd.DataFrame:
         """Execution ledger as a DataFrame (the §7 cost-model calibration source)."""
         return pd.read_sql_query("SELECT * FROM fills ORDER BY seq", self._conn)
+
+    def fills_for_date(self, date: str | pd.Timestamp) -> list[Fill]:
+        """Fills already recorded for one day (the live intraday trader appends
+        during the session; the close run must merge, not delete, them)."""
+        d = str(pd.Timestamp(date).date())
+        rows = self._conn.execute(
+            "SELECT date, time, symbol, side, shares, price, commission, notional FROM fills WHERE date = ? ORDER BY seq",
+            (d,),
+        ).fetchall()
+        return [
+            Fill(date=r[0], time=r[1] or "", symbol=r[2], side=r[3], shares=float(r[4]),
+                 price=float(r[5]), commission=float(r[6]), notional=float(r[7]))
+            for r in rows
+        ]
+
+    def max_fill_seq(self, date: str | pd.Timestamp) -> int:
+        """Highest fill ``seq`` recorded for one day (0 when none).
+
+        The close runner snapshots this before merging live fills, then passes
+        it as ``protect_after`` to :meth:`record_day` so fills appended by the
+        real-time trader while the run is in flight are never deleted.
+        """
+        d = str(pd.Timestamp(date).date())
+        row = self._conn.execute(
+            "SELECT COALESCE(MAX(seq), 0) FROM fills WHERE date = ?", (d,)
+        ).fetchone()
+        return int(row[0]) if row else 0
+
+    def append_fill(self, fill: Fill) -> None:
+        """Append one live intraday fill (used by the real-time trader)."""
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO fills (date, time, symbol, side, shares, price, commission, notional) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (str(pd.Timestamp(fill.date).date()), str(getattr(fill, "time", "") or ""),
+                 fill.symbol, fill.side, float(fill.shares), float(fill.price),
+                 float(fill.commission), float(fill.notional)),
+            )
 
     def total_commission(self) -> float:
         row = self._conn.execute("SELECT COALESCE(SUM(commission), 0) FROM fills").fetchone()

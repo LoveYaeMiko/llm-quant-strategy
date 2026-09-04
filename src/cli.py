@@ -1633,12 +1633,56 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
             stop_buffer=float(account.get("pb_stop_buffer", 0.0)),
             stop_open_minutes=int(account.get("pb_stop_open_minutes", 0)),
         )
-        return PullbackPortfolio(
+        portfolio = PullbackPortfolio(
             market, params, symbols=symbols, ledger=ledger, scores=scores,
             intraday=intraday, minute_provider=minute_provider,
-        ), None
+        )
+        portfolio.live_intraday_from = str(account.get("pb_live_intraday_from", "") or "") or None
+        return portfolio, None
     portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
     return portfolio, overlays
+
+
+def cmd_live(args) -> int:
+    """实时盘中交易 — D 轨日内止损的实盘式执行。
+
+    Runs 09:30-15:10 on trading days: polls the latest minute print of every
+    held symbol and executes stop breaches AT THAT MOMENT (fill timestamp =
+    now, minute precision). Positions are marked at the latest print every poll
+    and written to ``outputs/live_<account>.json`` for the PAICC panel. The
+    17:30 close run merges today's live fills and never re-trades a past
+    timestamp (the replay sweep is gated by ``pb_live_intraday_from``).
+    """
+    cfg = load_config()
+    lcfg = cfg.section("live") or {}
+    if not bool(lcfg.get("enabled", True)):
+        print("live trading disabled (live.enabled=false)")
+        return 0
+    account_name = str(lcfg.get("account", "D_5W"))
+    shadow = cfg.section("shadow")
+    account = next((a for a in shadow.get("accounts", []) if a.get("name") == account_name), None)
+    if account is None:
+        print(f"live account {account_name!r} not in shadow.accounts")
+        return 1
+    if str(account.get("alpha_source", "")) != "pullback":
+        print(f"live trading only supports pullback accounts (got {account.get('alpha_source')})")
+        return 1
+
+    from .data.ingestion.alphafeed_adapter import AlphaFeedAdapter
+    from .live import LiveTrader
+    from .paper import PaperLedger
+    from .paper.shadow import resolve_shadow_universe
+
+    symbols = list(args.symbols) if getattr(args, "symbols", None) else resolve_shadow_universe(
+        cfg, account.get("universe")
+    )
+    market = _build_market_for_paper(cfg, symbols, str(shadow.get("start_date", "2026-01-01")), None, seed=1)
+    base = str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite"))
+    ledger = PaperLedger(str(ROOT / base.replace(".sqlite", f"_{account_name}.sqlite")))
+    portfolio, _ = _build_account_portfolio(cfg, market, symbols, account, ledger=ledger)
+    adapter = AlphaFeedAdapter(api_key=str(cfg.get("data.alphafeed.api_key", "")))
+    trader = LiveTrader(cfg, portfolio, ledger, account, adapter)
+    return trader.run()
 
 
 def _refresh_shadow_data(cfg, symbols) -> dict:
@@ -2726,6 +2770,11 @@ def main(argv: list[str] | None = None) -> int:
     p_shadow.add_argument("--skip-refresh", action="store_true",
                           help="跳过行情/财报/研报增量刷新")
     p_shadow.set_defaults(func=cmd_shadow)
+
+    p_live = sub.add_parser("live", help="实时盘中交易 — D 轨日内止损的实盘式执行（逐分钟轮询）")
+    p_live.add_argument("--symbols", nargs="*", default=None,
+                        help="override the account universe")
+    p_live.set_defaults(func=cmd_live)
 
     p_cal = sub.add_parser("calibrate", help="§7 三项回校 (PEAD 幅度 / 舆情阈值 / 成本模型)")
     p_cal.add_argument("--start", type=str, default=None,

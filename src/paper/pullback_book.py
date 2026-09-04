@@ -176,6 +176,7 @@ class PullbackPortfolio:
         self._open: dict[str, _OpenLot] = {}
         self._minute_provider = minute_provider
         self._reentry_block: dict[str, pd.Timestamp] = {}
+        self.live_intraday_from: str | None = None  # set by the shadow wiring
         if ledger is not None:
             self._seed_from_ledger(ledger)
 
@@ -287,6 +288,35 @@ class PullbackPortfolio:
         return cand.sort_values("rank", ascending=False)
 
     # ------------------------------------------------------- intraday exits
+    def live_check(self, prices: dict[str, float], now: pd.Timestamp) -> list[dict]:
+        """REAL-TIME stop check against current traded prices.
+
+        A quote is a traded print — a print at/below the stop is a *confirmed*
+        breach (no wick ambiguity), so the trigger semantics reduce to
+        ``price <= stop × (1 - buffer)``, with the open-auction exemption and
+        the same-day re-entry block applied. Executed by the live trader, never
+        by the close replay.
+        """
+        if not self._open:
+            return []
+        t = now.time()
+        if self.p.stop_open_minutes > 0:
+            cut = (pd.Timestamp("09:30") + pd.Timedelta(minutes=self.p.stop_open_minutes)).time()
+            if t < cut:
+                return []
+        exits = []
+        for sym in list(self._open):
+            lot = self._open[sym]
+            px = prices.get(sym)
+            if px is None or not np.isfinite(px):
+                continue
+            thr = lot.stop * (1.0 - self.p.stop_buffer)
+            if float(px) <= thr:
+                exits.append({"symbol": sym, "time": now.strftime("%H:%M:%S"), "price": float(px)})
+                self._open.pop(sym)
+                self._reentry_block[sym] = now.normalize()
+        return exits
+
     def intraday_exits(self, date) -> list[dict]:
         """Stop breaches DURING the trading day, from minute bars (times < 15:00).
 

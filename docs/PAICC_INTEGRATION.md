@@ -32,14 +32,21 @@ B 127,327（+27.44%，Sharpe 1.93，maxDD 10.1%）；C 62,027（+24.26%，Sharpe
 - 红线历史 → 按账户持久化：`quant_redline_history` 增加 `account` 列（启动时自动迁移），
   10s 轮询按账户去重入库；`/quant/redline-history?account=X&limit=N`。
 - `/quant/autopilot` → 双账户档位映射（`autopilot_state_<name>.json`）。
+- **`/quant/live`（2026-09-04 新增）** → D 轨实时盘中状态（`outputs/live_<account>.json`，
+  `account` 缺省取配置 `live.account`）：`{ts(到秒), equity_live, cash, invested_pct,
+  positions[{symbol, shares, last, entry, stop, pnl, pnl_pct}]}`；交易者未运行过返回 `null`。
+- 调度新增 `quant_live_start`：工作日 09:25 拉起 `python cli.py live`（detached，
+  pid 锁防双开，15:10 自退出）。
 - 调度邮件：`run_shadow_daily` / `run_autopilot_daily` 发送「双资金轨」合并日报
   （各账户报表分节 + LLM 点评）；周日 18:00 `run_weekly_cycle` 不变；超时 7200s。
 
 ## 四、PAICC 前端改动（QuantPage / DualShadowPanel）
 
-- **影子模式（长期测试 · 双资金轨）**：双账户 Tab —— 档位/敞口/账户配置标签 +
+- **影子模式（长期测试 · 多资金轨）**：四账户 Tab —— 档位/敞口/账户配置标签 +
   净值/收益/Sharpe/回撤/成本统计 + 净值 vs HS300 与回撤/超额图 + 红线 + 当日目标持仓
-  （Top20）+ 最近 50 笔详细交易记录；卡片头部带「立即运行」与调度时刻。
+  （Top20）+ 最近 50 笔详细交易记录（含分钟级成交时间）；卡片头部带「立即运行」与调度时刻。
+- **D 轨盘中实时卡片（2026-09-04 新增）**：pullback 账户 Tab 内 30 秒轮询
+  `/quant/live`，展示实时权益/现金/仓位占比 + 逐仓现价/入场价/止损价/盈亏（更新时刻到秒）。
 - **红线仪表盘**：按账户分节展示四条红线卡片（总体状态取最差）。
 - **红线历史**：账户切换器（Segmented）+ 每日红线热力图（按账户查询）。
 - **自动闭环**：逐账户档位/敞口/原因/周期时间戳 + 「运行闭环」+ 新增「周度闭环」按钮
@@ -53,7 +60,8 @@ B 127,327（+27.44%，Sharpe 1.93，maxDD 10.1%）；C 62,027（+24.26%，Sharpe
 - 前端：`PAICC\frontend\npm start`（electron-vite preview 运行已构建产物，应用窗口已启动）；
   源码改动后需 `npm run build` 重建。
 - 调度（进程内 APScheduler）：
-  - 工作日 17:30 `cli.py autopilot`（双轨闭环）· 周六 18:00 `cli.py calibrate` ·
+  - 工作日 09:25 `cli.py live`（D 轨实时盘中交易）· 14:50 盘口快照 ·
+    17:30 `cli.py autopilot`（四轨闭环）· 周六 18:00 `cli.py calibrate` ·
     周日 18:00 `cli.py weekly`（重训 + promote 闸门），均可在面板手动触发；
   - **启动补跑（catch-up）**：后端每次启动时检查当日 scheduled 任务是否已运行
     （operation_logs / 补跑标记），未运行且已过点时立即补跑一次——应用被关闭导致

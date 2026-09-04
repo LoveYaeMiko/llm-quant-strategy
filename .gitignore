@@ -44,3 +44,10 @@ data/*.log
 # �������򻺴棨���ɻ���ű��������ɣ�
 data/margin/
 data/lhb/
+
+# 分钟K线缓存与盘口快照（可回填/前向累积，不入版本库）
+data/intraday/
+data/depth/
+
+# 复权因子事件缓存（AlphaFeed ex_factors 全量，可由 corp_actions.py 重新拉取）
+src/data/corp_actions/

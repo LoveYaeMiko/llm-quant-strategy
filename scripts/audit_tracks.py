@@ -180,7 +180,7 @@ def main() -> int:
         def compute_weights(self, symbols, date):
             return self._books.get(pd.Timestamp(date), {})
 
-    def ml_books(scores_series, symbols_used, long_pct):
+    def ml_books(scores_series, symbols_used, long_pct, max_position_pct):
         comp = scores_series[
             (scores_series.index.get_level_values(0) >= pd.Timestamp("2025-01-01"))
             & (scores_series.index.get_level_values(0) <= pd.Timestamp("2025-12-31"))
@@ -196,7 +196,8 @@ def main() -> int:
                     ss = 0.5
             day = day[day.index.get_level_values(1).isin(symbols_used)]
             books[pd.Timestamp(d)] = long_book_weights(
-                day, long_pct=long_pct, short_pct=0.0, max_position_pct=0.05, short_scale=ss
+                day, long_pct=long_pct, short_pct=0.0,
+                max_position_pct=max_position_pct, short_scale=ss
             )
         return books
 
@@ -221,19 +222,55 @@ def main() -> int:
         return m
 
     if scores is not None:
-        replay("A_config", _BooksPortfolio(ml_books(scores, uni300, 0.10)),
-               uni300, 2_000_000, 10, 0.0, 0.0)
-        replay("B_config", _BooksPortfolio(ml_books(scores, uni800, 0.05)),
-               uni800, 100_000, 10, 2000.0, 0.001)
-        replay("C_config", _BooksPortfolio(ml_books(scores, uni800, 0.05)),
-               uni800, 50_000, 10, 2000.0, 0.001)
-        d_params = PullbackParams(k=6, rank_source="ml", rank_min=0.8, ema_fast=21,
-                                  ema_zone=21, zone_band=0.02, pullback_min=0.03,
-                                  vol_shrink=True, atr_mult=1.5, stop_lo=0.025, stop_hi=0.04,
-                                  breakeven_r=1.0, trail_r=1.5, exit_into_strength_r=3.0,
-                                  max_hold=40, entry_gate=0.0, exit_gate=-0.03, trend_days=60)
-        d = PullbackPortfolio(market, d_params, symbols=uni800, scores=scores)
-        replay("D_config", d, uni800, 50_000, 1, 2000.0, 0.0)
+        # Replay each track with its DEPLOYED parameters (read from the master
+        # config so the out-of-sample probe never drifts from what runs live).
+        cfg_accounts = {a["name"]: a for a in (cfg.get("shadow.accounts") or [])}
+
+        def _acc(name):
+            return cfg_accounts[name]
+
+        def _replay_ml(name, universe):
+            acc = _acc(name)
+            cap = float(acc.get("max_position_pct", 0.05))
+            uni = resolve_shadow_universe(cfg, acc.get("universe", universe))
+            replay(
+                name,
+                _BooksPortfolio(ml_books(scores, uni, float(acc.get("long_pct", 0.10)), cap)),
+                uni,
+                float(acc["cash"]),
+                int(acc.get("rebalance_days", 10)),
+                float(acc.get("notional_floor", 0.0)),
+                float(acc.get("band_frac", 0.0)),
+            )
+
+        _replay_ml("A_200W", "hs300")
+        _replay_ml("B_10W", "hs300_500")
+        _replay_ml("C_5W", "hs300_500")
+
+        d_acc = _acc("D_5W")
+        d_params = PullbackParams(
+            k=int(d_acc.get("pb_k", 6)), rank_source="ml",
+            rank_min=float(d_acc.get("pb_rank_min", 0.8)), ema_fast=int(d_acc.get("pb_ema_fast", 21)),
+            ema_zone=int(d_acc.get("pb_ema_zone", 21)), zone_band=float(d_acc.get("pb_zone_band", 0.02)),
+            pullback_min=float(d_acc.get("pb_pullback_min", 0.03)),
+            vol_shrink=bool(d_acc.get("pb_vol_shrink", True)), atr_mult=float(d_acc.get("pb_atr_mult", 1.5)),
+            stop_lo=float(d_acc.get("pb_stop_lo", 0.025)), stop_hi=float(d_acc.get("pb_stop_hi", 0.04)),
+            breakeven_r=float(d_acc.get("pb_breakeven_r", 1.0)), trail_r=float(d_acc.get("pb_trail_r", 1.5)),
+            exit_into_strength_r=float(d_acc.get("pb_exit_into_strength_r", 3.0)),
+            max_hold=int(d_acc.get("pb_max_hold", 40)), entry_gate=float(d_acc.get("pb_entry_gate", 0.0)),
+            exit_gate=float(d_acc.get("pb_exit_gate", -0.03)), trend_days=int(d_acc.get("pb_trend_days", 60)),
+            tail_vol_max=float(d_acc.get("pb_tail_vol_max", 0.0)),
+            full_invest=bool(d_acc.get("pb_full_invest", False)),
+        )
+        d_uni = resolve_shadow_universe(cfg, d_acc.get("universe", "hs300_500"))
+        d = PullbackPortfolio(market, d_params, symbols=d_uni, scores=scores)
+        # note: close-only approximation — the intraday minute-bar stop sweep is
+        # not replayed here (2025 daily_features not wired into the audit).
+        replay(
+            "D_5W", d, d_uni, float(d_acc["cash"]),
+            int(d_acc.get("rebalance_days", 1)),
+            float(d_acc.get("notional_floor", 2000.0)), float(d_acc.get("band_frac", 0.0)),
+        )
 
     # grid spreads
     print("\ngrid selection spreads (2026 ann_return):")

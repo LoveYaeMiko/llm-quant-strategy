@@ -150,11 +150,32 @@ class PaperRunner:
             mtm = ex.settle(close)
 
             fills: list[Fill] = []
+            # Live intraday fills recorded earlier today (the real-time trader):
+            # apply them to the executor state so the close rebalance sees the
+            # true pre-close book, and carry them into today's recorded row.
+            # Snapshot the fill watermark BEFORE merging live fills: fills the
+            # real-time trader appends while THIS run is in flight get higher
+            # seqs and must survive record_day's idempotent delete.
+            prior_seq = self.ledger.max_fill_seq(d)
+            prior = self.ledger.fills_for_date(d)
+            for f in prior:
+                sym = f.symbol
+                ex.cash += f.notional - f.commission
+                new_sh = ex.positions.get(sym, 0.0) + f.shares
+                if abs(new_sh) < 1e-9:
+                    ex.positions.pop(sym, None)
+                else:
+                    ex.positions[sym] = new_sh
+            fills.extend(prior)
+
             # intraday stop sweep (minute-bar based, times < 15:00) — executes
             # stop breaches during the day, before the close rebalance. T+1 is
             # safe by construction: positions were entered at an earlier close.
+            # Dates the live trader owns (live_intraday_from) are skipped: their
+            # intraday exits were already executed in real time, not replayed.
             exiter = getattr(self.portfolio, "intraday_exits", None)
-            if exiter is not None:
+            live_from = getattr(self.portfolio, "live_intraday_from", None)
+            if exiter is not None and not (live_from and pd.Timestamp(d) >= pd.Timestamp(live_from)):
                 for sig in exiter(d):
                     shares = ex.positions.get(sig["symbol"], 0.0)
                     if abs(shares) < 1e-9:
@@ -199,7 +220,10 @@ class PaperRunner:
                 px = close.get(s, np.nan)
                 if np.isfinite(px):
                     gross += abs(sh) * float(px)
-            self.ledger.record_day(d, ex.cash, end_equity, dict(ex.positions), fills, gross)
+            self.ledger.record_day(
+                d, ex.cash, end_equity, dict(ex.positions), fills, gross,
+                protect_after=prior_seq,
+            )
 
         eq = self.ledger.equity_curve()
         ret = eq.pct_change().dropna() if len(eq) > 1 else pd.Series(dtype=float)
