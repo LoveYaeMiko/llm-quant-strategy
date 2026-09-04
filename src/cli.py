@@ -1755,6 +1755,21 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     latest = pd.Timestamp(market.price_panel.index.max()).date().isoformat()
     end = end or latest
 
+    # Pullback accounts with intraday features need today's row in the rollup or
+    # their tail-volume entry gate silently blocks ALL new entries (missing =
+    # fail). Self-heal here so the 17:30 loop is never data-starved; the 15:30
+    # scheduler job pre-fetches so this is usually a cheap no-op.
+    if account and str(account.get("alpha_source", "")) == "pullback" and (
+        bool(account.get("pb_use_intraday", False)) or bool(account.get("pb_intraday_stops", False))
+    ):
+        from .data.intraday import ensure_intraday_current
+
+        cov = ensure_intraday_current(cfg, symbols, latest)
+        print(
+            f"  intraday rollup: covered={cov['covered']} refreshed={cov['refreshed']} "
+            f"(as_of {latest})"
+        )
+
     from .paper import PaperLedger, PaperRunner
 
     # ledger/status/report all anchor to ROOT (not the process CWD) so the daily
@@ -1785,10 +1800,18 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     result = runner.run(start=start, end=end)
 
     benchmark = load_benchmark_index(cfg)
+    # Red-line design baseline: pullback books are 100% long by construction
+    # (no long_pct/short_pct keys) — flag against THAT baseline, not the
+    # alpha-core defaults, or every long-only day fires a spurious critical.
+    if account and str(account.get("alpha_source", "")) == "pullback":
+        bl_pct, bs_pct = 1.0, 0.0
+    else:
+        bl_pct = float(account.get("long_pct")) if account and "long_pct" in account else None
+        bs_pct = float(account.get("short_pct")) if account and "short_pct" in account else None
     status = build_shadow_status(
         cfg, ledger, market, result, overlays or {}, meta, benchmark=benchmark,
-        book_long_pct=(float(account.get("long_pct")) if account and "long_pct" in account else None),
-        book_short_pct=(float(account.get("short_pct")) if account and "short_pct" in account else None),
+        book_long_pct=bl_pct,
+        book_short_pct=bs_pct,
         book_cash=(float(account.get("cash")) if account and "cash" in account else None),
     )
     if account:
@@ -1867,6 +1890,9 @@ def cmd_shadow(args) -> int:
     from .paper.shadow import resolve_shadow_universe
 
     accounts = list(shadow.get("accounts", []) or [])
+    if getattr(args, "accounts", None):
+        want = set(args.accounts)
+        accounts = [a for a in accounts if a.get("name") in want]
     if not accounts:
         accounts = [None]
 
@@ -2454,6 +2480,9 @@ def cmd_autopilot(args) -> int:
 
     shadow = cfg.section("shadow")
     accounts = list(shadow.get("accounts", []) or [])
+    if getattr(args, "accounts", None):
+        want = set(args.accounts)
+        accounts = [a for a in accounts if a.get("name") in want]
     if not accounts:
         accounts = [None]
     start = args.start or str(shadow.get("start_date", "2026-01-01"))
@@ -2769,6 +2798,8 @@ def main(argv: list[str] | None = None) -> int:
     p_shadow.add_argument("--seed", type=int, default=1)
     p_shadow.add_argument("--skip-refresh", action="store_true",
                           help="跳过行情/财报/研报增量刷新")
+    p_shadow.add_argument("--accounts", nargs="*", default=None,
+                          help="只跑指定账户 (default: 全部 shadow.accounts)")
     p_shadow.set_defaults(func=cmd_shadow)
 
     p_live = sub.add_parser("live", help="实时盘中交易 — D 轨日内止损的实盘式执行（逐分钟轮询）")
@@ -2800,6 +2831,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="跳过行情/财报/研报增量刷新")
     p_auto.add_argument("--no-calibrate", action="store_true",
                         help="本轮跳过 §7 回校（即使已到周期）")
+    p_auto.add_argument("--accounts", nargs="*", default=None,
+                        help="只跑指定账户 (default: 全部 shadow.accounts)")
     p_auto.set_defaults(func=cmd_autopilot)
 
     p_x = sub.add_parser(

@@ -182,7 +182,15 @@ class PullbackPortfolio:
 
     # ------------------------------------------------------------------ seed
     def _seed_from_ledger(self, ledger) -> None:
-        """Rebuild open lots from the ledger fills (entry vwap + stop state)."""
+        """Rebuild open lots from the ledger fills (entry vwap + stop state).
+
+        Fills carry SIGNED shares (buys positive, sells negative) — the same
+        moving-average-cost accumulation as ``enrich_positions``: a fill that
+        reduces the position removes closed shares at the running avg cost, and
+        a fully closed position leaves NO lot behind (a previous sign bug made
+        sells ADD shares and resurrected closed positions as "ghost" lots that
+        the close rebalance then bought back — fixed 2026-09-04).
+        """
         fills = ledger.fills()
         if fills is None or len(fills) == 0:
             return
@@ -190,34 +198,59 @@ class PullbackPortfolio:
         if "seq" in fills.columns:
             cols = ["date", "seq", "symbol", "side", "shares", "price"]
         fills = fills[cols].sort_values(cols[:2])
-        lots: dict[str, _OpenLot] = {}
+
+        signed: dict[str, float] = {}
+        basis: dict[str, float] = {}
+        entry_date: dict[str, pd.Timestamp] = {}
         for _, f in fills.iterrows():
             sym = str(f["symbol"])
-            side = str(f["side"]).lower()
+            qty = float(f["shares"])
+            px = float(f["price"])
             d = pd.Timestamp(f["date"])
-            shares = float(f["shares"])
-            price = float(f["price"])
-            if side == "buy":
-                lot = lots.get(sym)
-                if lot is None:
-                    stop_dist = self._stop_dist(sym, d)
-                    lots[sym] = _OpenLot(
-                        symbol=sym, entry_date=d, entry_price=price,
-                        stop=price * (1.0 - stop_dist), stop_dist=stop_dist,
-                        peak=price, trail_active=False,
-                        qty=shares, cost=shares * price,
-                    )
-                else:
-                    lot.qty += shares
-                    lot.cost += shares * price
-                    lot.entry_price = lot.cost / lot.qty
-                    lot.stop = lot.entry_price * (1.0 - lot.stop_dist)
-            else:  # sell reduces / closes the lot
-                lot = lots.get(sym)
-                if lot is not None:
-                    lot.qty -= shares
-                    if lot.qty <= 0:
-                        lots.pop(sym, None)
+            s = signed.get(sym, 0.0)
+            b = basis.get(sym, 0.0)
+            if s == 0.0:
+                # open a fresh position (either direction) at the trade price
+                signed[sym] = qty
+                basis[sym] = qty * px
+                entry_date[sym] = d
+                continue
+            avg = b / s
+            if (qty > 0) == (s > 0):
+                # same direction: add at the trade price
+                signed[sym] = s + qty
+                basis[sym] = b + qty * px
+            else:
+                # reducing/reversing: remove closed shares at current avg cost
+                closing = min(abs(qty), abs(s))
+                sign = 1.0 if s > 0 else -1.0
+                new_b = b - sign * closing * avg
+                new_s = s + qty
+                remaining = abs(qty) - closing
+                if remaining > 0:
+                    # reversed through flat into the opposite side at trade price
+                    open_sign = 1.0 if qty > 0 else -1.0
+                    new_s = open_sign * remaining
+                    new_b = open_sign * remaining * px
+                    entry_date[sym] = d
+                signed[sym] = new_s
+                basis[sym] = new_b
+                if abs(new_s) < 1e-9:
+                    entry_date.pop(sym, None)
+
+        lots: dict[str, _OpenLot] = {}
+        for sym, qty in signed.items():
+            if abs(qty) < 1e-9:
+                continue
+            avg = basis[sym] / qty
+            d0 = entry_date.get(sym) or pd.Timestamp(fills.iloc[0]["date"])
+            stop_dist = self._stop_dist(sym, d0)
+            lots[sym] = _OpenLot(
+                symbol=sym, entry_date=d0, entry_price=avg,
+                stop=avg * (1.0 - stop_dist), stop_dist=stop_dist,
+                peak=avg, trail_active=False,
+                qty=qty, cost=basis[sym],
+            )
         for sym, lot in lots.items():
             hist = self._close.loc[lot.entry_date:, sym].dropna()
             if len(hist):
@@ -341,7 +374,11 @@ class PullbackPortfolio:
             if hit.empty:
                 continue
             bar = hit.iloc[0]
-            price = min(float(lot.stop), float(bar["low"]))
+            # Real-time semantics: the trader polls the LATEST print, so a
+            # confirmed (close) trigger fills at the breaching minute's close
+            # print — never at the bar low (that would be a stop-order fill at
+            # a price the poller could not have traded). Matches live_check.
+            price = min(float(lot.stop), float(bar[trigger_col]))
             ts = bar.get("timestamp")
             t_str = str(ts.time() if hasattr(ts, "time") else ts)
             exits.append({"symbol": sym, "time": t_str, "price": float(price)})

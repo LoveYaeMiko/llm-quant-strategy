@@ -63,6 +63,8 @@ B 127,327（+27.44%，Sharpe 1.93，maxDD 10.1%）；C 62,027（+24.26%，Sharpe
   源码改动后需 `npm run build` 重建。
 - 调度（进程内 APScheduler）：
   - 工作日 09:25 `cli.py live`（D 轨实时盘中交易）· 14:50 盘口快照 ·
+    **15:30 日内特征刷新**（`scripts/refresh_intraday_daily.py`，拉最新分钟K并重建
+    `daily_features.parquet`——17:30 运行内另有 `ensure_intraday_current` 自愈，双保险）·
     17:30 `cli.py autopilot`（四轨闭环）· 周六 18:00 `cli.py calibrate` ·
     周日 18:00 `cli.py weekly`（重训 + promote 闸门），均可在面板手动触发；
   - **启动补跑（catch-up）**：后端每次启动时检查当日 scheduled 任务是否已运行

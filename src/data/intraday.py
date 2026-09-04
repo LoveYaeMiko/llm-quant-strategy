@@ -199,8 +199,152 @@ def load_intraday_frames(cfg: Config, symbols: list[str] | None = None) -> dict[
         out[key] = wide
     return out
 
+
+# --------------------------------------------------------------------------- #
+# incremental refresh (the 15:30 scheduler job + the 17:30 run's self-heal)
+# --------------------------------------------------------------------------- #
+
+def _normalize_minute_bars(df: pd.DataFrame) -> pd.DataFrame:
+    if "timestamp" in df.columns and pd.api.types.is_numeric_dtype(df["timestamp"]):
+        df = df.copy()
+        df["timestamp"] = (
+            pd.to_datetime(df["timestamp"], unit="ms", utc=True)
+            .dt.tz_convert("Asia/Shanghai")
+            .dt.tz_localize(None)
+        )
+    elif "trade_time" in df.columns:
+        df = df.copy()
+        df["timestamp"] = pd.to_datetime(df["trade_time"])
+    return df
+
+
+def _merge_symbol_cache(cfg: Config, symbol: str, fresh: pd.DataFrame) -> None:
+    """Merge freshly fetched bars into the per-symbol cache (dedupe by timestamp)."""
+    cache_path = _intraday_dir(cfg) / f"{symbol.replace('.', '_')}.parquet"
+    frames = [fresh]
+    if cache_path.is_file():
+        try:
+            old = pd.read_parquet(cache_path)
+            if len(old):
+                frames.insert(0, old)
+        except Exception:  # noqa: BLE001 — corrupt cache is replaced by the fresh bars
+            pass
+    out = pd.concat(frames, ignore_index=True)
+    out = out.drop_duplicates(subset="timestamp").sort_values("timestamp").reset_index(drop=True)
+    out.to_parquet(cache_path)
+
+
+def refresh_intraday(
+    cfg: Config,
+    symbols: list[str],
+    start: str | pd.Timestamp,
+    end: str | pd.Timestamp,
+    batch: int = 25,
+) -> dict:
+    """Incremental minute-bar fetch for ``[start, end]`` + rollup rebuild.
+
+    Symbol batches (one API call per batch per window) with retries, merged into
+    the per-symbol caches, then a local rebuild of ``daily_features.parquet``.
+    Returns ``{calls, symbols_updated, rollup_days, rollup_symbols}``.
+    """
+    import time as _time
+
+    start_ts = pd.Timestamp(start).normalize()
+    end_ts = pd.Timestamp(end).normalize() + pd.Timedelta(days=1)
+    span_days = max(1, (end_ts - start_ts).days)
+    # ~240 bars per trading day, ~5/7 trading days per calendar day
+    count = min(10_000, int(span_days * 240 * 5 / 7) + 60)
+    adapter = AlphaFeedAdapter(api_key=str(cfg.get("data.alphafeed.api_key", "")))
+    calls = 0
+    updated = 0
+    for i in range(0, len(symbols), batch):
+        chunk = list(symbols)[i : i + batch]
+        got = None
+        last = None
+        for attempt in range(4):
+            try:
+                got = adapter.fetch_minute_klines(
+                    chunk, period="1m", count=count, start=start_ts, end=end_ts
+                )
+                calls += 1
+                break
+            except Exception as exc:  # noqa: BLE001 — SSL EOF etc., retry with backoff
+                last = exc
+                _time.sleep(4 * (attempt + 1))
+        if got is None:
+            logger.warning("intraday refresh batch failed: %s", last)
+            continue
+        for sym in chunk:
+            df = got.get(sym)
+            if df is None or df.empty:
+                continue
+            _merge_symbol_cache(cfg, sym, _normalize_minute_bars(df))
+            updated += 1
+
+    wide = build_intraday_frames(cfg, list(symbols))
+    out_path = _intraday_dir(cfg) / "daily_features.parquet"
+    rollup = pd.concat({k: v for k, v in wide.items()}, axis=1)
+    rollup.columns.names = ["feature", "symbol"]
+    rollup.to_parquet(out_path)
+    return {
+        "calls": calls,
+        "symbols_updated": updated,
+        "rollup_days": int(len(rollup)),
+        "rollup_symbols": int(rollup.shape[1] // len(_FEATURES)) if rollup.shape[1] else 0,
+        "first_day": str(rollup.index.min().date()) if len(rollup) else None,
+        "last_day": str(rollup.index.max().date()) if len(rollup) else None,
+    }
+
+
+def refresh_intraday_daily(
+    cfg: Config, symbols: list[str] | None = None, date: str | pd.Timestamp | None = None
+) -> dict:
+    """After-close incremental refresh: today's minute bars + rollup rebuild.
+
+    Called by the PAICC 15:30 job and as the 17:30 run's self-heal. When called
+    before ~15:05 the current day is NOT included (a partial day would poison
+    tail_vol/rv/range), so the rollup ends at yesterday.
+    """
+    from ..paper.shadow import resolve_shadow_universe  # noqa: PLC0415
+
+    if symbols is None:
+        symbols = resolve_shadow_universe(cfg, "hs300_500")
+    now = pd.Timestamp.now()
+    today = (pd.Timestamp(date) if date is not None else now).normalize()
+    end = today if now.time() < pd.Timestamp("15:05").time() and now.normalize() == today else now
+    start = today - pd.Timedelta(days=5)  # covers weekends/holidays before ``today``
+    return refresh_intraday(cfg, list(symbols), start=start, end=end)
+
+
+def ensure_intraday_current(
+    cfg: Config, symbols: list[str], date: str | pd.Timestamp
+) -> dict:
+    """Guarantee the rollup covers ``date`` (fetch if missing) — point-in-time.
+
+    The tail-volume entry gate treats a missing day as FAIL (no entries), so the
+    daily loop calls this right after the market build: if today's row is absent
+    the latest bars are fetched and the rollup rebuilt. Returns
+    ``{covered, refreshed}`` — ``covered`` is the best-effort final state.
+    """
+    d = pd.Timestamp(date).normalize()
+    frames = load_intraday_frames(cfg, symbols)
+    first = frames.get("vwap_gap")
+    if first is not None and d in first.index:
+        return {"covered": True, "refreshed": False}
+    summary = refresh_intraday_daily(cfg, symbols, date=d)
+    frames = load_intraday_frames(cfg, symbols)
+    first = frames.get("vwap_gap")
+    return {
+        "covered": bool(first is not None and d in first.index),
+        "refreshed": True,
+        "summary": summary,
+    }
+
 __all__ = [
     "build_intraday_frames",
+    "ensure_intraday_current",
     "fetch_symbol_minutes",
     "load_intraday_frames",
+    "refresh_intraday",
+    "refresh_intraday_daily",
 ]
