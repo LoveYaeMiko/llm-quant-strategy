@@ -302,7 +302,7 @@ shadow:
       alpha_source: "pullback"        # Martin Luk 回撤买入纪律（日线版，ML 扫描 + 改良）
       universe: "hs300_500"           # 动量/ML 截面同 B/C
       rebalance_days: 1               # 逐日评估止损/追踪/入场
-      max_position_pct: 0.20          # 自检修复：6 槽 × 16.7% 设计需要 0.20 上限（0.05 会把 D 压成 6×5%=30% 仓位）
+      max_position_pct: 0.25          # 满仓化网格最优：0.25 上限（+26.5% 年化 vs 0.20 时 +25.6%；0.30 集中度损害 Sharpe）
       notional_floor: 2000            # 每股 ~8333 元（50k/6 槽）
       band_frac: 0.0
       pb_rank_source: "ml"            # 强势股扫描器 = ML 工件截面排名（2026 A 股原始动量回撤失效，ML 扫描为改良版）
@@ -326,6 +326,9 @@ shadow:
       pb_tail_vol_max: 0.5            # 尾盘 30 分钟量比 ≤ 0.5 才入场（日内网格唯一正增益项：年化 +21.2% vs +20.8%）
       pb_vwap_filter: 0.0             # 真实VWAP回调过滤（网格验证为负增益，关闭）
       pb_stop_rv: false               # RV 止损（网格验证为负增益，关闭）
+      pb_open30_max: 0.0              # 开盘30分钟过滤（网格验证无增益，关闭）
+      pb_range_max: 0.0               # 日内振幅过滤（网格验证为负增益，关闭）
+      pb_full_invest: true            # 满仓化：每个持仓 1/n 权重（网格验证 +5.2pp 年化：+21.2% → +26.5%）
 
 # =====================================================================
 # 红线监控阈值 (red_lines) — 影子盘逐日输出的四条红线 + PAICC 量化面板展示。

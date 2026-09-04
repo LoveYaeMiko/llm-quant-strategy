@@ -1621,6 +1621,9 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
             vwap_filter=float(account.get("pb_vwap_filter", 0.0)),
             stop_rv=bool(account.get("pb_stop_rv", False)),
             tail_vol_max=float(account.get("pb_tail_vol_max", 0.0)),
+            open30_max=float(account.get("pb_open30_max", 0.0)),
+            range_max=float(account.get("pb_range_max", 0.0)),
+            full_invest=bool(account.get("pb_full_invest", False)),
         )
         return PullbackPortfolio(market, params, symbols=symbols, ledger=ledger, scores=scores, intraday=intraday), None
     portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)

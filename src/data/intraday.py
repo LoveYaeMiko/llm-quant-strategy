@@ -125,25 +125,35 @@ def _daily_features(minutes: pd.DataFrame) -> pd.DataFrame:
     # realized volatility: sqrt(sum of squared 1m log returns per day)
     df["logret"] = np.log(df["close"] / df["close"].shift(1))
     day["rv"] = np.sqrt((df["logret"] ** 2).groupby(df["date"]).sum())
-    out = day[["vwap_gap", "rv", "tail_vol", "gap", "vwap", "close"]].copy()
+    # open-30min return / intraday range / last-30min return
+    t = df["timestamp"].dt.time
+    open30 = df[t <= pd.Timestamp("10:00").time()].groupby("date")["close"].last()
+    day["open30"] = open30.reindex(day.index) / day["open"] - 1.0
+    day["range"] = (df.groupby("date")["high"].max() - df.groupby("date")["low"].min()) / day["vwap"]
+    aft = df[t >= pd.Timestamp("14:30").time()].groupby("date")["close"].last()
+    day["afternoon"] = day["close"] / aft.reindex(day.index) - 1.0
+    out = day[["vwap_gap", "rv", "tail_vol", "gap", "open30", "range", "afternoon", "vwap", "close"]].copy()
     out.index.name = "date"
     return out
 
 
+_FEATURES = ("vwap_gap", "rv", "tail_vol", "gap", "open30", "range", "afternoon", "vwap")
+
+
 def build_intraday_frames(cfg: Config, symbols: list[str]) -> dict[str, pd.DataFrame]:
     """Per-symbol daily intraday features → wide ``date × symbol`` frames."""
-    wide: dict[str, pd.DataFrame] = {}
+    series: dict[str, dict[str, pd.Series]] = {c: {} for c in _FEATURES}
     for sym in symbols:
         minutes = _symbol_minutes(cfg, sym)
         if minutes.empty:
             continue
         d = _daily_features(minutes)
-        for col in ("vwap_gap", "rv", "tail_vol", "gap", "vwap"):
-            key = col
-            series = d[col].rename(sym)
-            wide.setdefault(key, pd.DataFrame())[sym] = series
-    for key in list(wide):
-        wide[key] = wide[key].sort_index().sort_index(axis=1)
+        for col in _FEATURES:
+            series[col][sym] = d[col]
+    wide: dict[str, pd.DataFrame] = {}
+    for col in _FEATURES:
+        if series[col]:
+            wide[col] = pd.concat(series[col], axis=1).sort_index().sort_index(axis=1)
     return wide
 
 
@@ -155,7 +165,7 @@ def load_intraday_frames(cfg: Config, symbols: list[str] | None = None) -> dict[
     store = pd.read_parquet(path)
     out: dict[str, pd.DataFrame] = {}
     cols0 = store.columns.get_level_values(0).unique() if isinstance(store.columns, pd.MultiIndex) else []
-    for key in ("vwap_gap", "rv", "tail_vol", "gap", "vwap"):
+    for key in _FEATURES:
         if key not in cols0:
             continue
         wide = store[key].sort_index()
@@ -163,7 +173,6 @@ def load_intraday_frames(cfg: Config, symbols: list[str] | None = None) -> dict[
             wide = wide.reindex(columns=[s for s in symbols if s in wide.columns])
         out[key] = wide
     return out
-
 
 __all__ = [
     "build_intraday_frames",

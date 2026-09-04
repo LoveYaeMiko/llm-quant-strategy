@@ -75,6 +75,9 @@ class PullbackParams:
     vwap_filter: float = 0.0      # entry requires |close/daily_VWAP - 1| <= this
     stop_rv: bool = False         # stop width = max(ATR20, RV20) — realized vol
     tail_vol_max: float = 0.0     # entry requires last-30min volume share <= this
+    open30_max: float = 0.0       # entry requires open-30min return <= this (0=off)
+    range_max: float = 0.0        # entry requires intraday range <= this (0=off)
+    full_invest: bool = False     # size each open name 1/n — always fully invested
 
 
 class PullbackPortfolio:
@@ -131,6 +134,8 @@ class PullbackPortfolio:
         self._vwap_gap = None
         self._rv20 = None
         self._tail_vol = None
+        self._open30 = None
+        self._range = None
         if intraday:
             for key, frame in intraday.items():
                 f = frame.reindex(index=close_wide.index, columns=syms)
@@ -140,6 +145,10 @@ class PullbackPortfolio:
                     self._rv20 = f.rolling(20, min_periods=10).mean()
                 elif key == "tail_vol":
                     self._tail_vol = f
+                elif key == "open30":
+                    self._open30 = f
+                elif key == "range":
+                    self._range = f
         self._vol5 = vol_wide.rolling(5, min_periods=5).mean()
         self._vol20 = vol_wide.rolling(20, min_periods=20).mean()
 
@@ -257,6 +266,10 @@ class PullbackPortfolio:
             mask &= (self._vwap_gap.loc[d].abs() <= self.p.vwap_filter).fillna(False)
         if self.p.tail_vol_max > 0 and self._tail_vol is not None:
             mask &= (self._tail_vol.loc[d] <= self.p.tail_vol_max).fillna(False)
+        if self.p.open30_max > 0 and self._open30 is not None:
+            mask &= (self._open30.loc[d] <= self.p.open30_max).fillna(False)
+        if self.p.range_max > 0 and self._range is not None:
+            mask &= (self._range.loc[d] <= self.p.range_max).fillna(False)
         cand = pd.DataFrame(
             {
                 "symbol": px.index[mask],
@@ -338,7 +351,10 @@ class PullbackPortfolio:
 
         if not self._open:
             return {}
-        w = 1.0 / self.p.k
+        if self.p.full_invest:
+            w = 1.0 / len(self._open)
+        else:
+            w = 1.0 / self.p.k
         out = {sym: w for sym in self._open}
         if symbols is not None:
             keep = set(symbols)
