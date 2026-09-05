@@ -3,6 +3,12 @@
 # PIT container is healthy, then run the (resumable) eval script. Retries.
 $ErrorActionPreference = "Continue"
 $env:PYTHONIOENCODING = "utf-8"
+# Cap BLAS/OpenMP threads: the 337-formula zoo build runs OpenBLAS ops from 12
+# process workers — unrestricted thread buffers OOM 32 GB machines (observed
+# 2026-09-04). LightGBM sets its own num_threads independently.
+$env:OPENBLAS_NUM_THREADS = "1"
+$env:OMP_NUM_THREADS = "4"
+$env:MKL_NUM_THREADS = "1"
 $log = "outputs\_dcycle_eval.log"
 $evalArgs = $args -join " "
 

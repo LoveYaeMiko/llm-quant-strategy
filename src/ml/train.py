@@ -60,24 +60,27 @@ _DEFAULT_PARAMS: dict[str, Any] = {
 
 
 _EVAL_CTX = None  # per-worker FactorContext, set by _init_eval_worker
+_EVAL_DTYPE = "float64"  # per-worker feature dtype (float32 for memory-bound refits)
 
 
-def _init_eval_worker(panel: pd.DataFrame) -> None:
+def _init_eval_worker(panel: pd.DataFrame, dtype: str = "float64") -> None:
     """Process-pool initializer — one FactorContext per worker (Windows spawn)."""
-    global _EVAL_CTX
+    global _EVAL_CTX, _EVAL_DTYPE
     from ..factors.code_generator import FactorContext
 
     _EVAL_CTX = FactorContext(panel)
+    _EVAL_DTYPE = dtype
 
 
 def _eval_formula(item) -> tuple[str, pd.Series]:
     """Evaluate one formula in the worker's context (module-level: picklable)."""
-    global _EVAL_CTX
+    global _EVAL_CTX, _EVAL_DTYPE
     from ..factors.code_generator import eval_expression
 
     idx, f = item
     name = f"f{idx:03d}_{_sanitize(f)}"
     s = eval_expression(f, _EVAL_CTX)
+    return name, s.astype(_EVAL_DTYPE).rename(name)
     if not hasattr(s, "groupby"):
         raise ValueError(f"formula produced a scalar, not a signal: {f!r}")
     return name, s.astype(float).rename(name)
@@ -87,6 +90,7 @@ def build_feature_matrix(
     panel: pd.DataFrame,
     formulas: Sequence[str],
     n_jobs: Optional[int] = None,
+    dtype: str = "float64",
 ) -> pd.DataFrame:
     """Evaluate ``formulas`` on the (date, symbol) ``panel`` → feature frame.
 
@@ -97,6 +101,11 @@ def build_feature_matrix(
     ``n_jobs`` parallelises across formulas with a process pool (each worker
     holds its own FactorContext over the shared panel) — the 300+ formula zoo
     build drops from ~25 min to ~2-4 min on this machine.
+
+    ``dtype`` controls the frame precision. ``float32`` halves memory (~3 GB
+    for the 2.3M-row zoo) and is the documented choice for the D-track model
+    cycle refits on 32 GB machines; the default stays ``float64`` so existing
+    artifact pipelines are bit-identical.
     """
     from ..factors.code_generator import FactorContext, eval_expression
 
@@ -104,7 +113,9 @@ def build_feature_matrix(
     if n_jobs and n_jobs > 1 and len(formulas) > 4:
         from concurrent.futures import ProcessPoolExecutor
 
-        with ProcessPoolExecutor(max_workers=n_jobs, initializer=_init_eval_worker, initargs=(panel,)) as pool:
+        with ProcessPoolExecutor(
+            max_workers=n_jobs, initializer=_init_eval_worker, initargs=(panel, dtype)
+        ) as pool:
             pairs = list(pool.map(_eval_formula, list(enumerate(formulas))))
         cols = dict(pairs)
     else:
@@ -116,7 +127,7 @@ def build_feature_matrix(
                 raise ValueError(f"formula produced a scalar, not a signal: {f!r}")
             # rename explicitly — eval_expression may carry a formula/field name on
             # the series, which LightGBM would reject as duplicate column names
-            cols[names[i]] = s.astype(float).rename(names[i])
+            cols[names[i]] = s.astype(dtype).rename(names[i])
     out = pd.concat(cols.values(), axis=1)
     out.index.names = ["date", "symbol"]
     return out

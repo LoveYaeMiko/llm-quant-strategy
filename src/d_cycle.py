@@ -80,6 +80,20 @@ def _deploy_from(market, month_end: pd.Timestamp) -> str:
     return str(after.iloc[0].date())
 
 
+def _sanitize_inf_chunked(X: pd.DataFrame, step: int = 32) -> pd.DataFrame:
+    """Replace ±inf with NaN column-block by column-block (OOM-safe).
+
+    A whole-frame ``replace`` copies the entire matrix (~6 GB) and OOMs on
+    32 GB machines alongside LightGBM's own copies.
+    """
+    import gc
+
+    for i in range(0, X.shape[1], step):
+        X.iloc[:, i : i + step] = X.iloc[:, i : i + step].replace([float("inf"), float("-inf")], float("nan"))
+    gc.collect()
+    return X
+
+
 def refit_challenger(cfg, name: str = "CH") -> dict[str, Any]:
     """Monthly rolling refit → challenger artifact (isolated directory)."""
     import lightgbm as lgb
@@ -97,14 +111,22 @@ def refit_challenger(cfg, name: str = "CH") -> dict[str, Any]:
     extras = load_margin_extras(cfg)
     import os
 
-    n_jobs = max(2, (os.cpu_count() or 4) - 2)
-    X = build_feature_matrix(market.long, formulas, n_jobs=n_jobs)
+    # 6 workers max: with Windows spawn each worker pickles its own copy of the
+    # full market panel — more workers duplicated GBs of RAM (OOM observed).
+    # dtype="float32" keeps the 2.3M×337 matrix at ~3 GB with no float64
+    # intermediate.
+    n_jobs = min(6, (os.cpu_count() or 4) - 2)
+    X = build_feature_matrix(market.long, formulas, n_jobs=n_jobs, dtype="float32")
     if extras:
         X = X.join(pd.concat([s.rename(k) for k, s in extras.items()], axis=1), how="left")
-    X = X.astype("float64").replace([float("inf"), float("-inf")], float("nan"))
+    # float32 end-to-end: the 2.3M×337 matrix is ~3 GB instead of ~6 GB, and
+    # LightGBM converts internally anyway — rank-based books are insensitive
+    # to the precision (OOM-driven decision, documented).
+    X = _sanitize_inf_chunked(X.astype("float32"))
     labels = standardize_per_date(forward_return_labels(market.price_panel, (HORIZON,)))
     tradable = getattr(market, "forward_returns_tradable", None)
     Xm, y = align_features_labels(X, labels, f"fwd_{HORIZON}", tradable)
+    y = y.astype("float32")
 
     today = pd.Timestamp.today().normalize()
     month_end = (today.replace(day=1) - pd.Timedelta(days=1)).normalize()

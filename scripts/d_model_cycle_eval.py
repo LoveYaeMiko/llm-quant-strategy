@@ -94,25 +94,64 @@ def stage0_extend_intraday(cfg, symbols) -> None:
               f"rollup {s['first_day']}..{s['last_day']}", flush=True)
 
 
+def _sanitize_inf_chunked(X: pd.DataFrame, step: int = 32) -> pd.DataFrame:
+    """Replace ±inf with NaN column-block by column-block.
+
+    A whole-frame ``replace`` copies the entire matrix (~6 GB at 2.3M rows ×
+    337 cols) and OOMs on 32 GB machines alongside LightGBM's own copies;
+    block-wise replacement caps the extra memory at one block.
+    """
+    import gc
+
+    for i in range(0, X.shape[1], step):
+        X.iloc[:, i : i + step] = X.iloc[:, i : i + step].replace([np.inf, -np.inf], np.nan)
+    gc.collect()
+    return X
+
+
 def stage1_matrix(cfg, market, formulas, extras):
     if MATRIX_CACHE.is_file():
-        print("stage1: matrix cache hit — skip", flush=True)
-        return pd.read_parquet(MATRIX_CACHE)
+        try:
+            df = pd.read_parquet(MATRIX_CACHE)
+            print("stage1: matrix cache hit — skip", flush=True)
+            return df
+        except Exception:  # noqa: BLE001 — a truncated write must rebuild, not crash
+            print("stage1: corrupt matrix cache — rebuilding", flush=True)
+            MATRIX_CACHE.unlink(missing_ok=True)
     import os
 
     from src.ml.train import align_features_labels, build_feature_matrix, forward_return_labels, standardize_per_date
 
     t0 = time.time()
-    X = build_feature_matrix(market.long, formulas, n_jobs=max(2, (os.cpu_count() or 4) - 2))
+    # 6 workers max: with Windows spawn each worker pickles its own copy of the
+    # full market panel — 12 workers duplicated GBs of RAM (OOM observed).
+    # dtype="float32" keeps the 2.3M×337 matrix at ~3 GB with no float64
+    # intermediate (the original pipeline OOM'd the machine and ballooned the
+    # pagefile to ~39 GB on 2026-09-04).
+    X = build_feature_matrix(market.long, formulas, n_jobs=min(6, (os.cpu_count() or 4) - 2), dtype="float32")
     if extras:
         X = X.join(pd.concat([s.rename(k) for k, s in extras.items()], axis=1), how="left")
-    X = X.astype(np.float64).replace([np.inf, -np.inf], np.nan)
+    # float32 end-to-end: the 2.3M×337 matrix is ~3 GB instead of ~6 GB, and
+    # LightGBM converts internally anyway — rank-based books are insensitive
+    # to the precision (OOM-driven decision, documented).
+    X = _sanitize_inf_chunked(X.astype(np.float32))
     labels = standardize_per_date(forward_return_labels(market.price_panel, (HORIZON,)))
     tradable = getattr(market, "forward_returns_tradable", None)
     Xm, y = align_features_labels(X, labels, f"fwd_{HORIZON}", tradable)
     Xm = Xm.copy()
-    Xm["__y__"] = y
-    Xm.to_parquet(MATRIX_CACHE)
+    Xm["__y__"] = y.astype(np.float32)
+    # atomic write: a reboot/power-loss mid-write corrupts the cache (observed
+    # 2026-09-05 — the machine rebooted during the write), so write to a temp
+    # name and rename; the resume logic then never sees a half-written file.
+    import os as _os
+    import shutil as _shutil
+
+    free_gb = _shutil.disk_usage(str(ROOT)).free / 1e9
+    if free_gb < 4.0:
+        raise RuntimeError(f"low disk space ({free_gb:.1f} GB free) — refusing to write the matrix cache")
+    tmp_path = MATRIX_CACHE.with_name(MATRIX_CACHE.name + ".tmp")
+    Xm.to_parquet(tmp_path)
+    _os.replace(tmp_path, MATRIX_CACHE)
     print(f"stage1: matrix {Xm.shape} built in {time.time() - t0:.0f}s — cached", flush=True)
     return Xm
 
@@ -206,7 +245,7 @@ def _replay(cfg, acc, symbols, artifact_paths, eval_start, eval_end, label, ledg
 
     t0 = time.time()
     market = _build_market_for_paper(cfg, symbols, eval_start, eval_end, seed=1)
-    frame = _feature_frame(market, meta, cfg, n_jobs=max(2, (__import__("os").cpu_count() or 4) - 2))
+    frame = _feature_frame(market, meta, cfg, n_jobs=min(6, (__import__("os").cpu_count() or 4) - 2))
     assert list(frame.columns) == meta["features"], "artifact columns out of sync"
     scores = score_artifact(load_artifact(model_path), frame)
 
