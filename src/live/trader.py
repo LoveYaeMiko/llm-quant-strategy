@@ -40,6 +40,31 @@ def _in_trading_hours(now: datetime) -> bool:
     return (9, 30) <= t < (11, 30) or (13, 0) <= t < (15, 10)
 
 
+def _is_live_process(pid: int) -> bool:
+    """True when ``pid`` is an EXISTING live-trader process (not a recycled pid).
+
+    A hard crash leaves a stale pid file; if the OS recycled the pid to an
+    unrelated process, a bare ``os.kill(pid, 0)`` would wrongly treat the
+    trader as running and skip the whole session. The command-line check is the
+    primary gate; the os.kill probe only degrades gracefully when psutil is
+    missing.
+    """
+    try:
+        import psutil
+    except ImportError:
+        try:
+            os.kill(pid, 0)  # noqa: S101 — existence probe
+            return True
+        except OSError:
+            return False
+    try:
+        proc = psutil.Process(pid)
+        cmd = " ".join(proc.cmdline()).lower()
+        return "cli.py" in cmd and "live" in cmd.split()
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        return False
+
+
 class LiveTrader:
     """Polls live prices and executes D-track stop breaches in real time."""
 
@@ -92,9 +117,9 @@ class LiveTrader:
         if pid_file.is_file():
             try:
                 old = int(pid_file.read_text().strip())
-                os.kill(old, 0)  # noqa: S101 — existence probe
-                print(f"live trader already running (pid {old}) — exiting")
-                return 0
+                if _is_live_process(old):
+                    print(f"live trader already running (pid {old}) — exiting")
+                    return 0
             except (OSError, ValueError):
                 pass
         pid_file.write_text(str(os.getpid()))
@@ -103,39 +128,60 @@ class LiveTrader:
             while True:
                 now = datetime.now()
                 d = pd.Timestamp(now.date())
-                if not _is_trading_day(d) or not _in_trading_hours(now):
-                    if now.hour >= 15 and now.minute >= 10 and _is_trading_day(d):
+                if not _is_trading_day(d):
+                    # weekends/holidays (weekday check only): exit at once instead
+                    # of sleeping forever — manual runs must terminate cleanly.
+                    print(f"{now:%H:%M:%S} not a trading day — live trader exiting")
+                    break
+                if not _in_trading_hours(now):
+                    if now.hour >= 15 and now.minute >= 10:
                         print(f"{now:%H:%M:%S} market closed — live trader exiting")
                         break
                     time.sleep(max(20, self.poll_seconds))
                     continue
 
-                prices = self._current_prices()
-                exits = self.portfolio.live_check(prices, pd.Timestamp(now))
-                for sig in exits:
-                    px = float(sig["price"])
-                    fill_px = float(
-                        int(px * (1.0 - self.slippage_bps / 10_000.0) * 100) / 100.0
-                    )
-                    if fill_px <= 0:
-                        continue
-                    shares = self.positions.get(sig["symbol"], 0.0)
-                    if abs(shares) < 1e-9:
-                        continue
-                    notional = abs(shares) * fill_px
-                    fee = self._fee(notional)
-                    self.cash += notional - fee
-                    self.positions.pop(sig["symbol"], None)
-                    fill = Fill(
-                        date=str(now.date()), symbol=sig["symbol"], side="sell",
-                        shares=-abs(shares), price=fill_px, commission=float(fee),
-                        notional=float(notional), time=sig["time"],
-                    )
-                    self.ledger.append_fill(fill)
-                    print(f"LIVE EXIT {sig['time']} {sig['symbol']} {fill_px:.2f} "
-                          f"({abs(shares):.0f} shares, fee {fee:.2f})", flush=True)
+                # Network resilience: a failed price poll (outage, API throttle)
+                # must NOT kill the session — keep polling and retry next cycle.
+                try:
+                    prices = self._current_prices()
+                except Exception as exc:  # noqa: BLE001
+                    print(f"{now:%H:%M:%S} price poll failed "
+                          f"({type(exc).__name__}: {exc}) — retrying next cycle", flush=True)
+                    time.sleep(self.poll_seconds)
+                    continue
 
-                self._write_status(prices, now)
+                try:
+                    exits = self.portfolio.live_check(prices, pd.Timestamp(now))
+                    for sig in exits:
+                        px = float(sig["price"])
+                        fill_px = float(
+                            int(px * (1.0 - self.slippage_bps / 10_000.0) * 100) / 100.0
+                        )
+                        if fill_px <= 0:
+                            continue
+                        shares = self.positions.get(sig["symbol"], 0.0)
+                        if abs(shares) < 1e-9:
+                            continue
+                        notional = abs(shares) * fill_px
+                        fee = self._fee(notional)
+                        fill = Fill(
+                            date=str(now.date()), symbol=sig["symbol"], side="sell",
+                            shares=-abs(shares), price=fill_px, commission=float(fee),
+                            notional=float(notional), time=sig["time"],
+                        )
+                        # persist FIRST: if the ledger write fails the in-memory
+                        # book is left untouched, so no phantom/lost fills ever
+                        # reach the close-run merge.
+                        self.ledger.append_fill(fill)
+                        self.cash += notional - fee
+                        self.positions.pop(sig["symbol"], None)
+                        print(f"LIVE EXIT {sig['time']} {sig['symbol']} {fill_px:.2f} "
+                              f"({abs(shares):.0f} shares, fee {fee:.2f})", flush=True)
+
+                    self._write_status(prices, now)
+                except Exception as exc:  # noqa: BLE001 — transient cycle error, keep polling
+                    print(f"{now:%H:%M:%S} cycle error "
+                          f"({type(exc).__name__}: {exc}) — continuing", flush=True)
                 time.sleep(self.poll_seconds)
         finally:
             pid_file.unlink(missing_ok=True)
