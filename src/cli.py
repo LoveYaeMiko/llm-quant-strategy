@@ -1653,6 +1653,7 @@ def cmd_live(args) -> int:
     17:30 close run merges today's live fills and never re-trades a past
     timestamp (the replay sweep is gated by ``pb_live_intraday_from``).
     """
+    _raise_process_priority("live")
     cfg = load_config()
     lcfg = cfg.section("live") or {}
     if not bool(lcfg.get("enabled", True)):
@@ -1692,6 +1693,7 @@ def cmd_dcycle(args) -> int:
     structure is regulatory-fixed, only drift is alerted) and the Sunday weekly
     (monthly rolling refit + parallel challenger + forward promotion gate).
     """
+    _raise_process_priority("dcycle")
     from .d_cycle import (
         audit_cost_consistency, decide_promotion, refit_challenger, run_challenger,
     )
@@ -1716,6 +1718,24 @@ def cmd_dcycle(args) -> int:
     return 1
 
 
+def _raise_process_priority(label: str) -> None:
+    """Windows: raise THIS process to HIGH_PRIORITY_CLASS (D-track jobs).
+
+    The live trader (09:25) and the preclose layer (14:50) are the two
+    time-critical D-track processes — they must never be starved by the
+    A/B/C research work running on the same machine. Best-effort: silently
+    degrades where psutil/priority classes are unavailable.
+    """
+    try:
+        import psutil
+
+        if hasattr(psutil, "HIGH_PRIORITY_CLASS"):
+            psutil.Process().nice(psutil.HIGH_PRIORITY_CLASS)
+            print(f"{label}: process priority -> HIGH", flush=True)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def cmd_preclose(args) -> int:
     """14:55 收盘竞价下单层 — 实盘一致性：委托在收盘集合竞价前决定。
 
@@ -1723,6 +1743,7 @@ def cmd_preclose(args) -> int:
     persists it; the daily close run then fills exactly that list at the 15:00
     closing-auction prices (no orders → no close trades, as in reality).
     """
+    _raise_process_priority("preclose")
     from .preclose import cmd_preclose as _run
 
     return _run(args)
@@ -1957,6 +1978,8 @@ def cmd_shadow(args) -> int:
     if getattr(args, "accounts", None):
         want = set(args.accounts)
         accounts = [a for a in accounts if a.get("name") in want]
+    # priority order: the live (pullback) D track runs FIRST, ahead of A/B/C
+    accounts = sorted(accounts, key=lambda a: int(a.get("priority", 0) or 0), reverse=True)
     if not accounts:
         accounts = [None]
 
@@ -2547,6 +2570,8 @@ def cmd_autopilot(args) -> int:
     if getattr(args, "accounts", None):
         want = set(args.accounts)
         accounts = [a for a in accounts if a.get("name") in want]
+    # priority order: the live (pullback) D track runs FIRST, ahead of A/B/C
+    accounts = sorted(accounts, key=lambda a: int(a.get("priority", 0) or 0), reverse=True)
     if not accounts:
         accounts = [None]
     start = args.start or str(shadow.get("start_date", "2026-01-01"))

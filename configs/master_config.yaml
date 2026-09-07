@@ -261,8 +261,10 @@ shadow:
   benchmark_cache: "data/benchmark/hs300_index.csv"
   # 双资金轨（2026-09）：每个账户独立账本/状态/日报，文件按 name 后缀。
   # 10 万/5 万轨必须用成本治理（notional_floor + band_frac），200 万轨治理可选。
+  # priority 决定日度闭环运行顺序：D 轨（实时拟真）100 最高，先于 A/B/C 完成。
   accounts:
     - name: "A_200W"
+      priority: 10
       cash: 2000000
       alpha_source: "ml"              # ml | pool
       ml_artifacts: ["lgbm"]          # 最新 LightGBM 工件（345 特征，2026 段最佳）
@@ -273,6 +275,7 @@ shadow:
       notional_floor: 0               # 200 万规模微尘成本二阶化，无需治理
       band_frac: 0.0
     - name: "B_10W"
+      priority: 20
       cash: 100000
       alpha_source: "ml"
       ml_artifacts: ["lgbm"]          # 先同模型，治理后簿形重估
@@ -285,6 +288,7 @@ shadow:
       notional_floor: 2000            # 微尘下限
       band_frac: 0.001                # 带宽调仓
     - name: "C_5W"
+      priority: 30
       cash: 50000
       alpha_source: "ml"
       ml_artifacts: ["lgbm"]          # 同工件；C 轨特征缓存与 B 轨（同截面）复用
@@ -298,6 +302,7 @@ shadow:
                                       # 2000 下限会导致整轨停摆；1000 下限两截面口径下均可成交
       band_frac: 0.001                # 带宽调仓
     - name: "D_5W"
+      priority: 100                     # 实时拟真轨最高优先级，日度闭环最先处理
       cash: 50000
       alpha_source: "pullback"        # Martin Luk 回撤买入纪律（日线版，ML 扫描 + 改良）
       universe: "hs300_500"           # 动量/ML 截面同 B/C
