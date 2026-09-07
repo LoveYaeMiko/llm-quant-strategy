@@ -1716,6 +1716,18 @@ def cmd_dcycle(args) -> int:
     return 1
 
 
+def cmd_preclose(args) -> int:
+    """14:55 收盘竞价下单层 — 实盘一致性：委托在收盘集合竞价前决定。
+
+    Decides the D-track close-rebalance ORDER LIST from 14:55-known data and
+    persists it; the daily close run then fills exactly that list at the 15:00
+    closing-auction prices (no orders → no close trades, as in reality).
+    """
+    from .preclose import cmd_preclose as _run
+
+    return _run(args)
+
+
 def _refresh_shadow_data(cfg, symbols) -> dict:
     """Refresh price/PEAD/sentiment/benchmark once for the shadow loop.
 
@@ -1827,6 +1839,27 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
                 "max_position_pct": float(account.get("max_position_pct", runner_kwargs.get("max_position_pct", 0.05))),
             }
         )
+    # Closing-auction layer (pullback/live accounts): on dates >= live_intraday_from
+    # the close rebalance executes the 14:55-submitted order list at the 15:00
+    # auction close; if the 14:55 job never ran, NO close trades happen that day
+    # (as in reality). Historical dates keep the normal close-computed path.
+    if account and str(account.get("alpha_source", "")) == "pullback":
+        live_from = str(account.get("pb_live_intraday_from", "") or "") or None
+
+        def _preclose_provider(d, _live_from=live_from, _name=account["name"]):
+            if _live_from and pd.Timestamp(d) >= pd.Timestamp(_live_from):
+                path = ROOT / "outputs" / f"preclose_orders_{_name}.json"
+                if path.is_file():
+                    try:
+                        data = json.loads(path.read_text(encoding="utf-8"))
+                        if str(data.get("date")) == str(pd.Timestamp(d).date()):
+                            return list(data.get("orders", []) or [])
+                    except (ValueError, OSError):
+                        pass
+                return None  # live date without submitted orders → no close trades
+            return "__normal__"
+
+        runner_kwargs["preclose_provider"] = _preclose_provider
     runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=seed, **runner_kwargs)
     result = runner.run(start=start, end=end)
 
@@ -2901,6 +2934,14 @@ def main(argv: list[str] | None = None) -> int:
         help="refit=月度滚动重训挑战者 | challenger=推进挑战者账本 | decide=晋升闸门 | audit-cost=成本一致性检查",
     )
     p_dc.set_defaults(func=cmd_dcycle)
+
+    p_pc = sub.add_parser(
+        "preclose",
+        help="14:55 收盘竞价下单层 — 用 14:55 已知数据决定当日收盘委托清单，15:00 集合竞价价成交（实盘一致性）",
+    )
+    p_pc.add_argument("--symbols", nargs="*", default=None,
+                      help="override the account universe")
+    p_pc.set_defaults(func=cmd_preclose)
 
     args = parser.parse_args(argv)
     try:

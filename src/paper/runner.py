@@ -61,6 +61,7 @@ class PaperRunner:
         seed: int = 0,
         notional_floor: float = 0.0,
         band_frac: float = 0.0,
+        preclose_provider=None,
     ) -> None:
         self.portfolio = portfolio
         self.market = market
@@ -79,6 +80,12 @@ class PaperRunner:
         self.seed = int(seed)
         self.notional_floor = float(notional_floor)
         self.band_frac = float(band_frac)
+        # Closing-auction layer: callable(date) -> "__normal__" (compute the
+        # book at the close, the historical path) | list of {symbol, shares}
+        # orders (decided at 14:55, filled at the 15:00 auction) | None (a live
+        # date whose 14:55 orders were never submitted — no close trades, as in
+        # reality).
+        self.preclose_provider = preclose_provider
 
     # ------------------------------------------------------------------ helpers
     def _executor_kwargs(self) -> dict:
@@ -195,24 +202,43 @@ class PaperRunner:
                     ))
 
             if (i - start_idx) % self.rebalance_days == 0:
-                weights = self.portfolio.compute_weights(self.symbols, d)
-                if weights:
-                    # Explicit 0.0 for any name not in the book — both symbols
-                    # dropped by the optimizer and positions still held from a
-                    # shrunken universe (e.g. a halt target that only covers the
-                    # current universe) — so the executor *sells* them rather
-                    # than leaving them held forever.
-                    held = set(ex.positions)
-                    universe = list(
-                        dict.fromkeys([*self.symbols, *sorted(held - set(self.symbols))])
-                    )
-                    targets = pd.DataFrame(
-                        [{s: weights.get(s, 0.0) for s in universe}], index=[d]
-                    )
-                    res = ex.execute(targets, prices.loc[[d]], equity=mtm, limit_locked=rets.loc[d])
-                    if self.pit_strict:
-                        self._check_fills(d, close, res.fills)
-                    fills.extend(res.fills)
+                preclose = None
+                if self.preclose_provider is not None:
+                    preclose = self.preclose_provider(d)
+                if preclose == "__normal__":
+                    preclose = None
+                if preclose is not None:
+                    # Closing-auction layer: execute the 14:55-submitted order
+                    # list at the 15:00 auction (close) prices. An EMPTY list is
+                    # a valid decision (no orders submitted); a None means the
+                    # 14:55 job never ran — then, as in reality, no close trades
+                    # happen at all (the book is only marked to the close).
+                    if preclose:
+                        res = ex.execute_orders(
+                            preclose, prices.loc[d], d, limit_locked=rets.loc[d]
+                        )
+                        if self.pit_strict:
+                            self._check_fills(d, close, res.fills)
+                        fills.extend(res.fills)
+                else:
+                    weights = self.portfolio.compute_weights(self.symbols, d)
+                    if weights:
+                        # Explicit 0.0 for any name not in the book — both symbols
+                        # dropped by the optimizer and positions still held from a
+                        # shrunken universe (e.g. a halt target that only covers the
+                        # current universe) — so the executor *sells* them rather
+                        # than leaving them held forever.
+                        held = set(ex.positions)
+                        universe = list(
+                            dict.fromkeys([*self.symbols, *sorted(held - set(self.symbols))])
+                        )
+                        targets = pd.DataFrame(
+                            [{s: weights.get(s, 0.0) for s in universe}], index=[d]
+                        )
+                        res = ex.execute(targets, prices.loc[[d]], equity=mtm, limit_locked=rets.loc[d])
+                        if self.pit_strict:
+                            self._check_fills(d, close, res.fills)
+                        fills.extend(res.fills)
 
             end_equity = ex.settle(close)
             gross = 0.0

@@ -280,3 +280,64 @@ class OrderExecutor:
             if np.isfinite(px):
                 mv += shares * float(px)
         return self.cash + mv
+
+    def execute_orders(
+        self,
+        orders: list[dict],
+        prices: pd.Series,
+        date,
+        *,
+        limit_locked: Optional[pd.Series] = None,
+        fill_time: str = "15:00",
+    ) -> OrderResult:
+        """Execute a PRE-SUBMITTED closing-auction order list.
+
+        ``orders`` = ``[{symbol, shares}]`` with SIGNED shares, decided at
+        14:55 from 14:55-known data; fills happen at the 15:00 closing-auction
+        (closing) prices with the same slippage/tick/fee model as the intraday
+        executor. Limit-locked or suspended names do NOT fill (the order simply
+        lapses — as in reality). Fill ``time`` records the auction timestamp.
+        """
+        result = OrderResult()
+        for o in orders:
+            symbol = str(o["symbol"])
+            shares = float(o["shares"])
+            if abs(shares) < 1e-9:
+                continue
+            price = float(prices.get(symbol, np.nan))
+            if not np.isfinite(price) or price <= 0:
+                continue  # suspended — no auction print, order lapses
+            side = "buy" if shares > 0 else "sell"
+            if limit_locked is not None:
+                lv = limit_locked.get(symbol, np.nan)
+                if np.isfinite(lv):
+                    lim = 0.20 if symbol[:3] in ("688", "689", "300", "301") else 0.10
+                    if shares > 0 and lv >= lim - 0.005:
+                        continue  # buying into a limit-up close
+                    if shares < 0 and lv <= -(lim - 0.005):
+                        continue  # selling into a limit-down close
+            fill_price = float(round(self._quote(price, side), 2))
+            if fill_price <= 0:
+                continue
+            fee = self._fee(abs(shares) * fill_price, side)
+            self.cash -= shares * fill_price + fee
+            new_shares = self.positions.get(symbol, 0.0) + shares
+            if abs(new_shares) < 1e-9:
+                self.positions.pop(symbol, None)
+            else:
+                self.positions[symbol] = new_shares
+            result.fills.append(
+                Fill(
+                    date=str(date),
+                    symbol=symbol,
+                    side=side,
+                    shares=shares,
+                    price=float(fill_price),
+                    commission=float(fee),
+                    notional=float(abs(shares) * fill_price),
+                    time=str(fill_time),
+                )
+            )
+        result.cash = self.cash
+        result.positions = dict(self.positions)
+        return result
