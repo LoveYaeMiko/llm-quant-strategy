@@ -100,18 +100,27 @@ def _provisional_market(base_market, prov: dict[str, dict[str, float]], today: p
                 for sym, b in prov.items()
             ]
         ).set_index(["date", "symbol"])
-        for col in long.columns:
-            if col in extra.columns:
-                long.loc[extra.index, col] = extra[col]
+        if extra.index.names != long.index.names:
+            extra.index.names = long.index.names
+        # concat, NOT .loc setitem: pandas raises KeyError on .loc assignment
+        # with entirely new MultiIndex labels. Also DROP any existing today
+        # rows first (post-ingest re-runs) or the concat duplicates them and
+        # the book's unstack() fails.
+        long = long[long.index.get_level_values(0) < today]
+        long = pd.concat([long, extra]).sort_index()
     return SimpleNamespace(price_panel=panel, long=long)
 
 
 def _scores_as_of_yesterday(cfg, base_market, symbols, start, yesterday) -> pd.Series:
     """ML scanner scores through YESTERDAY, today's row = yesterday's (ffill).
 
-    At 14:55 today's final features do not exist; using the last fully-known
-    cross-section is the only lookahead-free choice (a real 14:55 operator has
-    exactly this information).
+    At 14:50 today's final features do not exist; using the last fully-known
+    cross-section is the only lookahead-free choice (a real 14:57 operator has
+    exactly this information). The REAL base market is passed straight to the
+    cached feature builder (cache hit — no slow fresh build, and no synthetic
+    market objects), then today's row is ALWAYS overwritten with yesterday's
+    (even if the cache already contains today's final features — post-ingest —
+    using them at 14:50 would be lookahead).
     """
     import json as _json
     import os
@@ -121,18 +130,18 @@ def _scores_as_of_yesterday(cfg, base_market, symbols, start, yesterday) -> pd.S
 
     meta_path, model_path = _resolve_artifact("lgbm", "")
     meta = _json.loads(meta_path.read_text(encoding="utf-8"))
-    market_hist = base_market
-    if yesterday is not None and market_hist.price_panel.index.max() > yesterday:
-        panel = market_hist.price_panel[market_hist.price_panel.index <= yesterday]
-        long = market_hist.long[market_hist.long.index.get_level_values(0) <= yesterday]
-        market_hist = SimpleNamespace(price_panel=panel, long=long)
-    frame = _feature_frame(market_hist, meta, cfg, n_jobs=min(6, (os.cpu_count() or 4) - 2))
+    frame = _feature_frame(base_market, meta, cfg, n_jobs=min(6, (os.cpu_count() or 4) - 2))
     assert list(frame.columns) == meta["features"], "artifact columns out of sync"
     scores = score_artifact(load_artifact(model_path), frame)
+    scores = scores[~scores.index.duplicated(keep="last")]
     wide = scores.unstack()
-    if wide.index.max() < pd.Timestamp.today().normalize():
-        new_idx = wide.index.append(pd.Index([pd.Timestamp.today().normalize()]))
-        wide = wide.reindex(new_idx).ffill()
+    today = pd.Timestamp.today().normalize()
+    # keep only rows <= yesterday (drop any post-ingest final-day features),
+    # then append today = yesterday's cross-section (ffill).
+    wide = wide[wide.index <= yesterday]
+    if len(wide) == 0:
+        raise RuntimeError("no scores through yesterday — feature cache empty?")
+    wide = wide.reindex(wide.index.append(pd.Index([today]))).ffill()
     return wide.stack(dropna=False)
 
 
@@ -146,9 +155,11 @@ def _intraday_today(bars: dict[str, pd.DataFrame], prev_close: pd.Series, today:
         if len(d) == 0:
             continue
         row = dict(d.iloc[-1])
+        # gap uses the day's OPEN (not kept in the feature frame) vs prev close
         pc = float(prev_close.get(sym, np.nan))
-        if np.isfinite(pc) and pc > 0:
-            row["gap"] = row["open"] / pc - 1.0
+        open_px = float(df["open"].iloc[0]) if len(df) else np.nan
+        if np.isfinite(pc) and pc > 0 and np.isfinite(open_px):
+            row["gap"] = open_px / pc - 1.0
         else:
             row["gap"] = np.nan
         rows[sym] = row
@@ -191,7 +202,15 @@ def build_preclose_orders(cfg, account: dict[str, Any], symbols: list[str]) -> d
     today_feats = _intraday_today(bars, prev_close, today)
     intraday: dict[str, pd.DataFrame] = {}
     for key in ("vwap_gap", "rv", "tail_vol", "gap", "open30", "range", "afternoon", "vwap"):
-        parts = [f for f in (rollup.get(key), today_feats.get(key)) if f is not None and len(f)]
+        parts: list[pd.DataFrame] = []
+        r = rollup.get(key)
+        if r is not None and len(r):
+            r = r[r.index < today]  # drop any today rows (post-refresh re-runs)
+            if len(r):
+                parts.append(r)
+        t = today_feats.get(key)
+        if t is not None and len(t):
+            parts.append(t)
         if parts:
             intraday[key] = pd.concat(parts).sort_index()
 

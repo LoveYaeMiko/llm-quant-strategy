@@ -109,8 +109,11 @@ def test_runner_skips_close_trades_when_no_orders_on_live_date(tmp_path):
             return None  # 14:55 job never ran → no close trades, as in reality
         return "__normal__"
 
+    # switch AT d0: the normal path WOULD trade on d0 (sell A01, buy C03) —
+    # the provider-None must suppress exactly those trades (regression for the
+    # sentinel bug where None fell through to the normal path, 2026-09-07).
     r = _runner(
-        _StaticPortfolio(syms, switch_date=dates[3]), market,
+        _StaticPortfolio(syms, switch_date=dates[2]), market,
         tmp_path / "l.sqlite", provider=provider,
     )
     r.run()

@@ -202,25 +202,14 @@ class PaperRunner:
                     ))
 
             if (i - start_idx) % self.rebalance_days == 0:
-                preclose = None
-                if self.preclose_provider is not None:
-                    preclose = self.preclose_provider(d)
+                # Closing-auction layer (three-way):
+                #   "__normal__" → compute the book at the close (historical path);
+                #   list        → execute the 14:55 order list at auction close;
+                #   None        → live date without submitted orders → NO close
+                #                 trades at all (as in reality) — NOT the normal
+                #                 path: an unsubmitted order never fills.
+                preclose = self.preclose_provider(d) if self.preclose_provider else "__normal__"
                 if preclose == "__normal__":
-                    preclose = None
-                if preclose is not None:
-                    # Closing-auction layer: execute the 14:55-submitted order
-                    # list at the 15:00 auction (close) prices. An EMPTY list is
-                    # a valid decision (no orders submitted); a None means the
-                    # 14:55 job never ran — then, as in reality, no close trades
-                    # happen at all (the book is only marked to the close).
-                    if preclose:
-                        res = ex.execute_orders(
-                            preclose, prices.loc[d], d, limit_locked=rets.loc[d]
-                        )
-                        if self.pit_strict:
-                            self._check_fills(d, close, res.fills)
-                        fills.extend(res.fills)
-                else:
                     weights = self.portfolio.compute_weights(self.symbols, d)
                     if weights:
                         # Explicit 0.0 for any name not in the book — both symbols
@@ -239,6 +228,16 @@ class PaperRunner:
                         if self.pit_strict:
                             self._check_fills(d, close, res.fills)
                         fills.extend(res.fills)
+                elif preclose:
+                    # 14:55 order list (possibly empty → no trades)
+                    res = ex.execute_orders(
+                        preclose, prices.loc[d], d, limit_locked=rets.loc[d]
+                    )
+                    if self.pit_strict:
+                        self._check_fills(d, close, res.fills)
+                    fills.extend(res.fills)
+                # else: preclose is None → the 14:55 job never ran for this live
+                # date → skip the rebalance entirely (mark-only day).
 
             end_equity = ex.settle(close)
             gross = 0.0
