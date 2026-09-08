@@ -116,5 +116,64 @@
       "gross_scale_wired": false,
       "resumed": false
     }
+  },
+  "flat_no_skip30": {
+    "stop_lo": 0.025,
+    "stop_hi": 0.025,
+    "intraday_stops": true,
+    "cum_return": 0.13233522255096508,
+    "ann_return": 0.2192330749694451,
+    "sharpe": 1.35084750054471,
+    "max_dd": 0.06304336658661613,
+    "n_days": 158,
+    "n_fills": 238,
+    "n_intraday": 55,
+    "cost": 1763.12,
+    "fills_by_source": {
+      "close": 183,
+      "replay": 55
+    },
+    "fingerprint": {
+      "book_class": "PullbackPortfolio",
+      "params": {
+        "k": 6,
+        "rank_source": "ml",
+        "rank_min": 0.8,
+        "mom_window": 63,
+        "mom_long_rank_min": 0.0,
+        "bounce_confirm": false,
+        "ema_fast": 21,
+        "ema_zone": 21,
+        "zone_band": 0.02,
+        "pullback_min": 0.03,
+        "vol_shrink": true,
+        "atr_mult": 1.5,
+        "stop_lo": 0.025,
+        "stop_hi": 0.025,
+        "breakeven_r": 1.0,
+        "trail_r": 1.5,
+        "exit_into_strength_r": 3.0,
+        "max_hold": 40,
+        "entry_gate": 0.0,
+        "exit_gate": -0.03,
+        "trend_days": 60,
+        "vwap_filter": 0.0,
+        "stop_rv": false,
+        "tail_vol_max": 0.5,
+        "open30_max": 0.0,
+        "range_max": 0.0,
+        "full_invest": true,
+        "stop_trigger": "close",
+        "stop_buffer": 0.0,
+        "stop_open_minutes": 0
+      },
+      "params_hash": "911adf24a699d728",
+      "has_intraday_frames": true,
+      "has_minute_provider": true,
+      "live_intraday_from": "2026-09-04",
+      "always_rebalance": true,
+      "gross_scale_wired": false,
+      "resumed": false
+    }
   }
 }

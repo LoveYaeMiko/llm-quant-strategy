@@ -311,7 +311,9 @@ shadow:
                                       # 触发约定敏感性（ATR 自适应口径，2026-09-09 重跑 outputs/d_track_grid7.json）：
                                       # D_close_only 12.54% / D_low 12.93% / D_close_trig 13.96% / D_close_skip30 8.26%（年化）
                                       # —— 修复 TR 口径后"日内止损必损"的旧结论不再成立，故保留日内止损。
-      pb_stop_open_minutes: 30        # 开盘 30 分钟豁免（集合竞价/开盘异动不扫损）
+      pb_stop_open_minutes: 30        # 开盘 30 分钟豁免（集合竞价/开盘异动不扫损）。
+                                      # 部署口径实测（outputs/d_atr_impact.json）：带豁免 +24.82%/Sharpe 1.53
+                                      # vs 不带 +21.92%/1.35（2026-01→08-28，固定 2.5% 止损）→ 保留。
       pb_stop_buffer: 0.0             # 触发缓冲（v7 网格 0.5% 缓冲略逊，关闭）
       pb_live_intraday_from: "2026-09-04"  # 该日起日内止损由实时交易服务执行；收盘回放不再对当日历史时点补做交易
       pb_tail_vol_max: 0.5            # 尾盘 30 分钟量比 ≤ 0.5 才入场（outputs/d_track_intraday.json：D_tail50 年化 21.2% vs D_base 20.8%）

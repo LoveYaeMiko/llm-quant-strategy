@@ -64,6 +64,10 @@ def main() -> int:
         "flat_2p5": {**base_account, **flat},
         # deployed ATR-adaptive stop (2.5–4%) with the two-dimensional TR fix.
         "atr_adaptive": {**base_account, **atr},
+        # deployed stop width WITHOUT the open-30-minute exemption: grid7 showed
+        # skip30 is a negative contributor under ATR stops (13.96% → 8.26%
+        # annualised), so measure it under the deployed flat 2.5% width too.
+        "flat_no_skip30": {**base_account, **flat, "pb_stop_open_minutes": 0},
     }
     if only:
         want = {x.strip() for x in only.split(",") if x.strip()}
