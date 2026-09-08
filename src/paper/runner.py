@@ -199,6 +199,7 @@ class PaperRunner:
                         date=str(d.date()), symbol=sig["symbol"], side="sell",
                         shares=-abs(shares), price=fill_px, commission=float(fee),
                         notional=float(notional), time=str(sig.get("time", "")),
+                        source="replay",
                     ))
 
             if (i - start_idx) % self.rebalance_days == 0:
@@ -211,7 +212,12 @@ class PaperRunner:
                 preclose = self.preclose_provider(d) if self.preclose_provider else "__normal__"
                 if preclose == "__normal__":
                     weights = self.portfolio.compute_weights(self.symbols, d)
-                    if weights:
+                    # A book that reports ``always_rebalance`` (the pullback book)
+                    # must execute even with EMPTY weights: empty means "sell what
+                    # is held" (regime flatten, all lots exited, kill-switch halt),
+                    # not "no signal". Books without the flag keep the historical
+                    # skip-if-empty behaviour.
+                    if weights or getattr(self.portfolio, "always_rebalance", False):
                         # Explicit 0.0 for any name not in the book — both symbols
                         # dropped by the optimizer and positions still held from a
                         # shrunken universe (e.g. a halt target that only covers the

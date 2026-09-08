@@ -1,5 +1,10 @@
 """D-track tune round 3 — A-share-adapted wider stops (daily ±10% limit market
-caps single-day gaps; wider stops + fewer slots keep per-name risk ≈ 0.5%)."""
+caps single-day gaps; wider stops + fewer slots keep per-name risk ≈ 0.5%).
+
+# 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）
+# 注意：本脚本 BASE 未设 tail_vol_max（默认 0.0 = 门槛关闭），接入特征包只是保证
+# 与生产同一条装配路径；如需生产门槛口径需在 BASE 显式加 tail_vol_max=0.5。
+"""
 from __future__ import annotations
 
 import json
@@ -65,12 +70,14 @@ def round_trip_stats(fills: pd.DataFrame) -> dict:
     return {"round_trips": len(trips), "win_rate": len(wins) / len(trips)}
 
 
-def run_variant(market, symbols, scores, params, wstart, wend, label) -> dict:
+def run_variant(market, symbols, scores, params, wstart, wend, label, intraday=None) -> dict:
     from src.paper.ledger import PaperLedger
     from src.paper.pullback_book import PullbackPortfolio
     from src.paper.runner import PaperRunner
 
-    portfolio = PullbackPortfolio(market, params, symbols=symbols, scores=scores)
+    portfolio = PullbackPortfolio(
+        market, params, symbols=symbols, scores=scores, intraday=intraday,
+    )
     ledger_path = ROOT / "outputs" / f"_dtune3_{label}.sqlite"
     ledger_path.unlink(missing_ok=True)
     ledger = PaperLedger(str(ledger_path))
@@ -101,6 +108,7 @@ def run_variant(market, symbols, scores, params, wstart, wend, label) -> dict:
 def main() -> int:
     from src.cli import _market_data
     from src.config import load_config
+    from src.data.intraday import load_intraday_frames
     from src.ml import load_artifact, score_artifact
     from src.paper.shadow import resolve_shadow_universe
 
@@ -123,12 +131,17 @@ def main() -> int:
     if frame26 is None:
         raise SystemExit("no shadow feature cache matched")
     scores26 = score_artifact(booster, frame26)
-    print(f"market: {len(symbols)} | scores26 ready", flush=True)
+
+    # 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）
+    intraday = load_intraday_frames(cfg, symbols)
+    print(f"market: {len(symbols)} | scores26 ready | intraday frames: {list(intraday)}",
+          flush=True)
 
     results: dict[str, dict] = {}
     for label, overrides in VARIANTS.items():
         params = PullbackParams(**{**BASE, **overrides})
-        r = run_variant(market, symbols, scores26, params, "2026-01-01", "2026-08-28", f"{label}_2026")
+        r = run_variant(market, symbols, scores26, params, "2026-01-01", "2026-08-28",
+                        f"{label}_2026", intraday=intraday)
         results[label] = {"2026": r}
         win_txt = "—" if r["win_rate"] is None else f"{r['win_rate']:.0%}"
         print(f"{label:14s} 2026: cum={r['cum_return']:+.2%} ann={r['ann_return']:+.2%} "
@@ -143,7 +156,7 @@ def main() -> int:
         frame_full = pd.read_parquet(frame_full_path)
         scores_full = score_artifact(booster, frame_full)
         r = run_variant(market, symbols, scores_full, PullbackParams(**{**BASE, **VARIANTS[top1]}),
-                        "2025-01-01", "2025-12-31", f"{top1}_2025")
+                        "2025-01-01", "2025-12-31", f"{top1}_2025", intraday=intraday)
         results[top1]["2025"] = r
         win_txt = "—" if r["win_rate"] is None else f"{r['win_rate']:.0%}"
         print(f"{top1:14s} 2025: cum={r['cum_return']:+.2%} ann={r['ann_return']:+.2%} "

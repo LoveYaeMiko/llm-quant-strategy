@@ -1632,15 +1632,56 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
             stop_trigger=str(account.get("pb_stop_trigger", "low")),
             stop_buffer=float(account.get("pb_stop_buffer", 0.0)),
             stop_open_minutes=int(account.get("pb_stop_open_minutes", 0)),
+            intraday_basis_adjust=bool(account.get("pb_intraday_basis_adjust", True)),
         )
+        # Kill-switch (defect D-6): the autopilot's gross multiplier must reach
+        # the pullback book — otherwise a de-risk/halt decision is inert on the
+        # D track. ``control_scale`` is read from the per-account ControlState by
+        # cmd_shadow/cmd_autopilot; None means "no autopilot state" (scale 1.0).
+        scale_getter = None
+        if control_scale is not None:
+            _scale = float(control_scale)
+            scale_getter = lambda: _scale  # noqa: E731 — captured immutable value
+
         portfolio = PullbackPortfolio(
             market, params, symbols=symbols, ledger=ledger, scores=scores,
             intraday=intraday, minute_provider=minute_provider,
+            scale_getter=scale_getter,
         )
         portfolio.live_intraday_from = str(account.get("pb_live_intraday_from", "") or "") or None
         return portfolio, None
     portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
     return portfolio, overlays
+
+
+def _book_fingerprint(portfolio) -> dict:
+    """Wiring + parameter fingerprint of an assembled book.
+
+    Used by the OOS harness to prove its run uses the SAME assembly as
+    production (same param values, same intraday/minute wiring, same live gate)
+    instead of a lookalike re-implementation.
+    """
+    import hashlib
+
+    params = getattr(portfolio, "p", None)
+    fields = dict(vars(params)) if params is not None else {}
+    payload = json.dumps(
+        {"class": type(portfolio).__name__, "params": fields}, sort_keys=True, default=str
+    )
+    frames = any(
+        getattr(portfolio, attr, None) is not None
+        for attr in ("_vwap_gap", "_rv20", "_tail_vol", "_open30", "_range")
+    )
+    return {
+        "book_class": type(portfolio).__name__,
+        "params": fields,
+        "params_hash": hashlib.sha256(payload.encode()).hexdigest()[:16],
+        "has_intraday_frames": bool(frames),
+        "has_minute_provider": getattr(portfolio, "_minute_provider", None) is not None,
+        "live_intraday_from": getattr(portfolio, "live_intraday_from", None),
+        "always_rebalance": bool(getattr(portfolio, "always_rebalance", False)),
+        "gross_scale_wired": getattr(portfolio, "_scale_getter", None) is not None,
+    }
 
 
 def cmd_live(args) -> int:
@@ -1784,7 +1825,7 @@ def _refresh_shadow_data(cfg, symbols) -> dict:
     return meta
 
 
-def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None, account=None, shared_meta=None, replay_live_date=False):
+def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None, account=None, shared_meta=None, replay_live_date=False, ledger_override=None, write_artifacts=True, probe=None):
     """Run one shadow cycle: refresh → build market+portfolio → advance the
     resumable ledger → emit ``shadow_status.json`` + ``shadow_report.md``.
 
@@ -1798,6 +1839,12 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     intraday sweep REPLAYS a live date minute-by-minute (the real-time-standard
     re-simulation for an outage morning: first confirmed breach bar, minute
     timestamps — point-in-time, never a future bar).
+    ``ledger_override`` (optional) points the cycle at a DIFFERENT ledger file
+    (OOS/validation runs must never touch the production ledger) and
+    ``write_artifacts=False`` suppresses the status/report/CSV writes.
+    ``probe`` (optional dict, out-param) receives the assembled book's
+    fingerprint (params + wiring flags) so an OOS harness can assert the run is
+    byte-for-byte the production assembly.
     Returns ``(status, ledger_path)``.
     """
     shadow = cfg.section("shadow")
@@ -1846,12 +1893,17 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     # seed their open lots from the resumable fills history.
     base = str(shadow.get("ledger_db", "outputs/shadow_ledger.sqlite"))
     ledger_path = base if not suffix else base.replace(".sqlite", f"{suffix}.sqlite")
-    ledger = PaperLedger(str(ROOT / ledger_path))
+    if ledger_override:
+        ledger_path = str(ledger_override)
+    ledger_abs = Path(ledger_path)
+    ledger = PaperLedger(str(ledger_abs if ledger_abs.is_absolute() else ROOT / ledger_abs))
 
     if account:
         portfolio, overlays = _build_account_portfolio(cfg, market, symbols, account, control_scale, ledger=ledger)
     else:
         portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
+    if probe is not None:
+        probe.update(_book_fingerprint(portfolio))
     if replay_live_date and account and str(account.get("alpha_source", "")) == "pullback":
         # outage re-simulation: clear the live gate so the intraday sweep
         # replays the live date minute-by-minute (point-in-time triggers).
@@ -1892,6 +1944,8 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
         runner_kwargs["preclose_provider"] = _preclose_provider
     runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=seed, **runner_kwargs)
     result = runner.run(start=start, end=end)
+    if probe is not None:
+        probe["resumed"] = bool(result.get("resumed", False))
 
     benchmark = load_benchmark_index(cfg)
     # Red-line design baseline: pullback books are 100% long by construction
@@ -1954,6 +2008,9 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     if suffix:
         status_path = status_path.with_name(status_path.stem + f"{suffix}.json")
         report_path = report_path.with_name(report_path.stem + f"{suffix}.md")
+    if not write_artifacts:
+        # OOS/validation runs must not clobber the production status/report/CSV.
+        return status, ledger_path
     status_path.parent.mkdir(parents=True, exist_ok=True)
     status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     report_path.write_text(render_shadow_report(status, trades=trades), encoding="utf-8")

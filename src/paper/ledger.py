@@ -78,6 +78,13 @@ class PaperLedger:
         if "time" not in cols:
             self._conn.execute("ALTER TABLE fills ADD COLUMN time TEXT NOT NULL DEFAULT ''")
             self._conn.commit()
+        # migration: fill provenance — live (real-time trader) vs replay (minute
+        # sweep) vs close (rebalance) vs auction (15:00 order list). Defect D-4:
+        # the audit found 96% of intraday stops were replays presented as if they
+        # had been executed in real time.
+        if "source" not in cols:
+            self._conn.execute("ALTER TABLE fills ADD COLUMN source TEXT NOT NULL DEFAULT ''")
+            self._conn.commit()
 
     # ------------------------------------------------------------------ write
     def record_day(
@@ -128,11 +135,12 @@ class PaperLedger:
                     "DELETE FROM fills WHERE date = ? AND seq <= ?", (d, int(protect_after))
                 )
             self._conn.executemany(
-                "INSERT INTO fills (date, symbol, side, shares, price, commission, notional, time) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO fills (date, symbol, side, shares, price, commission, notional, time, source) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     (d, f.symbol, f.side, float(f.shares), float(f.price),
-                     float(f.commission), float(f.notional), str(getattr(f, "time", "") or ""))
+                     float(f.commission), float(f.notional), str(getattr(f, "time", "") or ""),
+                     str(getattr(f, "source", "") or ""))
                     for f in fill_rows
                 ],
             )
@@ -192,12 +200,14 @@ class PaperLedger:
         during the session; the close run must merge, not delete, them)."""
         d = str(pd.Timestamp(date).date())
         rows = self._conn.execute(
-            "SELECT date, time, symbol, side, shares, price, commission, notional FROM fills WHERE date = ? ORDER BY seq",
+            "SELECT date, time, symbol, side, shares, price, commission, notional, "
+            "COALESCE(source, '') FROM fills WHERE date = ? ORDER BY seq",
             (d,),
         ).fetchall()
         return [
             Fill(date=r[0], time=r[1] or "", symbol=r[2], side=r[3], shares=float(r[4]),
-                 price=float(r[5]), commission=float(r[6]), notional=float(r[7]))
+                 price=float(r[5]), commission=float(r[6]), notional=float(r[7]),
+                 source=r[8] or "")
             for r in rows
         ]
 
@@ -218,12 +228,24 @@ class PaperLedger:
         """Append one live intraday fill (used by the real-time trader)."""
         with self._conn:
             self._conn.execute(
-                "INSERT INTO fills (date, time, symbol, side, shares, price, commission, notional) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO fills (date, time, symbol, side, shares, price, commission, notional, source) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (str(pd.Timestamp(fill.date).date()), str(getattr(fill, "time", "") or ""),
                  fill.symbol, fill.side, float(fill.shares), float(fill.price),
-                 float(fill.commission), float(fill.notional)),
+                 float(fill.commission), float(fill.notional),
+                 str(getattr(fill, "source", "") or "")),
             )
+
+    def fills_by_source(self) -> dict[str, int]:
+        """Fill counts per provenance (``live`` / ``replay`` / ``close`` / ``auction``).
+
+        Defect D-4: the panel and reports must show how many intraday stops were
+        actually executed in real time versus replayed from minute bars.
+        """
+        rows = self._conn.execute(
+            "SELECT COALESCE(source, ''), COUNT(*) FROM fills GROUP BY 1"
+        ).fetchall()
+        return {(r[0] or "unlabelled"): int(r[1]) for r in rows}
 
     def total_commission(self) -> float:
         row = self._conn.execute("SELECT COALESCE(SUM(commission), 0) FROM fills").fetchone()

@@ -35,6 +35,22 @@ import pandas as pd
 from .cli import ROOT  # noqa: F401 — re-export for callers
 
 
+def merge_targets(weights: dict[str, float], positions: dict[str, float]) -> dict[str, float]:
+    """Build the 14:55 target-weight row from the book's desired weights.
+
+    Every currently-held symbol is pinned at 0.0 FIRST, then the book's weights
+    override. Rationale (defect D-5, 2026-09-08 audit): ``compute_weights`` only
+    returns names the book still wants to hold, and ``OrderExecutor.execute``
+    iterates over the target frame's columns — so an exited name absent from the
+    dict was never sold, and the 14:55 order list could not liquidate anything.
+    Pinning held names at 0.0 turns "the book no longer wants this name" into an
+    explicit exit order (stop / trail / trend gate / max_hold / strength).
+    """
+    row: dict[str, float] = {str(s): 0.0 for s in positions}
+    row.update({str(s): float(w) for s, w in weights.items()})
+    return row
+
+
 def _today_provisional(adapter, symbols, batch: int = 25):
     """Fetch today's minute bars and roll each symbol into one provisional bar.
 
@@ -215,13 +231,24 @@ def build_preclose_orders(cfg, account: dict[str, Any], symbols: list[str]) -> d
             intraday[key] = pd.concat(parts).sort_index()
 
     # pullback params from the deployed D config (same builder as the daily run)
+    from .autopilot.state import ControlState
     from .d_cycle import _pullback_params  # reuse — same deployed parameters
 
     params = _pullback_params(account)
+    # Kill-switch (defect D-6): the 14:55 order list must honour the autopilot
+    # gross multiplier exactly like the daily run — a halt decided overnight has
+    # to liquidate at the next closing auction, not only at the next close run.
+    state_path = str(
+        ROOT / str(cfg.get("autopilot.state_file", "outputs/autopilot_state.json"))
+    ).replace(".json", f"_{name}.json")
+    control = ControlState.load(state_path)
+    print(f"preclose [{name}]: control={control.mode} (gross x{control.gross_scale:g})", flush=True)
+
     ledger_path = str(ROOT / "outputs" / f"shadow_ledger_{name}.sqlite")
     ledger = PaperLedger(ledger_path)
     book = PullbackPortfolio(market, params, symbols=symbols, scores=scores,
-                             intraday=intraday, ledger=ledger)
+                             intraday=intraday, ledger=ledger,
+                             scale_getter=lambda: control.gross_scale)
     # same-day re-entry block: today's live stop-outs cannot be re-bought at close
     for f in ledger.fills_for_date(today):
         if f.side == "sell":
@@ -229,14 +256,9 @@ def build_preclose_orders(cfg, account: dict[str, Any], symbols: list[str]) -> d
     ledger.close()
 
     weights = book.compute_weights(symbols, today)
-    if not weights:
-        out_path = ROOT / "outputs" / f"preclose_orders_{name}.json"
-        payload = {"date": str(today.date()), "ts": time.strftime("%H:%M:%S"),
-                   "orders": [], "note": "no orders (empty book / regime gate)"}
-        out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        return {"ok": True, "orders": 0, "path": str(out_path)}
 
-    # current state: latest ledger day + today's live fills
+    # current state: latest ledger day + today's live fills (BEFORE today's
+    # close). Needed to pin exited names into the target frame — see below.
     ledger2 = PaperLedger(str(ROOT / "outputs" / f"shadow_ledger_{name}.sqlite"))
     _, cash, positions = ledger2.latest_state()
     for f in ledger2.fills_for_date(today):
@@ -256,6 +278,15 @@ def build_preclose_orders(cfg, account: dict[str, Any], symbols: list[str]) -> d
             equity += sh * float(px)
     rets_today = px_row / prev_close.reindex(px_row.index) - 1.0
 
+    # EXITS must be expressible as target weights. `compute_weights` only
+    # returns the names the book still WANTS to hold: a name it exited (stop /
+    # trail / trend gate / max_hold / strength) is simply ABSENT from the dict.
+    # The executor iterates over the target frame's columns, so an absent name
+    # was never sold — the 14:55 order list could not liquidate anything
+    # (defect D-5, found by the 2026-09-08 independent audit). Pin every
+    # currently-held symbol at 0.0 first, then let the book's weights override.
+    target_row = merge_targets(weights, positions)
+
     ex = OrderExecutor(
         cash=float(cash),
         slippage_bps=2.0, commission_bps=2.5, min_commission=5.0,
@@ -266,17 +297,23 @@ def build_preclose_orders(cfg, account: dict[str, Any], symbols: list[str]) -> d
         seed=1,
     )
     ex.restore(float(cash), dict(positions))
-    targets = pd.DataFrame([weights], index=[today])
+    targets = pd.DataFrame([target_row], index=[today])
     prices_df = pd.DataFrame([px_row], index=[today])
     res = ex.execute(targets, prices_df, equity=equity, limit_locked=rets_today)
 
     orders = [{"symbol": f.symbol, "side": f.side, "shares": f.shares} for f in res.fills]
+    if orders:
+        note = ("decided at 14:55 from 14:55-known data (T-1 ML ranks); "
+                "fills at the 15:00 auction close")
+    else:
+        note = ("no orders (no open position to exit and no entry candidate "
+                "passing the 14:55 filters)")
     out_path = ROOT / "outputs" / f"preclose_orders_{name}.json"
     payload = {
         "date": str(today.date()),
         "ts": time.strftime("%H:%M:%S"),
         "orders": orders,
-        "note": "decided at 14:55 from 14:55-known data (T-1 ML ranks); fills at the 15:00 auction close",
+        "note": note,
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

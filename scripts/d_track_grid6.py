@@ -2,6 +2,8 @@
 
 Isolates the minute-bar stop sweep's return/risk impact (the sweep sells at the
 intraday breach price instead of waiting for the close).
+
+# 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）
 """
 from __future__ import annotations
 
@@ -36,7 +38,7 @@ VARIANTS = {
 def main() -> int:
     from src.cli import _market_data
     from src.config import load_config
-    from src.data.intraday import make_minute_provider
+    from src.data.intraday import load_intraday_frames, make_minute_provider
     from src.ml import load_artifact, score_artifact
     from src.paper.ledger import PaperLedger
     from src.paper.runner import PaperRunner
@@ -54,12 +56,19 @@ def main() -> int:
     scores = score_artifact(booster, frame)
     provider = make_minute_provider(cfg)
 
+    # 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）。
+    # 注：本脚本 VARIANTS 的 "intraday" 是分钟止损开关，特征包用 intraday_frames
+    # 命名以免与开关混淆。
+    intraday_frames = load_intraday_frames(cfg, symbols)
+    print(f"intraday frames: {list(intraday_frames)}", flush=True)
+
     results = {}
     for label, over in VARIANTS.items():
         cap = float(over.get("cap", 0.40))
         params = PullbackParams(**BASE)
         portfolio = PullbackPortfolio(
             market, params, symbols=symbols, scores=scores,
+            intraday=intraday_frames,
             minute_provider=provider if over["intraday"] else None,
         )
         ledger_path = ROOT / "outputs" / f"_dgrid6_{label}.sqlite"

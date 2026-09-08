@@ -1,5 +1,11 @@
 """One-off outage re-simulation: replay the MISSED morning session (≤11:30).
 
+> ⚠️ **诊断用途，不作为实时成交依据**（2026-09-08 审计 D-9.1）：本脚本只在"实时
+> 交易者因故障未启动"时用于事后诊断与账本状态修复，它读的是已经过去的分时 bar。
+> 由它产生的成交标记为 `source="replay"`，**不得**计入 LIVE-EXEC（实时执行）样本
+> ——见 `docs/D_TRACK_EVIDENCE.md` §四。生产路径绝不调用本脚本；实时窗口内的正常
+> 恢复走 `cli.py live` 的前向恢复（只读当前价，不补历史）。
+
 The 09:25 live trader never started on 2026-09-08 (Docker auto-start failed),
 so the morning's intraday stop monitoring is replayed NOW with the exact
 live-trader semantics — point-in-time, never a future bar:
@@ -10,8 +16,8 @@ live-trader semantics — point-in-time, never a future bar:
   the trigger minute — identical to `cli.py live`;
 * bars AFTER 11:30 are never read (the afternoon belongs to the live trader).
 
-Triggered exits are appended to the D ledger as live fills; the live trader
-is then restarted so its book reflects the corrected state.
+Triggered exits are appended to the D ledger with ``source="replay"``; the live
+trader is then restarted so its book reflects the corrected state.
 """
 import sys
 from pathlib import Path
@@ -108,6 +114,7 @@ def main() -> int:
                 date=str(TODAY.date()), symbol=sym, side="sell",
                 shares=-abs(lot.qty), price=fill_px, commission=float(fee),
                 notional=float(notional), time=ts.strftime("%H:%M:%S"),
+                source="replay",   # diagnostic re-simulation, never LIVE-EXEC
             ))
         book._open.pop(sym)
         cash += notional - fee

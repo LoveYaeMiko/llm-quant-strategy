@@ -610,15 +610,57 @@ def build_shadow_status(
             "n_days": metrics.get("n_days", 0),
             "n_fills": metrics.get("n_fills", 0),
             "total_commission": metrics.get("total_commission", 0.0),
+            # Defect D-4 provenance split: how many fills were executed by the
+            # real-time trader ("live") versus replayed from minute bars
+            # ("replay") / executed at the close ("close" / "auction"). Reporting
+            # must never present replays as real-time executions.
+            "fills_by_source": (
+                ledger.fills_by_source() if hasattr(ledger, "fills_by_source") else {}
+            ),
         },
         "positions": positions_out[:30],  # Top-30 by |weight| for the dashboard
         "equity_curve": equity_curve_out,
         "benchmark": benchmark_out,
         "excess_curve": excess_out,
         "s7_params": s7_params,
+        # Deployment channel (observe = simulated only). Reported so no panel,
+        # report or email can present the shadow track as live money.
+        "deployment": _deployment_status(cfg),
         "refreshed": meta,
         "red_lines": red_lines,
     }
+
+
+def _deployment_status(cfg) -> dict[str, Any]:
+    """Deployment channel (observe = simulated only) — never raises."""
+    try:
+        from ..deploy import deployment_status
+
+        return deployment_status(cfg)
+    except Exception:  # noqa: BLE001 — a missing gate must not break the report
+        return {"mode": "observe", "real_money_enabled": False, "simulated_only": True}
+
+
+_SOURCE_LABELS = {
+    "live": "实时执行",
+    "replay": "分钟回放",
+    "close": "收盘调仓",
+    "auction": "收盘竞价",
+    "unlabelled": "未标注(旧数据)",
+}
+
+
+def _source_label(source: Any) -> str:
+    return _SOURCE_LABELS.get(str(source or "unlabelled"), str(source))
+
+
+def _source_line(by_source: dict[str, int]) -> str:
+    """Provenance summary line — never present replays as live executions."""
+    if not by_source:
+        return "无成交"
+    return "　".join(
+        f"{_source_label(k)} {v} 笔" for k, v in sorted(by_source.items(), key=lambda kv: -kv[1])
+    )
 
 
 def render_shadow_report(status: dict[str, Any], trades: list[dict[str, Any]] | None = None) -> str:
@@ -642,18 +684,20 @@ def render_shadow_report(status: dict[str, Any], trades: list[dict[str, Any]] | 
         f"- 累计收益: {eq.get('total_return', 0):.2%}　年化: {eq.get('annualized_return', 0):.2%}",
         f"- Sharpe: {eq.get('sharpe', 0):.2f}　最大回撤: {eq.get('max_drawdown', 0):.2%}",
         f"- 交易日: {eq.get('n_days', 0)}　成交笔数: {eq.get('n_fills', 0)}　累计成本: {eq.get('total_commission', 0):,.2f}",
+        f"- 成交来源: {_source_line(eq.get('fills_by_source') or {})}",
         "",
         "## 当日成交",
         "",
     ]
     if trades:
-        lines.append("| 时间 | 代码 | 方向 | 股数 | 价格 | 佣金 | 金额 |")
-        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+        lines.append("| 时间 | 代码 | 方向 | 股数 | 价格 | 佣金 | 金额 | 来源 |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
         for t in trades[:50]:
             lines.append(
                 f"| {t.get('date', '')} | {t.get('symbol', '')} | {t.get('side', '')} | "
                 f"{float(t.get('shares', 0)):+,.0f} | {float(t.get('price', 0)):.2f} | "
-                f"{float(t.get('commission', 0)):.2f} | {float(t.get('notional', 0)):,.0f} |"
+                f"{float(t.get('commission', 0)):.2f} | {float(t.get('notional', 0)):,.0f} | "
+                f"{_source_label(t.get('source'))} |"
             )
         if len(trades) > 50:
             lines.append(f"（另有 {len(trades) - 50} 笔，详见账本）")

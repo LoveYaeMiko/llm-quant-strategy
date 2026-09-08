@@ -259,60 +259,31 @@ shadow:
   report_md: "outputs/shadow_report.md"
   refresh_benchmark: true             # 运行前抓取 HS300 指数基准（失败保留旧缓存）
   benchmark_cache: "data/benchmark/hs300_index.csv"
-  # 双资金轨（2026-09）：每个账户独立账本/状态/日报，文件按 name 后缀。
-  # 10 万/5 万轨必须用成本治理（notional_floor + band_frac），200 万轨治理可选。
-  # priority 决定日度闭环运行顺序：D 轨（实时拟真）100 最高，先于 A/B/C 完成。
+  # 单资金轨（2026-09-08 起）：仅保留 D 轨（回撤买入 + 实时日内止损）。
+  # A_200W / B_10W / C_5W 三条 ML 截面轨已退役 —— 账本/状态/报告归档至
+  # outputs/archive/2026-09-08_retire_ABC/，本配置不再注册（不再计入日度闭环、
+  # 红线、邮件与 PAICC 面板）。D 轨仍是长期影子观察，未接入真实资金。
+  # 每个账户独立账本/状态/日报，文件按 name 后缀。
+  # priority 决定日度闭环运行顺序（当前仅 D 轨，100）。
   accounts:
-    - name: "A_200W"
-      priority: 10
-      cash: 2000000
-      alpha_source: "ml"              # ml | pool
-      ml_artifacts: ["lgbm"]          # 最新 LightGBM 工件（345 特征，2026 段最佳）
-      ml_ensemble: true               # 多工件时用 rank 集成（此处单工件即自身）
-      long_pct: 0.10
-      short_pct: 0.0                  # 2026 长多网格：去空腿 +26.7%/Sharpe 1.80/maxDD 8.0%（空腿 13.7%/1.14/16.3%）
-      rebalance_days: 10              # 调优最优：10 日调仓
-      notional_floor: 0               # 200 万规模微尘成本二阶化，无需治理
-      band_frac: 0.0
-    - name: "B_10W"
-      priority: 20
-      cash: 100000
-      alpha_source: "ml"
-      ml_artifacts: ["lgbm"]          # 先同模型，治理后簿形重估
-      ml_ensemble: true
-      universe: "hs300_500"           # 模型在 hs300_500 截面训练；HS300 内排序 alpha 不足（+0.8% vs +13.5% 年化）
-      long_pct: 0.05                  # 5%×多头，去空腿（B 网格：+26.3%/Sharpe 1.88/maxDD 10.1%）
-      short_pct: 0.0
-      max_position_pct: 0.08          # 自检修复：100 股整手下单笔名义 ~6667 元（0.05 上限时 5000 元，40 元以上股票买不进整手）
-      rebalance_days: 15              # 合规网格最优：15 日调仓（+28.8% 年化 vs 10 日 +27.3%）
-      notional_floor: 2000            # 微尘下限
-      band_frac: 0.001                # 带宽调仓
-    - name: "C_5W"
-      priority: 30
-      cash: 50000
-      alpha_source: "ml"
-      ml_artifacts: ["lgbm"]          # 同工件；C 轨特征缓存与 B 轨（同截面）复用
-      ml_ensemble: true
-      universe: "hs300_500"           # 模型训练截面（同 B 轨结论）
-      long_pct: 0.05                  # 5%×长多（15 名，每股 ~3333 元）
-      short_pct: 0.0                  # 2026 空腿纯拖累，5 万轨同样长多
-      max_position_pct: 0.10          # 合规网格最优：0.10 上限 + 15 日调仓（+14.5% 年化 vs +12.3%）
-      rebalance_days: 15              # 合规网格最优
-      notional_floor: 1000            # 自检修复：50k×5% 档在 800 名全截面（40 名）下每股仅 1250 元，
-                                      # 2000 下限会导致整轨停摆；1000 下限两截面口径下均可成交
-      band_frac: 0.001                # 带宽调仓
     - name: "D_5W"
       priority: 100                     # 实时拟真轨最高优先级，日度闭环最先处理
       cash: 50000
+      # 部署口径 = 日内止损 + 确认式触发(close) + 开盘30分钟豁免 + 尾盘量比门槛 + 满仓化；
+      # 该组合的实测出处：outputs/d_track_grid7.json 的 D_close_skip30
+      #   （2026 段 +12.82% 累计 / +21.22% 年化 / Sharpe 1.158 / maxDD 10.23% / 242 笔，其中日内 50 笔）
+      # 注意：不带日内止损的 D_close_only（+33.24% 年化 / 1.594 / maxDD 6.58%）不是部署口径，
+      # 不得用于对外表述；差异来自「破位当天是否真按分钟价卖出」。
       alpha_source: "pullback"        # Martin Luk 回撤买入纪律（日线版，ML 扫描 + 改良）
-      universe: "hs300_500"           # 动量/ML 截面同 B/C
+      universe: "hs300_500"           # 扫描截面（与已退役 B/C 轨一致，便于对比）
       rebalance_days: 1               # 逐日评估止损/追踪/入场
-      max_position_pct: 0.40          # 满仓化网格 v5 最优：0.40（年化 +33.2%/Sharpe 1.59/maxDD 6.6%；0.50+ 集中度损害）
+      max_position_pct: 0.40          # 单槽上限 0.40（outputs/d_track_grid5.json + grid6.json：0.50+ 集中度损害；
+                                      # 无日内止损口径 D_cap40_close = +33.2%/1.59/6.6%，部署口径见上方 grid7 注释）
       notional_floor: 2000            # 每股 ~8333 元（50k/6 槽）
       band_frac: 0.0
       pb_rank_source: "ml"            # 强势股扫描器 = ML 工件截面排名（2026 A 股原始动量回撤失效，ML 扫描为改良版）
       pb_rank_min: 0.8                # 排名前 20% 才有入场资格
-      pb_k: 6                         # 6 个等权槽位（网格最优：2026 +6.4% 年化 / Sharpe 1.34 / maxDD 2.2%）
+      pb_k: 6                         # 6 个等权槽位（2026 段出处 outputs/d_track_grid3.json D_t21_k6：+6.4% 年化 / Sharpe 1.34 / maxDD 2.2%）
       pb_ema_fast: 21                 # 慢追踪 EMA(21)（网格最优：让利润跑得更远）
       pb_ema_zone: 21                 # 回调区间 EMA(21)
       pb_zone_band: 0.02              # |收盘/EMA21 - 1| ≤ 2%
@@ -329,22 +300,38 @@ shadow:
       pb_exit_gate: -0.03             # 市场趋势 < -3% 全簿清仓（"停止交易"规则化）
       pb_use_intraday: true           # AlphaFeed 分钟K日内特征包（data/intraday/daily_features.parquet）
       pb_intraday_stops: true         # 日内止损执行：分钟K逐 bar 检测破位（<15:00），当场卖出并记录成交时刻
-      pb_stop_trigger: "close"        # 确认式触发（分钟收盘破位而非插针最低价——v7 网格：年化 9.4%→21.2%）
+      pb_stop_trigger: "close"        # 确认式触发（分钟收盘破位而非插针最低价）：outputs/d_track_grid7.json
+                                      # D_low(插针) 年化 9.35% → D_close_trig 17.29% → D_close_skip30 21.22%
       pb_stop_open_minutes: 30        # 开盘 30 分钟豁免（集合竞价/开盘异动不扫损）
       pb_stop_buffer: 0.0             # 触发缓冲（v7 网格 0.5% 缓冲略逊，关闭）
       pb_live_intraday_from: "2026-09-04"  # 该日起日内止损由实时交易服务执行；收盘回放不再对当日历史时点补做交易
-      pb_tail_vol_max: 0.5            # 尾盘 30 分钟量比 ≤ 0.5 才入场（日内网格唯一正增益项：年化 +21.2% vs +20.8%）
+      pb_tail_vol_max: 0.5            # 尾盘 30 分钟量比 ≤ 0.5 才入场（outputs/d_track_intraday.json：D_tail50 年化 21.2% vs D_base 20.8%）
       pb_vwap_filter: 0.0             # 真实VWAP回调过滤（网格验证为负增益，关闭）
       pb_stop_rv: false               # RV 止损（网格验证为负增益，关闭）
       pb_open30_max: 0.0              # 开盘30分钟过滤（网格验证无增益，关闭）
       pb_range_max: 0.0               # 日内振幅过滤（网格验证为负增益，关闭）
-      pb_full_invest: true            # 满仓化：每个持仓 1/n 权重（网格验证 +5.2pp 年化：+21.2% → +26.5%）
+      pb_full_invest: true            # 满仓化：每个持仓 1/n 权重（outputs/d_track_grid4.json：D_base 21.2% → D_full_cap25 26.5% 年化）
 
-# 实时盘中交易（D 轨日内止损的实盘式执行，09:30-15:10 逐分钟轮询最新成交价）
+# =====================================================================
+# 部署通道 (deployment) — 只约束「从现在起」的行为，绝不回溯改写历史成交。
+# observe = 影子/模拟盘：全部成交由本系统的纸面撮合产生，不向任何券商发单；
+# real_money_enabled 是硬闸门：未来接入券商适配器时，必须先调用
+# src/deploy.assert_simulated_only()，闸门关闭时直接抛错而不是下单。
+# 接入前置条件见 docs/LIVE_READINESS.md（未全绿不得接实盘）。
+# =====================================================================
+deployment:
+  mode: "observe"                    # observe | live
+  real_money_enabled: false          # 硬闸门：false = 只允许模拟成交
+  observe_since: "2026-01-01"
+  note: "影子/模拟盘：未接入任何券商接口，不产生真实委托"
+
+# 实时盘中交易（D 轨日内止损的实盘式执行，09:30–15:00 逐分钟轮询最新成交价；
+# 15:00 后的收盘集合竞价由 preclose 委托层负责，避免同一标的双重成交）
 live:
   enabled: true
   account: "D_5W"                    # 实时执行账户（须为 pullback 账户）
   poll_seconds: 60                   # 轮询间隔（秒）
+  max_quote_age_minutes: 5           # 报价陈旧阈值：超过则本轮不做决策（停牌/数据延迟），并写入状态文件
 
 # D 轨模型长期自优化闭环（月度滚动重训 + 平行挑战者 + 前向晋升闸门）
 # —— 替代原周六 §7 校准与周日周度任务；详见 docs/D_MODEL_CYCLE.md

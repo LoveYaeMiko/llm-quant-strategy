@@ -292,6 +292,9 @@ def _pullback_params(acc):
         stop_trigger=str(acc.get("pb_stop_trigger", "close")),
         stop_buffer=float(acc.get("pb_stop_buffer", 0.0)),
         stop_open_minutes=int(acc.get("pb_stop_open_minutes", 0)),
+        # Diagnostic A/B switch (default True = correct): see
+        # PullbackParams.intraday_basis_adjust. Production never sets it False.
+        intraday_basis_adjust=bool(acc.get("pb_intraday_basis_adjust", True)),
     )
 
 

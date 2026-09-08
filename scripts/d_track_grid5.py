@@ -1,5 +1,7 @@
 """D-track grid v5 — higher single-name caps so full-invest actually fills
 when few names are open (n=2 → 50% each needs cap ≥ 0.50; n=3 → 33% needs 0.35).
+
+# 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）
 """
 from __future__ import annotations
 
@@ -36,6 +38,7 @@ VARIANTS = {
 def main() -> int:
     from src.cli import _market_data
     from src.config import load_config
+    from src.data.intraday import load_intraday_frames
     from src.ml import load_artifact, score_artifact
     from src.paper.ledger import PaperLedger
     from src.paper.runner import PaperRunner
@@ -52,11 +55,17 @@ def main() -> int:
     frame = pd.read_parquet(ROOT / "outputs" / f"_dtune_frame_{meta_path.stem}.parquet")
     scores = score_artifact(booster, frame)
 
+    # 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）
+    intraday = load_intraday_frames(cfg, symbols)
+    print(f"intraday frames: {list(intraday)}", flush=True)
+
     results = {}
     for label, over in VARIANTS.items():
         cap = float(over["cap"])
         params = PullbackParams(**BASE)
-        portfolio = PullbackPortfolio(market, params, symbols=symbols, scores=scores)
+        portfolio = PullbackPortfolio(
+            market, params, symbols=symbols, scores=scores, intraday=intraday,
+        )
         ledger_path = ROOT / "outputs" / f"_dgrid5_{label}.sqlite"
         ledger_path.unlink(missing_ok=True)
         ledger = PaperLedger(str(ledger_path))

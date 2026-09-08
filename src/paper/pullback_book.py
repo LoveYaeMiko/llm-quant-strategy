@@ -82,10 +82,23 @@ class PullbackParams:
     stop_trigger: str = "low"     # "low" = any wick breach | "close" = confirmed
     stop_buffer: float = 0.0      # trigger threshold = stop × (1 - buffer)
     stop_open_minutes: int = 0    # ignore the first N minutes (open-auction noise)
+    #: Diagnostic ONLY (default True = correct): scale raw minute prints onto the
+    #: panel's adjustment basis before comparing with the stop level. Setting it
+    #: False reproduces the pre-2026-09-09 mixed-basis behaviour, where raw prints
+    #: were compared against adjustment-scaled stops — a systematic ~2-5% loose
+    #: bias on any name with a dividend after the bar (see
+    #: scripts/d_atr_impact.py and docs/D_TRACK_EVIDENCE.md). Never set False in
+    #: production.
+    intraday_basis_adjust: bool = True
 
 
 class PullbackPortfolio:
     """Stateful daily pullback book — ``compute_weights(symbols, date)``."""
+
+    #: The daily close rebalance must run even when the book returns NO weights:
+    #: an empty book (regime flatten / all lots exited) means "sell what is
+    #: held", not "skip the rebalance". The runner pins held names at 0.0.
+    always_rebalance = True
 
     def __init__(
         self,
@@ -97,8 +110,14 @@ class PullbackPortfolio:
         scores: Optional[pd.Series] = None,
         intraday: Optional[dict[str, pd.DataFrame]] = None,
         minute_provider=None,
+        scale_getter=None,
     ) -> None:
         self.p = params or PullbackParams()
+        # Kill-switch integration (defect D-6, 2026-09-08 audit): the autopilot's
+        # gross multiplier was never applied to this book — a `de_risk`/`halt`
+        # decision had no effect on the D track. ``scale_getter`` returns the live
+        # multiplier (1.0 normal, 0.5 de-risk, 0.0 halt); it may only SHRINK.
+        self._scale_getter = scale_getter
         close_wide = market.price_panel
         long_ = market.long
         syms = list(symbols) if symbols else list(close_wide.columns)
@@ -106,6 +125,17 @@ class PullbackPortfolio:
         high_wide = long_["high"].unstack().reindex(columns=syms)
         low_wide = long_["low"].unstack().reindex(columns=syms)
         vol_wide = long_["volume"].unstack().reindex(columns=syms)
+
+        # Basis consistency (defect D-8, 2026-09-08 audit): the PIT panel stores
+        # RAW open/high/low but an ADJUSTMENT-SCALED close (ADR-0002:
+        # close = raw_close × adjust_factor, factor anchored at the newest bar).
+        # Mixing raw high/low with the adjusted close in the true range inflates
+        # the ATR on every corporate-action bar (a 10:1 split makes high/close
+        # ≈ 10), which then blows up the ATR-based stop distance. Scale high/low
+        # onto the close's basis with the per-bar factor so TR is self-consistent.
+        self._factor = self._adjust_factor_frame(market, syms, close_wide.index)
+        high_wide = high_wide * self._factor
+        low_wide = low_wide * self._factor
 
         self._close = close_wide
         self._prev_close = close_wide.shift(1)
@@ -158,14 +188,24 @@ class PullbackPortfolio:
         self._vol20 = vol_wide.rolling(20, min_periods=20).mean()
 
         prev_close = close_wide.shift(1)
-        tr = pd.concat(
-            [
-                high_wide - low_wide,
-                (high_wide - prev_close).abs(),
-                (low_wide - prev_close).abs(),
-            ],
-            axis=1,
-        ).max(axis=1)
+        # True range, ELEMENT-WISE over the three candidates. The previous
+        # ``pd.concat([...], axis=1).max(axis=1)`` collapsed the (date × symbol)
+        # frame to a per-DATE Series, so ``_atr20 / close_wide`` aligned a
+        # date-indexed Series against symbol columns and every
+        # ``_atr_pct.loc[d, symbol]`` lookup returned NaN — the ATR-adaptive
+        # stop silently degraded to its 2.5% floor for the whole track
+        # (defect D-8b, 2026-09-08 audit). np.maximum.reduce keeps the frame.
+        tr = pd.DataFrame(
+            np.maximum.reduce(
+                [
+                    (high_wide - low_wide).to_numpy(),
+                    (high_wide - prev_close).abs().to_numpy(),
+                    (low_wide - prev_close).abs().to_numpy(),
+                ]
+            ),
+            index=close_wide.index,
+            columns=close_wide.columns,
+        )
         self._atr20 = tr.rolling(20, min_periods=20).mean()
         self._atr_pct = self._atr20 / close_wide
 
@@ -181,6 +221,46 @@ class PullbackPortfolio:
             self._seed_from_ledger(ledger)
 
     # ------------------------------------------------------------------ seed
+    @staticmethod
+    def _adjust_factor_frame(market, syms: list[str], index) -> pd.DataFrame:
+        """``date × symbol`` backward-adjustment factor (1.0 when unavailable).
+
+        Reads ``market.records`` (the PIT price records keep ``adjust_factor``;
+        the flattened ``long`` panel drops it). Missing factors default to 1.0,
+        which is exact for the newest bars (the factor is anchored at the newest
+        bar) and for the synthetic offline market.
+        """
+        ones = pd.DataFrame(1.0, index=index, columns=syms)
+        rec = getattr(market, "records", None)
+        if rec is None or not hasattr(rec, "columns") or "adjust_factor" not in rec.columns:
+            return ones
+        if "date" in rec.columns:
+            dates = pd.to_datetime(rec["date"])
+        elif "valid_from" in rec.columns:
+            dates = pd.to_datetime(rec["valid_from"])
+        else:
+            return ones
+        frame = pd.DataFrame(
+            {"date": dates.to_numpy(), "symbol": rec["symbol"].to_numpy(),
+             "factor": pd.to_numeric(rec["adjust_factor"], errors="coerce").to_numpy()}
+        ).dropna(subset=["factor"])
+        if frame.empty:
+            return ones
+        wide = frame.pivot_table(index="date", columns="symbol", values="factor", aggfunc="last")
+        return wide.reindex(index=index, columns=syms).ffill().fillna(1.0)
+
+    def _basis_factor(self, d: pd.Timestamp) -> pd.Series:
+        """Per-symbol backward-adjustment factor at date ``d`` (1.0 fallback)."""
+        if self._factor is None or len(self._factor) == 0:
+            return pd.Series(1.0, index=self._close.columns)
+        if d in self._factor.index:
+            return self._factor.loc[d].fillna(1.0)
+        # suspended / non-trading date: use the last known factor
+        prior = self._factor.loc[self._factor.index <= d]
+        if len(prior) == 0:
+            return pd.Series(1.0, index=self._close.columns)
+        return prior.iloc[-1].fillna(1.0)
+
     def _seed_from_ledger(self, ledger) -> None:
         """Rebuild open lots from the ledger fills (entry vwap + stop state).
 
@@ -359,6 +439,13 @@ class PullbackPortfolio:
         """
         if self._minute_provider is None or not self._open:
             return []
+        d = pd.Timestamp(date)
+        # Minute caches are RAW prints (AlphaFeed adjust="none") while the daily
+        # panel is adjustment-scaled — convert the print onto the panel basis
+        # before comparing it with an adjusted stop level (defect D-8).
+        # ``intraday_basis_adjust=False`` is a diagnostic switch that reproduces
+        # the old mixed-basis behaviour for the A/B in scripts/d_atr_impact.py.
+        factor = self._basis_factor(d) if self.p.intraday_basis_adjust else None
         exits = []
         for sym in list(self._open):
             lot = self._open[sym]
@@ -370,7 +457,8 @@ class PullbackPortfolio:
                 bars = bars[bars["timestamp"].dt.time >= cut.time()]
             trigger_col = "close" if self.p.stop_trigger == "close" else "low"
             thr = lot.stop * (1.0 - self.p.stop_buffer)
-            hit = bars[bars[trigger_col] <= thr]
+            f = float(factor.get(sym, 1.0)) if factor is not None else 1.0
+            hit = bars[bars[trigger_col] * f <= thr]
             if hit.empty:
                 continue
             bar = hit.iloc[0]
@@ -378,7 +466,9 @@ class PullbackPortfolio:
             # confirmed (close) trigger fills at the breaching minute's close
             # print — never at the bar low (that would be a stop-order fill at
             # a price the poller could not have traded). Matches live_check.
-            price = min(float(lot.stop), float(bar[trigger_col]))
+            # The recorded price is on the panel (adjusted) basis, exactly like
+            # every close fill in the same ledger.
+            price = min(float(lot.stop), float(bar[trigger_col]) * f)
             ts = bar.get("timestamp")
             t_str = str(ts.time() if hasattr(ts, "time") else ts)
             exits.append({"symbol": sym, "time": t_str, "price": float(price)})
@@ -460,16 +550,32 @@ class PullbackPortfolio:
                     free -= 1
 
         if not self._open:
-            return {}
-        if self.p.full_invest:
-            w = 1.0 / len(self._open)
+            out = {}
+        elif self.p.full_invest:
+            out = {sym: 1.0 / len(self._open) for sym in self._open}
         else:
             w = 1.0 / self.p.k
-        out = {sym: w for sym in self._open}
+            out = {sym: w for sym in self._open}
         if symbols is not None:
             keep = set(symbols)
             out = {s: v for s, v in out.items() if s in keep}
-        return out
+
+        # 4. kill-switch gross multiplier — SHRINK ONLY (never lever up)
+        scale = 1.0
+        if self._scale_getter is not None:
+            try:
+                scale = float(self._scale_getter() or 0.0)
+            except (TypeError, ValueError):
+                scale = 0.0  # fail closed: an unreadable state must not trade
+        if scale >= 1.0:
+            return out
+        if scale <= 0.0:
+            # halt: flatten. Return 0.0 for every symbol the executor looks at
+            # (the universe plus anything held) so positions are SOLD rather
+            # than frozen at their last weights.
+            base = list(symbols) if symbols is not None else list(self._open)
+            return {s: 0.0 for s in dict.fromkeys([*base, *self._open])}
+        return {s: v * scale for s, v in out.items()}
 
 
 __all__ = ["PullbackParams", "PullbackPortfolio"]

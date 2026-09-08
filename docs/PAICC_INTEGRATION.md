@@ -1,5 +1,18 @@
 # PAICC × FQA 多资金轨影子盘集成报告
 
+> ## ⚠️ 部署状态（2026-09-08 起）：**单轨 D，A/B/C 已退役**
+>
+> - FQA `shadow.accounts` 只注册 `D_5W`；A/B/C 产出归档到
+>   `outputs/archive/2026-09-08_retire_ABC/`；
+> - PAICC 量化面板已重写为 **D 单轨**（`DTrackPanel.tsx`）：实时盘中（分钟级盈亏）+
+>   今日收盘竞价委托 + 关键指标 + 净值/回撤图 + 持仓 + 成交（分钟精度）+
+>   任务调度（8 个 job 的计划/下次/上次/状态）+ 红线仪表盘/历史 + 进程 + 日志；
+>   已移除量化项目/量化命令/配置编辑器/§7 回校卡片/多轨 Tab；
+> - D 轨**仍是影子（模拟）盘**，未接入真实资金；实盘接入前置条件见
+>   `docs/LIVE_READINESS.md`，逐项落地清单见 `docs/LANDING_PLAN.md`，
+>   证据分级见 `docs/D_TRACK_EVIDENCE.md`；
+> - 下文 §一–§四 中 A/B/C 的内容为**历史记录**（2026-09-02 时点）。
+
 > 2026-09-02 起：PAICC 量化面板全面切换到 FQA 多资金轨影子盘（A_200W / B_10W / C_5W）；
 > 原三因子池策略退出部署（仅保留在研究侧 `paper`/`calibrate` 扫描路径，不再进入影子部署）。
 
@@ -62,10 +75,11 @@ B 127,327（+27.44%，Sharpe 1.93，maxDD 10.1%）；C 62,027（+24.26%，Sharpe
 - 前端：`PAICC\frontend\npm start`（electron-vite preview 运行已构建产物，应用窗口已启动）；
   源码改动后需 `npm run build` 重建。
 - 调度（进程内 APScheduler）：
-  - 工作日 09:25 `cli.py live`（D 轨实时盘中交易）· **14:50 盘口快照** ·
-    **14:55 `cli.py preclose`**（收盘竞价下单层：14:55 决策委托清单，15:00 竞价价成交；
-    错过即当日收盘零成交，绝不事后补单）· **15:02 日内特征刷新**（`scripts/refresh_intraday_daily.py`）·
-    **15:10 `cli.py autopilot`**（四轨闭环，收盘竞价成交后立即执行；运行内
+  - 工作日 09:25 `cli.py live`（D 轨实时盘中交易，09:30–15:00 决策窗口）· **14:50 盘口快照** ·
+    **14:50 `cli.py preclose`**（收盘竞价下单层：14:50 决策委托清单，15:00 竞价价成交；
+    错过即当日收盘零成交，绝不事后补单；与盘口快照同点，快照任务已提前以避让）·
+    **15:02 日内特征刷新**（`scripts/refresh_intraday_daily.py`）·
+    **15:10 `cli.py autopilot`**（D 轨闭环，收盘竞价成交后立即执行；运行内
     `ensure_intraday_current` 自愈双保险）· **17:45 `cli.py dcycle challenger`**
     （D 轨模型挑战者平行影子推进，`quant_d_cycle_enabled` 闸门控制）· 周日 18:00
     **D 轨模型月度循环**（每月第一个周日：`dcycle decide` 前向晋升闸门 + `dcycle refit`
@@ -81,8 +95,6 @@ B 127,327（+27.44%，Sharpe 1.93，maxDD 10.1%）；C 62,027（+24.26%，Sharpe
   - 机器电源计划已设「从不睡眠」（STANDBYIDLE=0），17:30 触发不再依赖人机交互。
 - 性能：ML 账户部署下日度运行跳过研报全量重取（仅因子池账户需要），
   一次日度循环约 15-25 分钟；特征矩阵按工件+universe 缓存增量构建。
-- **优先级（2026-09-07 起）**：`shadow.accounts` 增加 `priority` 字段
-  （D_5W=100 / C_5W=30 / B_10W=20 / A_200W=10）——日度闭环与面板均按优先级
-  降序：**D 轨最先处理、面板 D 轨标签页置顶**；`cli.py live` / `preclose` /
-  `dcycle` 进程同时提升为 Windows HIGH_PRIORITY_CLASS，避免被 A/B/C 研究
-  负载挤占实时窗口。
+- **优先级（2026-09-07 起）**：`shadow.accounts` 的 `priority` 字段决定日度闭环与面板
+  顺序（降序）；A/B/C 退役后只剩 `D_5W=100`。`cli.py live` / `preclose` /
+  `dcycle` 进程提升为 Windows HIGH_PRIORITY_CLASS，避免被研究负载挤占实时窗口。

@@ -32,6 +32,11 @@ class Fill:
     commission: float
     notional: float
     time: str = ""  # intraday fill timestamp (HH:MM), "" for close fills
+    #: provenance (2026-09-08 audit, defect D-4): "live" = executed by the
+    #: real-time trader at the actual print, "replay" = minute-bar intraday
+    #: sweep, "close" = close rebalance, "auction" = pre-submitted 15:00
+    #: closing-auction order list. Reporting must never mix live with replay.
+    source: str = ""
 
 
 @dataclass
@@ -121,6 +126,7 @@ class OrderExecutor:
         *,
         equity: Optional[float] = None,
         limit_locked: Optional[pd.Series] = None,
+        source: str = "close",
     ) -> OrderResult:
         """Execute weight targets against a price panel.
 
@@ -164,7 +170,12 @@ class OrderExecutor:
                 if locked is not None:
                     lv = locked.get(symbol, np.nan)
                     if np.isfinite(lv):
-                        lim = 0.20 if symbol[:3] in ("688", "689", "300", "301") else 0.10
+                        # board- AND date-aware band (主板 10%, 创业板 10% until
+                        # 2020-08-24 then 20%, 科创板 20%, 北交所 30%) — one
+                        # source of truth with the backtest mask.
+                        from ..backtest.limit_locked import board_limit
+
+                        lim = board_limit(symbol, pd.Timestamp(date), True)
                         if delta > 0 and lv >= lim - 0.005:
                             continue  # buying into a limit-up close
                         if delta < 0 and lv <= -(lim - 0.005):
@@ -260,6 +271,7 @@ class OrderExecutor:
                         price=float(fill_price),
                         commission=float(fee),
                         notional=float(abs(delta) * fill_price),
+                        source=source,
                     )
                 )
         result.cash = self.cash
@@ -289,6 +301,7 @@ class OrderExecutor:
         *,
         limit_locked: Optional[pd.Series] = None,
         fill_time: str = "15:00",
+        source: str = "auction",
     ) -> OrderResult:
         """Execute a PRE-SUBMITTED closing-auction order list.
 
@@ -311,7 +324,11 @@ class OrderExecutor:
             if limit_locked is not None:
                 lv = limit_locked.get(symbol, np.nan)
                 if np.isfinite(lv):
-                    lim = 0.20 if symbol[:3] in ("688", "689", "300", "301") else 0.10
+                    # board- AND date-aware band — same source of truth as the
+                    # backtest mask and the close executor above.
+                    from ..backtest.limit_locked import board_limit
+
+                    lim = board_limit(symbol, pd.Timestamp(date), True)
                     if shares > 0 and lv >= lim - 0.005:
                         continue  # buying into a limit-up close
                     if shares < 0 and lv <= -(lim - 0.005):
@@ -336,6 +353,7 @@ class OrderExecutor:
                     commission=float(fee),
                     notional=float(abs(shares) * fill_price),
                     time=str(fill_time),
+                    source=source,
                 )
             )
         result.cash = self.cash

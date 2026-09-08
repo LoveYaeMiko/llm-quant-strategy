@@ -296,14 +296,35 @@ def refresh_intraday(
     }
 
 
+def _resolve_end_date(now: pd.Timestamp, today: pd.Timestamp) -> pd.Timestamp:
+    """Inclusive last day an incremental minute fetch should cover.
+
+    The current day's bars are only COMPLETE after the 15:00 close, so a run
+    before 15:00 must stop at the previous day — a partial day would poison
+    ``tail_vol``/``rv``/``range`` (and the tail-volume entry gate would read a
+    half-day volume share as if it were final). An explicitly requested PAST
+    day is long closed and is always included, whatever the wall clock says
+    (the 17:30 self-heal replays an earlier ``date``).
+    """
+    now = pd.Timestamp(now)
+    today = pd.Timestamp(today).normalize()
+    if now.normalize() > today:
+        return today
+    if now.time() >= _MARKET_CLOSE:
+        return today
+    return today - pd.Timedelta(days=1)
+
+
 def refresh_intraday_daily(
     cfg: Config, symbols: list[str] | None = None, date: str | pd.Timestamp | None = None
 ) -> dict:
     """After-close incremental refresh: today's minute bars + rollup rebuild.
 
-    Called by the PAICC 15:30 job and as the 17:30 run's self-heal. When called
-    before ~15:05 the current day is NOT included (a partial day would poison
-    tail_vol/rv/range), so the rollup ends at yesterday.
+    Called by the PAICC 15:02 job (after the 15:00 close, so the current day is
+    complete) and as the 17:30 run's self-heal. Before 15:00 the current day is
+    NOT included — a partial day would poison tail_vol/rv/range — so the fetch
+    ends at yesterday (see :func:`_resolve_end_date`); an explicitly requested
+    historical ``date`` is always included.
     """
     from ..paper.shadow import resolve_shadow_universe  # noqa: PLC0415
 
@@ -311,7 +332,7 @@ def refresh_intraday_daily(
         symbols = resolve_shadow_universe(cfg, "hs300_500")
     now = pd.Timestamp.now()
     today = (pd.Timestamp(date) if date is not None else now).normalize()
-    end = today if now.time() < pd.Timestamp("15:05").time() and now.normalize() == today else now
+    end = _resolve_end_date(now, today)
     start = today - pd.Timedelta(days=5)  # covers weekends/holidays before ``today``
     return refresh_intraday(cfg, list(symbols), start=start, end=end)
 

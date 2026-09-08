@@ -10,6 +10,11 @@
    * price limits — entries on limit-up bars / exits on limit-down bars;
    * price tick — fills not on the 0.01 tick;
    * suspension — fills with no close (should be zero by construction).
+
+Audited accounts come from ``shadow.accounts`` (priority desc, the daily-loop
+order) — never a hardcoded list: A/B/C were retired on 2026-09-08 and an audit
+must not silently probe ledgers the config no longer registers.
+# 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）
 """
 from __future__ import annotations
 
@@ -24,12 +29,17 @@ sys.path.insert(0, str(ROOT))
 import numpy as np
 import pandas as pd
 
-ACCOUNTS = [
-    ("A_200W", "outputs/shadow_ledger_A_200W.sqlite"),
-    ("B_10W", "outputs/shadow_ledger_B_10W.sqlite"),
-    ("C_5W", "outputs/shadow_ledger_C_5W.sqlite"),
-    ("D_5W", "outputs/shadow_ledger_D_5W.sqlite"),
-]
+
+def account_ledger_relpath(cfg, name: str) -> str:
+    """Per-account ledger path, derived the same way ``src/cli.py`` derives it."""
+    base = str((cfg.section("shadow") or {}).get("ledger_db", "outputs/shadow_ledger.sqlite"))
+    return base.replace(".sqlite", f"_{name}.sqlite")
+
+
+def load_accounts(cfg) -> list[dict]:
+    """``shadow.accounts`` in the daily closed-loop order (priority desc)."""
+    accounts = list(cfg.get("shadow.accounts") or [])
+    return sorted(accounts, key=lambda a: int(a.get("priority", 0) or 0), reverse=True)
 
 
 def board_code(symbol: str) -> str:
@@ -117,15 +127,24 @@ def main() -> int:
 
     cfg = load_config()
     market = _market_data(cfg, seed=1)
+    accounts = load_accounts(cfg)
+    print("audited accounts (shadow.accounts, priority desc): "
+          + (", ".join(f"{a['name']}[{a.get('alpha_source', 'pool')}]" for a in accounts)
+             or "<none>"))
+    if not accounts:
+        print("WARNING: shadow.accounts is empty — no account-level audit performed")
     print("=" * 72)
     print("PART 1 — legality (A-share trading rules)")
     print("=" * 72)
-    for account, path in ACCOUNTS:
-        if not (ROOT / path).is_file():
-            print(f"{account}: ledger missing, skipped")
+    for account in accounts:
+        name = str(account["name"])
+        source = str(account.get("alpha_source", "pool"))
+        rel = account_ledger_relpath(cfg, name)
+        if not (ROOT / rel).is_file():
+            print(f"\n[{name}] alpha_source={source}: ledger {rel} missing, skipped")
             continue
-        r = legality_audit(account, path, market)
-        print(f"\n[{account}] fills={r['n_fills']}")
+        r = legality_audit(name, rel, market)
+        print(f"\n[{name}] alpha_source={source} ledger={rel} fills={r['n_fills']}")
         print(f"  T+1 same-day flip: {r['same_day_flips']}")
         print(f"  odd-lot fills (not 100-share): {r['odd_lot_fills']} "
               f"(notional {r['odd_lot_notional']:,.0f})")
@@ -169,9 +188,6 @@ def main() -> int:
 
     print("\n2025 replay of current track configs:")
     from src.paper.shadow import resolve_shadow_universe
-
-    uni800 = resolve_shadow_universe(cfg, "hs300_500")
-    uni300 = resolve_shadow_universe(cfg, "hs300")
 
     class _BooksPortfolio:
         def __init__(self, books):
@@ -222,55 +238,106 @@ def main() -> int:
         return m
 
     if scores is not None:
-        # Replay each track with its DEPLOYED parameters (read from the master
-        # config so the out-of-sample probe never drifts from what runs live).
-        cfg_accounts = {a["name"]: a for a in (cfg.get("shadow.accounts") or [])}
+        # Replay each CONFIGURED account with its DEPLOYED parameters (read from
+        # the master config so the out-of-sample probe never drifts from what
+        # runs live) through the path its alpha_source selects:
+        #   ml       → cross-sectional book (long_book_weights + trend gate);
+        #   pullback → D-track book with the intraday feature pack AND the
+        #              minute-bar stop provider — the same wiring as
+        #              src/cli.py::_build_account_portfolio, so the tail-volume
+        #              entry gate (pb_tail_vol_max) and the intraday stop sweep
+        #              are actually exercised.
+        from src.data.intraday import load_intraday_frames, make_minute_provider
 
-        def _acc(name):
-            return cfg_accounts[name]
-
-        def _replay_ml(name, universe):
-            acc = _acc(name)
-            cap = float(acc.get("max_position_pct", 0.05))
-            uni = resolve_shadow_universe(cfg, acc.get("universe", universe))
+        def _replay_ml(account):
+            name = str(account["name"])
+            cap = float(account.get("max_position_pct", 0.05))
+            uni = resolve_shadow_universe(cfg, account.get("universe"))
             replay(
                 name,
-                _BooksPortfolio(ml_books(scores, uni, float(acc.get("long_pct", 0.10)), cap)),
+                _BooksPortfolio(ml_books(scores, uni, float(account.get("long_pct", 0.10)), cap)),
                 uni,
-                float(acc["cash"]),
-                int(acc.get("rebalance_days", 10)),
-                float(acc.get("notional_floor", 0.0)),
-                float(acc.get("band_frac", 0.0)),
+                float(account["cash"]),
+                int(account.get("rebalance_days", 10)),
+                float(account.get("notional_floor", 0.0)),
+                float(account.get("band_frac", 0.0)),
             )
 
-        _replay_ml("A_200W", "hs300")
-        _replay_ml("B_10W", "hs300_500")
-        _replay_ml("C_5W", "hs300_500")
+        def _replay_pullback(account):
+            name = str(account["name"])
+            uni = resolve_shadow_universe(cfg, account.get("universe"))
+            # 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）
+            intraday = None
+            if bool(account.get("pb_use_intraday", False)):
+                intraday = load_intraday_frames(cfg, uni)
+            minute_provider = None
+            if bool(account.get("pb_intraday_stops", False)):
+                minute_provider = make_minute_provider(cfg)
+            print(f"  intraday pack: {list(intraday) if intraday else '<not loaded>'} | "
+                  f"minute provider: {'on' if minute_provider is not None else 'off'}")
+            first = (intraday or {}).get("vwap_gap")
+            if first is not None and len(first):
+                lo, hi = first.index.min(), first.index.max()
+                print(f"  intraday coverage: {lo.date()}..{hi.date()} "
+                      f"({first.shape[1]} symbols)")
+                if lo > pd.Timestamp("2025-01-01"):
+                    print("  WARNING: the tail-volume entry gate treats a MISSING day as "
+                          "FAIL, so this 2025 replay only trades from the coverage "
+                          "start — the fill count is NOT a full-year figure")
+            params = PullbackParams(
+                k=int(account.get("pb_k", 8)),
+                rank_source=str(account.get("pb_rank_source", "momentum")),
+                rank_min=float(account.get("pb_rank_min", 0.8)),
+                mom_window=int(account.get("pb_mom_window", 63)),
+                mom_long_rank_min=float(account.get("pb_mom_long_rank_min", 0.0)),
+                bounce_confirm=bool(account.get("pb_bounce_confirm", False)),
+                ema_fast=int(account.get("pb_ema_fast", 9)),
+                ema_zone=int(account.get("pb_ema_zone", 21)),
+                zone_band=float(account.get("pb_zone_band", 0.02)),
+                pullback_min=float(account.get("pb_pullback_min", 0.03)),
+                vol_shrink=bool(account.get("pb_vol_shrink", True)),
+                atr_mult=float(account.get("pb_atr_mult", 1.5)),
+                stop_lo=float(account.get("pb_stop_lo", 0.025)),
+                stop_hi=float(account.get("pb_stop_hi", 0.04)),
+                breakeven_r=float(account.get("pb_breakeven_r", 1.0)),
+                trail_r=float(account.get("pb_trail_r", 1.5)),
+                exit_into_strength_r=float(account.get("pb_exit_into_strength_r", 0.0)),
+                max_hold=int(account.get("pb_max_hold", 40)),
+                entry_gate=float(account.get("pb_entry_gate", 0.0)),
+                exit_gate=float(account.get("pb_exit_gate", -0.03)),
+                trend_days=int(account.get("pb_trend_days", 60)),
+                vwap_filter=float(account.get("pb_vwap_filter", 0.0)),
+                stop_rv=bool(account.get("pb_stop_rv", False)),
+                tail_vol_max=float(account.get("pb_tail_vol_max", 0.0)),
+                open30_max=float(account.get("pb_open30_max", 0.0)),
+                range_max=float(account.get("pb_range_max", 0.0)),
+                full_invest=bool(account.get("pb_full_invest", False)),
+                stop_trigger=str(account.get("pb_stop_trigger", "low")),
+                stop_buffer=float(account.get("pb_stop_buffer", 0.0)),
+                stop_open_minutes=int(account.get("pb_stop_open_minutes", 0)),
+            )
+            book = PullbackPortfolio(
+                market, params, symbols=uni, scores=scores,
+                intraday=intraday, minute_provider=minute_provider,
+            )
+            book.live_intraday_from = str(account.get("pb_live_intraday_from", "") or "") or None
+            replay(
+                name, book, uni, float(account["cash"]),
+                int(account.get("rebalance_days", 1)),
+                float(account.get("notional_floor", 2000.0)), float(account.get("band_frac", 0.0)),
+            )
 
-        d_acc = _acc("D_5W")
-        d_params = PullbackParams(
-            k=int(d_acc.get("pb_k", 6)), rank_source="ml",
-            rank_min=float(d_acc.get("pb_rank_min", 0.8)), ema_fast=int(d_acc.get("pb_ema_fast", 21)),
-            ema_zone=int(d_acc.get("pb_ema_zone", 21)), zone_band=float(d_acc.get("pb_zone_band", 0.02)),
-            pullback_min=float(d_acc.get("pb_pullback_min", 0.03)),
-            vol_shrink=bool(d_acc.get("pb_vol_shrink", True)), atr_mult=float(d_acc.get("pb_atr_mult", 1.5)),
-            stop_lo=float(d_acc.get("pb_stop_lo", 0.025)), stop_hi=float(d_acc.get("pb_stop_hi", 0.04)),
-            breakeven_r=float(d_acc.get("pb_breakeven_r", 1.0)), trail_r=float(d_acc.get("pb_trail_r", 1.5)),
-            exit_into_strength_r=float(d_acc.get("pb_exit_into_strength_r", 3.0)),
-            max_hold=int(d_acc.get("pb_max_hold", 40)), entry_gate=float(d_acc.get("pb_entry_gate", 0.0)),
-            exit_gate=float(d_acc.get("pb_exit_gate", -0.03)), trend_days=int(d_acc.get("pb_trend_days", 60)),
-            tail_vol_max=float(d_acc.get("pb_tail_vol_max", 0.0)),
-            full_invest=bool(d_acc.get("pb_full_invest", False)),
-        )
-        d_uni = resolve_shadow_universe(cfg, d_acc.get("universe", "hs300_500"))
-        d = PullbackPortfolio(market, d_params, symbols=d_uni, scores=scores)
-        # note: close-only approximation — the intraday minute-bar stop sweep is
-        # not replayed here (2025 daily_features not wired into the audit).
-        replay(
-            "D_5W", d, d_uni, float(d_acc["cash"]),
-            int(d_acc.get("rebalance_days", 1)),
-            float(d_acc.get("notional_floor", 2000.0)), float(d_acc.get("band_frac", 0.0)),
-        )
+        for account in accounts:
+            name = str(account["name"])
+            source = str(account.get("alpha_source", "pool"))
+            print(f"\n[{name}] alpha_source={source} — 2025 replay:")
+            if source == "pullback":
+                _replay_pullback(account)
+            elif source == "ml":
+                _replay_ml(account)
+            else:
+                print(f"  {name}: alpha_source={source} has no replay path in this "
+                      f"audit — skipped")
 
     # grid spreads
     print("\ngrid selection spreads (2026 ann_return):")

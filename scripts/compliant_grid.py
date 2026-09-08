@@ -3,6 +3,10 @@
 Re-optimizes caps / rebalance / floors after the A-share compliance fixes
 (100-share lots, ticks, limit-lock blocks). ML books are built from the cached
 full-panel scores with the same long_book_weights semantics as the shadow.
+
+# 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）
+# 注意：D_VARIANTS 的 base 未设 tail_vol_max（默认 0.0 = 门槛关闭），接入特征包只是
+# 保证与生产同一条装配路径；如需生产门槛口径需在 base 显式加 tail_vol_max=0.5。
 """
 from __future__ import annotations
 
@@ -105,6 +109,7 @@ def replay(label, portfolio, market, symbols, cash, rb, floor, band, cap) -> dic
 def main() -> int:
     from src.cli import _market_data
     from src.config import load_config
+    from src.data.intraday import load_intraday_frames
     from src.ml import load_artifact, score_artifact
     from src.paper.pullback_book import PullbackParams, PullbackPortfolio
     from src.paper.shadow import resolve_shadow_universe
@@ -119,7 +124,11 @@ def main() -> int:
     booster = load_artifact(meta_path.with_suffix(".txt"))
     frame = pd.read_parquet(ROOT / "outputs" / f"_dtune_frame_{meta_path.stem}.parquet")
     scores = score_artifact(booster, frame)
-    print(f"market: {len(uni800)} symbols | scores ready", flush=True)
+
+    # 口径与生产同构：加载 data/intraday 分钟特征包（pb_tail_vol_max 生效）
+    intraday = load_intraday_frames(cfg, uni800)
+    print(f"market: {len(uni800)} symbols | scores ready | "
+          f"intraday frames: {list(intraday)}", flush=True)
 
     results = {}
     for label, v in ML_VARIANTS.items():
@@ -139,7 +148,9 @@ def main() -> int:
                 max_hold=40, entry_gate=0.0, exit_gate=-0.03, trend_days=60)
     for label, over in D_VARIANTS.items():
         params = PullbackParams(**{**base, **over})
-        portfolio = PullbackPortfolio(market, params, symbols=uni800, scores=scores)
+        portfolio = PullbackPortfolio(
+            market, params, symbols=uni800, scores=scores, intraday=intraday,
+        )
         r = replay(label, portfolio, market, uni800, 50_000, 1, 2000.0, 0.0, 0.20)
         results[label] = r
         print(f"{label:14s}: cum={r['cum_return']:+.2%} ann={r['ann_return']:+.2%} "

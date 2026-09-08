@@ -23,6 +23,16 @@ import pandas as pd
 CHINEXT_20PCT_SINCE = pd.Timestamp("2020-08-24")
 
 
+def board_limit(symbol: str, date: pd.Timestamp, dynamic: bool = True) -> float:
+    """Public, date/board-aware limit band (as a return) for one bar.
+
+    Single source of truth for the executor's limit-lock checks and the
+    backtest's mask: 主板 10%, 创业板 10% until 2020-08-24 then 20%, 科创板
+    20%, 北交所 30% (``dynamic=False`` forces the flat 9.5% band).
+    """
+    return _board_limit(symbol, date, dynamic)
+
+
 def _board_limit(symbol: str, date: pd.Timestamp, dynamic: bool) -> float:
     """Limit band (as a return) for ``symbol`` on ``date``."""
     if not dynamic:
@@ -109,4 +119,4 @@ def tradeable_forward_returns(
     return forward.mask(untradeable)
 
 
-__all__ = ["limit_lock_mask", "tradeable_forward_returns"]
+__all__ = ["board_limit", "limit_lock_mask", "tradeable_forward_returns"]
