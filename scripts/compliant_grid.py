@@ -145,7 +145,9 @@ def main() -> int:
                 bounce_confirm=False, ema_fast=21, ema_zone=21, zone_band=0.02,
                 pullback_min=0.03, vol_shrink=True, atr_mult=1.5, stop_lo=0.025,
                 stop_hi=0.04, breakeven_r=1.0, trail_r=1.5, exit_into_strength_r=3.0,
-                max_hold=40, entry_gate=0.0, exit_gate=-0.03, trend_days=60)
+                max_hold=40, entry_gate=0.0, exit_gate=-0.03, trend_days=60,
+                # 生产口径：尾盘 30 分钟量比门槛（2026-09-09 起显式对齐部署配置）
+                tail_vol_max=0.5)
     for label, over in D_VARIANTS.items():
         params = PullbackParams(**{**base, **over})
         portfolio = PullbackPortfolio(

@@ -26,6 +26,9 @@ BASE = dict(
     pullback_min=0.03, vol_shrink=True, atr_mult=1.5, stop_lo=0.025,
     stop_hi=0.04, breakeven_r=1.0, trail_r=1.5, exit_into_strength_r=3.0,
     max_hold=40, entry_gate=0.0, exit_gate=-0.03, trend_days=60,
+    # 生产口径：尾盘 30 分钟量比门槛（2026-09-09 起显式对齐部署配置；
+    # 此前 BASE 未设该键 → 门槛默认关闭，outputs/d_track_grid3.json 为无门槛口径）
+    tail_vol_max=0.5,
 )
 
 VARIANTS = {

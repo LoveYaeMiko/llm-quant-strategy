@@ -45,7 +45,7 @@
 
 | # | 事项 | 状态 | 落地动作 / 验收 |
 | --- | --- | --- | --- |
-| 2.1 | `scripts/d_track_grid5/6/7`、`d_track_tune2/3`、`compliant_grid`、`audit_tracks` 未加载 `intraday=`（无 tail_vol 门槛） | [x] | 全部加载 `intraday=`（语法/导入/门控实测通过）；grid7 数字待重跑刷新 |
+| 2.1 | `scripts/d_track_grid5/6/7`、`d_track_tune2/3`、`compliant_grid`、`audit_tracks` 未加载 `intraday=`（无 tail_vol 门槛） | [x] | 全部加载 `intraday=`；`tune2/tune3/compliant_grid` 的 BASE 补 `tail_vol_max=0.5`；**grid7 已用修复后代码重跑**（`outputs/d_track_grid7.json`，触发约定结论已更新为日内止损不损害收益） |
 | 2.2 | `audit_tracks.py` D 轨回放缺 `intraday=` | [x] | 同上（与 0.3 合并） |
 | 2.3 | `refresh_intraday_daily` 文档与代码不一致（docstring 说 15:05 前不含当日，代码 `end = today`） | [x] | 新增 `_resolve_end_date`（15:00 前不含当日）+ `tests/test_intraday_refresh.py` 6 用例 |
 | 2.4 | `order_executor` 涨跌停带宽硬编码、与日期/板块无关 | [x] | 两处调用点改用共享 `board_limit`（主板 10%/创业板 20%（2020-08-24 前 10%）/科创 20%/北交所 30%）；`tests/test_order_executor_limit_band.py` 4 用例 |
