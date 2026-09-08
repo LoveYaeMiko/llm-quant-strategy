@@ -34,10 +34,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import pandas as pd
+import numpy as np
 
 #: A calendar gap wider than this (in calendar days) means the window contains a
 #: hole in the data — results over it cannot be read as a continuous curve.
-MAX_CALENDAR_GAP_DAYS = 10
+#: 15 days tolerates the Spring-Festival break (a 10-11 day market closure).
+MAX_CALENDAR_GAP_DAYS = 15
 
 #: Intraday decisions must stop at the close; the auction layer owns 15:00+.
 INTRADAY_CUTOFF = "15:00"
@@ -83,11 +85,18 @@ def main() -> int:
 
     print(f"[oos] window=[{args.start}, {args.end}] account={args.account} "
           f"universe={len(symbols)} ledger={ledger_path.name}", flush=True)
+    # Build the market with the PRODUCTION slice shape (end=None) so the feature
+    # matrix cache hits; the runner still stops at ``end``. A fresh slice would
+    # force a multi-GB rebuild and can OOM the worker pool.
+    from src.cli import _build_market_for_paper
+
+    market = _build_market_for_paper(cfg, symbols, args.start, None, seed=args.seed)
+    symbols = [s for s in symbols if s in market.price_panel.columns]
     probe: dict = {}
     status, ledger_out = _shadow_cycle(
         cfg, symbols, args.start, args.end, args.seed, skip_refresh=not args.refresh,
         control_scale=None, account=account, ledger_override=str(ledger_path),
-        write_artifacts=False, probe=probe,
+        write_artifacts=False, probe=probe, market_override=market,
     )
 
     ledger = PaperLedger(str(ledger_path))
@@ -113,6 +122,7 @@ def main() -> int:
         (ROOT / "outputs" / "_doos_prod_probe.sqlite").unlink(missing_ok=True)
 
     # ---- window data sanity -------------------------------------------------
+    equity.index = pd.to_datetime(equity.index)  # ledger dates are TEXT
     window = equity.index[(equity.index >= pd.Timestamp(args.start)) & (equity.index <= pd.Timestamp(args.end))]
     dates = list(pd.to_datetime(window))
     gap_days = _calendar_gap_days(dates)
@@ -141,17 +151,35 @@ def main() -> int:
                     t1_ok = False
                 opens[sym].pop()
 
-    # limit-lock: no fill may sit on a locked bar
-    from src.backtest.limit_locked import limit_lock_mask
+    # Limit-lock legality, direction-aware — exactly the executor's rule: buying
+    # into a limit-UP close and selling into a limit-DOWN close are impossible;
+    # selling into a limit-up (or buying a limit-down) is perfectly legal and
+    # must NOT be flagged. A direction-blind mask would flag every limit-up exit.
+    from src.backtest.limit_locked import board_limit
 
-    locked = limit_lock_mask(market.long)
-    locked_set = set(locked[locked].index)
+    rets_panel = market.price_panel.pct_change(fill_method=None)
     locked_fills = 0
+    locked_examples: list[dict] = []
     if len(fills):
         for _, f in fills.iterrows():
-            key = (pd.Timestamp(f["date"]), str(f["symbol"]))
-            if key in locked_set:
+            day = pd.Timestamp(f["date"])
+            sym = str(f["symbol"])
+            try:
+                lv = float(rets_panel.loc[day, sym])
+            except (KeyError, TypeError):
+                continue
+            if not np.isfinite(lv):
+                continue
+            lim = board_limit(sym, day, True) - 0.005
+            is_buy = float(f["shares"]) > 0
+            illegal = (is_buy and lv >= lim) or ((not is_buy) and lv <= -lim)
+            if illegal:
                 locked_fills += 1
+                if len(locked_examples) < 5:
+                    locked_examples.append(
+                        {"date": str(f["date"]), "symbol": sym, "side": f["side"],
+                         "day_return": round(lv, 4)}
+                    )
 
     # minute-feature coverage of the window: the tail-volume entry gate treats a
     # missing day as FAIL, so a gap silently suppresses entries (and the OOS
@@ -213,6 +241,8 @@ def main() -> int:
         "max_calendar_gap_days": gap_days,
         "minute_frame_days": frame_days,
         "minute_window_coverage": coverage,
+        "limit_locked_fills": locked_fills,
+        "limit_locked_examples": locked_examples,
         "fingerprint": probe,
         "production_fingerprint": prod_probe,
         "checks": checks,

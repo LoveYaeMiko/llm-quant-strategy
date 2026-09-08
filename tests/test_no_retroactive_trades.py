@@ -58,6 +58,15 @@ def _book(tmp_path, live_from: str | None, minute_provider=None):
 
 
 def _crashing_minutes(d, s):
+    # -5% from the previous close: below the 2.5% stop but well inside the 10%
+    # limit band, so the limit-down guard (D-7 replay path) does not veto it.
+    return pd.DataFrame({
+        "timestamp": pd.to_datetime([f"{pd.Timestamp(d).date()} 10:00:00"]),
+        "open": [9.5], "high": [9.5], "low": [9.5], "close": [9.5],
+    })
+
+
+def _limit_down_minutes(d, s):
     return pd.DataFrame({
         "timestamp": pd.to_datetime([f"{pd.Timestamp(d).date()} 10:00:00"]),
         "open": [9.0], "high": [9.0], "low": [9.0], "close": [9.0],
@@ -88,6 +97,20 @@ def test_pre_live_date_is_replayed(tmp_path):
     intraday = fills[fills["time"].fillna("").astype(str) != ""] if len(fills) else fills
     assert len(intraday) == 1
     assert intraday.iloc[0]["source"] == "replay"
+    ledger.close()
+
+
+def test_limit_down_bar_is_not_replayed_as_a_fill(tmp_path):
+    """A locked limit-down print has no counterparty — the stop stays pending."""
+    book, ledger = _book(tmp_path, live_from="2026-03-10",
+                         minute_provider=_limit_down_minutes)
+    runner = PaperRunner(book, _market(), ledger, symbols=["000001.SZ"], cash=1000.0,
+                         rebalance_days=1, pit_strict=False, seed=1)
+    runner.preclose_provider = None
+    runner.run(start="2026-03-02", end="2026-03-02")
+    fills = ledger.fills()
+    intraday = fills[fills["time"].fillna("").astype(str) != ""] if len(fills) else fills
+    assert len(intraday) == 0
     ledger.close()
 
 

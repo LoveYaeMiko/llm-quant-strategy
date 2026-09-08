@@ -24,6 +24,9 @@ CFG = Config({"d_model_cycle": {
     "margin_pp": 0.3,
     "min_fills": 5,
     "window_days": 30,
+    # Promotion is human-in-the-loop by default (2026-09-09); this fixture
+    # exercises the automatic path explicitly.
+    "auto_promote": True,
 }})
 
 

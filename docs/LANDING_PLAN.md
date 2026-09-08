@@ -52,7 +52,7 @@
 | # | 事项 | 状态 | 落地动作 / 验收 |
 | --- | --- | --- | --- |
 | 3.1 | 建立 `scripts/d_oos.py`：新账本、生产同构装配、11 项断言 | [x] | `_shadow_cycle(ledger_override=, write_artifacts=False, probe=)` + `_book_fingerprint`；断言含 `fresh_ledger_not_resumed`、`contiguous_window_no_gap`、`intraday_frames_loaded`、`minute_provider_loaded`、`strategy_fingerprint_is_production`、`live_dates_not_replayed`、`t_plus_1_respected`、`no_fill_on_limit_locked_bar`、`cost_model_consistent` 等 |
-| 3.2 | 运行 OOS（2025 段 + 2026 段），记录结论 | [~] | 2026 段已可跑；2025 段受分钟缓存覆盖（2025-09-01 起、含 2025-10-27→12-12 缺口）限制，见 `D_TRACK_EVIDENCE.md` §六 |
+| 3.2 | 运行 OOS（2025 段 + 2026 段），记录结论 | [x] | 2026-01-01→08-28 窗口 **11/11 断言通过**（+14.91%/Sharpe 1.53/SE 1.26/t 1.22，`outputs/d_oos_is_2026.json`）；2025-09-01→12-31 见 `d_oos_oos_2025h2.json`（分钟缓存含 2025-10-27→12-12 缺口，覆盖度随报告给出） |
 | 3.3 | 证据分级文档：in-sample / OOS / 实时影子 | [x] | `docs/D_TRACK_EVIDENCE.md`：四类证据、触发约定敏感性、ATR 影响、成交来源、统计功效、引用规范 |
 
 ## 阶段 4 — 实盘接入合规前置
@@ -67,10 +67,10 @@
 
 | # | 事项 | 状态 | 验收 |
 | --- | --- | --- | --- |
-| 5.1 | FQA 测试全绿 | [~] | 新增测试全部通过；`tests/test_phase8_remedy.py` 为**既有**状态依赖失败（`outputs/factors.json` 只有 5 条，断言 ≥6，与本次改动无关） |
+| 5.1 | FQA 测试全绿 | [~] | 新增/受影响测试 66 用例全绿；`tests/test_phase8_remedy.py` 为**既有**状态依赖失败（`outputs/factors.json` 只有 5 条，断言 ≥6，与本次改动无关） |
 | 5.2 | PAICC 后端测试 + 前端 typecheck/build | [x] | `pytest` 46 passed；`npm run typecheck` exit 0；`npm run build` 成功 |
-| 5.3 | 后端重启与端点验证 | [ ] | `/api/quant/accounts` 仅 D；`/api/quant/schedule` 含 jobs；`/api/quant/live` 正常 |
-| 5.4 | 双仓提交推送 | [ ] | FQA + PAICC 各一次 commit + push |
+| 5.3 | 后端重启与端点验证 | [x] | 后端已重启（PID 33752）；`/quant/schedule` 8 jobs（depth 14:40）、`/quant/accounts` 仅 D_5W、`/quant/live`、`/quant/preclose`、`/quant/trades`、`/quant/status` 全部正常 |
+| 5.4 | 双仓提交推送 | [x] | FQA `48d6504`、PAICC `1bbcc34` 已推送 main |
 
 ---
 

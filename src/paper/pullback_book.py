@@ -456,6 +456,14 @@ class PullbackPortfolio:
             hit = bars[bars[trigger_col] <= thr]
             if hit.empty:
                 continue
+            # Limit-down legality (defect D-7 for the REPLAY path): a print at or
+            # below the board's limit-down price has no bid behind it — the stop
+            # stays pending (as the real-time trader already does). The check is
+            # lookahead-free: it only compares the breaching bar with the
+            # PREVIOUS close (both on the panel's adjusted basis).
+            hit = self._drop_limit_down(hit, sym, d, trigger_col)
+            if hit.empty:
+                continue
             bar = hit.iloc[0]
             # Real-time semantics: the trader polls the LATEST print, so a
             # confirmed (close) trigger fills at the breaching minute's close
@@ -470,6 +478,24 @@ class PullbackPortfolio:
         return exits
 
     # --------------------------------------------------------------- weights
+    def _drop_limit_down(self, hit: pd.DataFrame, sym: str, d: pd.Timestamp, trigger_col: str) -> pd.DataFrame:
+        """Drop breaching bars that sit at/below the limit-down price.
+
+        Selling into a locked limit-down has no counterparty, so the stop stays
+        pending. Uses only the bar and the PREVIOUS close (no lookahead).
+        """
+        from ..backtest.limit_locked import board_limit
+
+        try:
+            prev = float(self._prev_close.loc[d, sym])
+        except (KeyError, TypeError):
+            return hit
+        if not np.isfinite(prev) or prev <= 0:
+            return hit
+        band = board_limit(sym, d, True) - 0.005
+        ret = hit[trigger_col].astype(float) / prev - 1.0
+        return hit[ret > -band]
+
     def compute_weights(self, symbols, date) -> dict[str, float]:
         d = pd.Timestamp(date)
         px_row = self._close.loc[d]

@@ -1588,7 +1588,11 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
 
             meta_path, model_path = _resolve_artifact("lgbm", "")
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            frame = _feature_frame(market, meta, cfg, n_jobs=max(2, (os.cpu_count() or 4) - 2))
+            # FQA_FEATURE_N_JOBS caps the worker pool for a cold feature-matrix
+            # rebuild (an OOS window with a new slice start misses the cache and
+            # 6 workers + the 16GB main process can exhaust RAM).
+            n_jobs = int(os.environ.get("FQA_FEATURE_N_JOBS", max(2, (os.cpu_count() or 4) - 2)))
+            frame = _feature_frame(market, meta, cfg, n_jobs=n_jobs)
             assert list(frame.columns) == meta["features"], "artifact columns out of sync"
             scores = score_artifact(load_artifact(model_path), frame)
         if bool(account.get("pb_use_intraday", False)):
@@ -1824,7 +1828,7 @@ def _refresh_shadow_data(cfg, symbols) -> dict:
     return meta
 
 
-def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None, account=None, shared_meta=None, replay_live_date=False, ledger_override=None, write_artifacts=True, probe=None):
+def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None, account=None, shared_meta=None, replay_live_date=False, ledger_override=None, write_artifacts=True, probe=None, market_override=None):
     """Run one shadow cycle: refresh → build market+portfolio → advance the
     resumable ledger → emit ``shadow_status.json`` + ``shadow_report.md``.
 
@@ -1865,7 +1869,10 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
         meta = _refresh_shadow_data(cfg, symbols)
 
     # market includes 360d warmup before ``start``; run through the latest bar.
-    market = _build_market_for_paper(cfg, symbols, start, None, seed=seed)
+    # ``market_override`` lets an OOS harness reuse the PRODUCTION market slice
+    # (same feature-cache key → no multi-GB rebuild) while still stopping the
+    # runner at ``end``.
+    market = market_override if market_override is not None else _build_market_for_paper(cfg, symbols, start, None, seed=seed)
     latest = pd.Timestamp(market.price_panel.index.max()).date().isoformat()
     end = end or latest
 
