@@ -290,15 +290,19 @@ shadow:
       pb_zone_band: 0.02              # |收盘/EMA21 - 1| ≤ 2%
       pb_pullback_min: 0.03           # 距 10 日高点至少回落 3%（真实回调）
       pb_vol_shrink: true             # 缩量回调确认（5 日均量 < 20 日均量）
-      pb_atr_mult: 1.5                # ATR 自适应系数（当前停用：stop_lo == stop_hi 使 ATR 通道失效，见下方说明）
-      pb_stop_lo: 0.025               # 止损下限 = 上限 2.5% → 固定 2.5% 止损
-      pb_stop_hi: 0.025               # 2026-09-09 决策：D-8b 修复（TR 恢复二维）后，ATR 自适应 2.5–4% 的
-                                      # 样本内表现显著劣于固定 2.5%（outputs/d_atr_impact.json：
-                                      # atr_adaptive +5.00%/Sharpe 0.58 vs flat_2p5 +14.91%/Sharpe 1.53，
-                                      # 同窗口 2026-01-01→08-28、生产同构装配）。
-                                      # 原 stop_lo/stop_hi/atr_mult 是在 TR 缺陷下（止损恒为 2.5%）选出的，
-                                      # 从未在真实 ATR 口径下被验证；在完成修复后口径的止损宽度再调优前，
-                                      # 显式固定为 2.5%，与历史账本口径保持一致（避免同一净值曲线混两种止损规则）。
+      pb_atr_mult: 1.5                # ATR 自适应系数（当前停用：stop_lo == stop_hi 使 ATR 通道失效）
+      pb_stop_lo: 0.035               # 固定止损 3.5%（D-8c 止损宽度再调优的结论，见下）
+      pb_stop_hi: 0.035               # 2026-09-09 D-8c：修复 TR 口径后扫描 8 个宽度变体（scripts/d_stop_grid.py，
+                                      # outputs/d_stop_grid.json），并对 4 个候选跑 2025-09→12 的 OOS（d_oos.py，11 项断言全通过）：
+                                      #   变体              IS Sharpe(2026)  OOS Sharpe(2025H2)  OOS 累计
+                                      #   flat_2p5（旧部署）     1.53            −1.10            −6.14%   ← TR 缺陷造成的宽度，最差
+                                      #   flat_3p5（现部署）     1.57            +1.60            +8.21%
+                                      #   atr_1p0_25_35         1.95            +1.33            +6.85%
+                                      #   atr_1p0_25_40         0.97            +1.58            +9.47%
+                                      # 选择规则：跨两窗口的最差 Sharpe 最大（max-min）→ flat_3p5 胜出，且实现最简单、
+                                      # 不依赖 ATR 曲面（ATR 曲面很尖：上限差 0.5pp 时 IS Sharpe 摆动 ~1.0）。
+                                      # 注意：样本短（159/82 日）、|t|<1，属"证据方向一致但统计不显著"；
+                                      # 变更点 2026-09-09，此前账本为 2.5% 宽度。
       pb_breakeven_r: 1.0             # +1R 后止损上移至成本
       pb_trail_r: 1.5                 # +1.5R 后启用追踪
       pb_exit_into_strength_r: 3.0    # +3R 且乖离 EMA21>8% 冲高离场（锁定 parabolic 利润）

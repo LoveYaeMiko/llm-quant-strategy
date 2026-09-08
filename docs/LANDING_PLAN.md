@@ -37,7 +37,7 @@
 | D-7 | 实时交易无跌停/停牌/陈旧报价守卫；轮询窗口到 15:10 与收盘竞价层冲突 | [x] | 决策窗口改为 09:30–11:30/13:00–15:00；跌停价不成交、陈旧报价（>5 分钟）不决策、状态文件记录 blocked；`tests/test_live_trader_guards.py` 14 用例 |
 | D-8 | ATR 混合口径（PIT 面板 open/high/low 原始、close 前复权）+ TR 被压成一维 | [x] | `_adjust_factor_frame` 统一口径、`np.maximum.reduce` 保留二维；分钟回放成交价换算到面板口径；`tests/test_pullback_atr_basis.py` 6 用例；影响见 `outputs/d_atr_impact.json` |
 | D-9 | 杂项（按代码复核逐条列出） | [x] | 见下方「D-9 复核清单」 |
-| D-8c | **待办**：修复后口径的止损宽度再调优（`atr_mult × stop_hi` 网格） | [ ] | 当前显式固定 `pb_stop_lo = pb_stop_hi = 0.025`；`outputs/d_atr_impact.json` 显示 ATR 自适应（修复后）样本内 Sharpe 0.58 < 固定 2.5% 的 1.53 |
+| D-8c | 修复后口径的止损宽度再调优（`atr_mult × stop_hi` 网格 + OOS 复核） | [x] | `scripts/d_stop_grid.py` 8 变体 IS + 4 候选 OOS（11 断言全通过）：max-min 规则选 **flat 3.5%**（IS Sharpe 1.57 / OOS 1.60），旧 2.5% 在 OOS 最差（−1.10）；证据 `outputs/d_stop_grid.json`、`d_oos_oos_2025h2_*.json`；限制（短样本、|t|<1）已在 `D_TRACK_EVIDENCE.md` §三/§九 标注 |
 | D-10 | 挑战者晋升改为人工确认（`auto_promote: false`），避免 30 日窗自动换模型 | [x] | `src/d_cycle.py` + `tests/test_challenger_promotion_gate.py` 3 用例；`docs/D_MODEL_CYCLE.md` §1.4 |
 | D-11 | 红线按 alpha_source 过滤（D 轨不再显示无关的 PEAD/空腿线） | [x] | `_applicable_red_lines` + `tests/test_red_lines_applicable.py` 3 用例 |
 

@@ -60,9 +60,17 @@ def main() -> int:
     ap.add_argument("--account", default="D_5W")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--refresh", action="store_true", help="refresh market data first")
+    ap.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="override one account parameter for a candidate run (repeatable), "
+             "e.g. --set pb_atr_mult=1.0 --set pb_stop_hi=0.035",
+    )
     args = ap.parse_args()
 
-    from src.cli import _market_data, _shadow_cycle
+    from src.cli import _shadow_cycle
     from src.config import load_config
     from src.data.intraday import load_intraday_frames
     from src.paper.ledger import PaperLedger
@@ -75,10 +83,21 @@ def main() -> int:
     if account is None:
         print(f"ERROR: account {args.account!r} not in shadow.accounts", file=sys.stderr)
         return 2
+    account = dict(account)
+    overrides: dict[str, object] = {}
+    for item in args.set:
+        if "=" not in item:
+            print(f"ERROR: --set expects KEY=VALUE, got {item!r}", file=sys.stderr)
+            return 2
+        key, raw = item.split("=", 1)
+        try:
+            value: object = float(raw) if "." in raw or "e" in raw.lower() else int(raw)
+        except ValueError:
+            value = raw
+        account[key.strip()] = value
+        overrides[key.strip()] = value
 
     symbols = resolve_shadow_universe(cfg, account.get("universe"))
-    market = _market_data(cfg, seed=args.seed)
-    symbols = [s for s in symbols if s in market.price_panel.columns]
 
     ledger_path = ROOT / "outputs" / f"_doos_{args.label}.sqlite"
     ledger_path.unlink(missing_ok=True)
@@ -230,6 +249,11 @@ def main() -> int:
         "label": args.label,
         "window": {"start": args.start, "end": args.end},
         "account": args.account,
+        #: candidate parameter overrides (empty for the deployed configuration);
+        #: the fingerprint check still compares against the PRODUCTION assembly
+        #: built from the same override set, so it validates isomorphism rather
+        #: than parameter equality.
+        "overrides": overrides,
         "ledger": str(ledger_path),
         "n_days": n_days,
         "n_fills": int(len(fills)),
