@@ -123,6 +123,10 @@ class LiveTrader:
             except (OSError, ValueError):
                 pass
         pid_file.write_text(str(os.getpid()))
+        # Clear yesterday's status file: the panel must never present the
+        # previous session's P&L as today's live data (the trader writes the
+        # first fresh snapshot on its first poll of the day).
+        self.status_path.unlink(missing_ok=True)
 
         try:
             while True:
