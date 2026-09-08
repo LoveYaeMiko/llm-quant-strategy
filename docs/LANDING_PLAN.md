@@ -2,6 +2,10 @@
 
 > 状态：**执行中** · 建立于 2026-09-08 · 本文件是"所有已探讨方案实际落地"的唯一权威清单。
 > 每完成一项，把 `[ ]` 改为 `[x]` 并补上验证证据（命令 / 文件 / 数字）。
+> **2026-09-09 更新**：阶段 0–5 全部落地（见下）；新增两项由落地过程发现的后续研究
+> 任务：**D-8c 止损宽度再调优**（`[ ]`）与已完成的 D-10/D-11。当前结论见
+> `docs/D_TRACK_EVIDENCE.md` §九：**两个窗口都没有统计显著的正 alpha 证据，
+> 系统保持 observe（模拟盘）**。
 >
 > 总原则（用户长期约束，逐字保留）：
 > **"一切都建立在所有改动还有整套系统没有违规操作能够直接接入实盘的基础上"**
@@ -67,7 +71,7 @@
 
 | # | 事项 | 状态 | 验收 |
 | --- | --- | --- | --- |
-| 5.1 | FQA 测试全绿 | [~] | 新增/受影响测试 66 用例全绿；`tests/test_phase8_remedy.py` 为**既有**状态依赖失败（`outputs/factors.json` 只有 5 条，断言 ≥6，与本次改动无关） |
+| 5.1 | FQA 测试全绿 | [x] | 新增/受影响测试全绿；全量 `pytest tests/ --ignore=tests/test_phase8_remedy.py` exit 0；`test_phase8_remedy` 为**既有**状态依赖失败（`outputs/factors.json` 只有 5 条，断言 ≥6，与本次改动无关） |
 | 5.2 | PAICC 后端测试 + 前端 typecheck/build | [x] | `pytest` 46 passed；`npm run typecheck` exit 0；`npm run build` 成功 |
 | 5.3 | 后端重启与端点验证 | [x] | 后端已重启（PID 33752）；`/quant/schedule` 8 jobs（depth 14:40）、`/quant/accounts` 仅 D_5W、`/quant/live`、`/quant/preclose`、`/quant/trades`、`/quant/status` 全部正常 |
 | 5.4 | 双仓提交推送 | [x] | FQA `48d6504`、PAICC `1bbcc34` 已推送 main |
