@@ -52,7 +52,7 @@
 | # | 事项 | 状态 | 落地动作 / 验收 |
 | --- | --- | --- | --- |
 | 3.1 | 建立 `scripts/d_oos.py`：新账本、生产同构装配、11 项断言 | [x] | `_shadow_cycle(ledger_override=, write_artifacts=False, probe=)` + `_book_fingerprint`；断言含 `fresh_ledger_not_resumed`、`contiguous_window_no_gap`、`intraday_frames_loaded`、`minute_provider_loaded`、`strategy_fingerprint_is_production`、`live_dates_not_replayed`、`t_plus_1_respected`、`no_fill_on_limit_locked_bar`、`cost_model_consistent` 等 |
-| 3.2 | 运行 OOS（2025 段 + 2026 段），记录结论 | [x] | 2026-01-01→08-28 窗口 **11/11 断言通过**（+14.91%/Sharpe 1.53/SE 1.26/t 1.22，`outputs/d_oos_is_2026.json`）；2025-09-01→12-31 见 `d_oos_oos_2025h2.json`（分钟缓存含 2025-10-27→12-12 缺口，覆盖度随报告给出） |
+| 3.2 | 运行 OOS（2025 段 + 2026 段），记录结论 | [x] | 2026-01-01→08-28：**11/11 通过**，+14.91%/Sharpe 1.53/SE 1.26/**t 1.22**；2025-09-01→12-31：**11/11 通过**，−6.14%/Sharpe −1.10/SE 1.75/**t −0.63**（35 天分钟覆盖仅 274/800 标的）。两窗口均无统计显著证据，见 `D_TRACK_EVIDENCE.md` §六/§九 |
 | 3.3 | 证据分级文档：in-sample / OOS / 实时影子 | [x] | `docs/D_TRACK_EVIDENCE.md`：四类证据、触发约定敏感性、ATR 影响、成交来源、统计功效、引用规范 |
 
 ## 阶段 4 — 实盘接入合规前置
