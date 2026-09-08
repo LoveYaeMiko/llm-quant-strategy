@@ -1784,7 +1784,7 @@ def _refresh_shadow_data(cfg, symbols) -> dict:
     return meta
 
 
-def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None, account=None, shared_meta=None):
+def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None, account=None, shared_meta=None, replay_live_date=False):
     """Run one shadow cycle: refresh → build market+portfolio → advance the
     resumable ledger → emit ``shadow_status.json`` + ``shadow_report.md``.
 
@@ -1794,6 +1794,10 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     entry) suffixes ledger/status/report per account and applies per-account
     cash/governance. ``shared_meta`` (optional) carries a refresh meta dict from
     a caller-level union refresh, which then replaces the per-cycle refresh.
+    ``replay_live_date`` (optional) clears the pullback book's live gate so the
+    intraday sweep REPLAYS a live date minute-by-minute (the real-time-standard
+    re-simulation for an outage morning: first confirmed breach bar, minute
+    timestamps — point-in-time, never a future bar).
     Returns ``(status, ledger_path)``.
     """
     shadow = cfg.section("shadow")
@@ -1848,6 +1852,11 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
         portfolio, overlays = _build_account_portfolio(cfg, market, symbols, account, control_scale, ledger=ledger)
     else:
         portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
+    if replay_live_date and account and str(account.get("alpha_source", "")) == "pullback":
+        # outage re-simulation: clear the live gate so the intraday sweep
+        # replays the live date minute-by-minute (point-in-time triggers).
+        portfolio.live_intraday_from = None
+        print("  replay-live-date: intraday sweep re-enabled for the live date", flush=True)
 
     runner_kwargs = paper_runner_kwargs(cfg)
     if account:
@@ -2013,6 +2022,7 @@ def cmd_shadow(args) -> int:
             control_scale=state.gross_scale,
             account=account,
             shared_meta=shared_meta,
+            replay_live_date=bool(getattr(args, "replay_live_date", False)),
         )
 
         eq = status["equity"]
@@ -2889,6 +2899,8 @@ def main(argv: list[str] | None = None) -> int:
                           help="跳过行情/财报/研报增量刷新")
     p_shadow.add_argument("--accounts", nargs="*", default=None,
                           help="只跑指定账户 (default: 全部 shadow.accounts)")
+    p_shadow.add_argument("--replay-live-date", action="store_true",
+                          help="断线/停机重模拟：清除实时闸门，用日内分钟K逐bar点内时重放当日止损（首笔确认破位+分钟级时点）")
     p_shadow.set_defaults(func=cmd_shadow)
 
     p_live = sub.add_parser("live", help="实时盘中交易 — D 轨日内止损的实盘式执行（逐分钟轮询）")
