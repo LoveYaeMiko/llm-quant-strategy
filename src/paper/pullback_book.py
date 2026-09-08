@@ -82,14 +82,6 @@ class PullbackParams:
     stop_trigger: str = "low"     # "low" = any wick breach | "close" = confirmed
     stop_buffer: float = 0.0      # trigger threshold = stop × (1 - buffer)
     stop_open_minutes: int = 0    # ignore the first N minutes (open-auction noise)
-    #: Diagnostic ONLY (default True = correct): scale raw minute prints onto the
-    #: panel's adjustment basis before comparing with the stop level. Setting it
-    #: False reproduces the pre-2026-09-09 mixed-basis behaviour, where raw prints
-    #: were compared against adjustment-scaled stops — a systematic ~2-5% loose
-    #: bias on any name with a dividend after the bar (see
-    #: scripts/d_atr_impact.py and docs/D_TRACK_EVIDENCE.md). Never set False in
-    #: production.
-    intraday_basis_adjust: bool = True
 
 
 class PullbackPortfolio:
@@ -250,7 +242,11 @@ class PullbackPortfolio:
         return wide.reindex(index=index, columns=syms).ffill().fillna(1.0)
 
     def _basis_factor(self, d: pd.Timestamp) -> pd.Series:
-        """Per-symbol backward-adjustment factor at date ``d`` (1.0 fallback)."""
+        """Per-symbol backward-adjustment factor at date ``d`` (1.0 fallback).
+
+        Used to build the ATR's consistent basis and by diagnostics/tests; the
+        minute-bar stop path must NOT use it (those prints are already adjusted).
+        """
         if self._factor is None or len(self._factor) == 0:
             return pd.Series(1.0, index=self._close.columns)
         if d in self._factor.index:
@@ -440,12 +436,12 @@ class PullbackPortfolio:
         if self._minute_provider is None or not self._open:
             return []
         d = pd.Timestamp(date)
-        # Minute caches are RAW prints (AlphaFeed adjust="none") while the daily
-        # panel is adjustment-scaled — convert the print onto the panel basis
-        # before comparing it with an adjusted stop level (defect D-8).
-        # ``intraday_basis_adjust=False`` is a diagnostic switch that reproduces
-        # the old mixed-basis behaviour for the A/B in scripts/d_atr_impact.py.
-        factor = self._basis_factor(d) if self.p.intraday_basis_adjust else None
+        # The minute cache is ALREADY adjustment-scaled (verified 2026-09-09:
+        # AlphaFeed's minute endpoint returns 前复权 bars — for 000001.SZ on
+        # 2026-01-05 the cache's last print is 11.1336, exactly the PIT adjusted
+        # close, while the raw close was 11.50). So the prints are directly
+        # comparable with the book's adjusted stop level — converting them again
+        # would double-adjust (~3% too low) and fire stops on noise.
         exits = []
         for sym in list(self._open):
             lot = self._open[sym]
@@ -457,8 +453,7 @@ class PullbackPortfolio:
                 bars = bars[bars["timestamp"].dt.time >= cut.time()]
             trigger_col = "close" if self.p.stop_trigger == "close" else "low"
             thr = lot.stop * (1.0 - self.p.stop_buffer)
-            f = float(factor.get(sym, 1.0)) if factor is not None else 1.0
-            hit = bars[bars[trigger_col] * f <= thr]
+            hit = bars[bars[trigger_col] <= thr]
             if hit.empty:
                 continue
             bar = hit.iloc[0]
@@ -466,9 +461,7 @@ class PullbackPortfolio:
             # confirmed (close) trigger fills at the breaching minute's close
             # print — never at the bar low (that would be a stop-order fill at
             # a price the poller could not have traded). Matches live_check.
-            # The recorded price is on the panel (adjusted) basis, exactly like
-            # every close fill in the same ledger.
-            price = min(float(lot.stop), float(bar[trigger_col]) * f)
+            price = min(float(lot.stop), float(bar[trigger_col]))
             ts = bar.get("timestamp")
             t_str = str(ts.time() if hasattr(ts, "time") else ts)
             exits.append({"symbol": sym, "time": t_str, "price": float(price)})

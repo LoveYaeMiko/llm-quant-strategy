@@ -289,9 +289,15 @@ shadow:
       pb_zone_band: 0.02              # |收盘/EMA21 - 1| ≤ 2%
       pb_pullback_min: 0.03           # 距 10 日高点至少回落 3%（真实回调）
       pb_vol_shrink: true             # 缩量回调确认（5 日均量 < 20 日均量）
-      pb_atr_mult: 1.5                # ATR 自适应止损 1.5×ATR20
-      pb_stop_lo: 0.025               # 止损下限 2.5%
-      pb_stop_hi: 0.04                # 止损上限 4%
+      pb_atr_mult: 1.5                # ATR 自适应系数（当前停用：stop_lo == stop_hi 使 ATR 通道失效，见下方说明）
+      pb_stop_lo: 0.025               # 止损下限 = 上限 2.5% → 固定 2.5% 止损
+      pb_stop_hi: 0.025               # 2026-09-09 决策：D-8b 修复（TR 恢复二维）后，ATR 自适应 2.5–4% 的
+                                      # 样本内表现显著劣于固定 2.5%（outputs/d_atr_impact.json：
+                                      # atr_adaptive +5.00%/Sharpe 0.58 vs flat_2p5 +14.91%/Sharpe 1.53，
+                                      # 同窗口 2026-01-01→08-28、生产同构装配）。
+                                      # 原 stop_lo/stop_hi/atr_mult 是在 TR 缺陷下（止损恒为 2.5%）选出的，
+                                      # 从未在真实 ATR 口径下被验证；在完成修复后口径的止损宽度再调优前，
+                                      # 显式固定为 2.5%，与历史账本口径保持一致（避免同一净值曲线混两种止损规则）。
       pb_breakeven_r: 1.0             # +1R 后止损上移至成本
       pb_trail_r: 1.5                 # +1.5R 后启用追踪
       pb_exit_into_strength_r: 3.0    # +3R 且乖离 EMA21>8% 冲高离场（锁定 parabolic 利润）
@@ -341,6 +347,8 @@ d_model_cycle:
   margin_pp: 0.3                     # 晋升边际：挑战者需超现役 +0.3pp/月
   min_fills: 5                       # 晋升前提：评估窗至少 5 笔挑战者成交
   window_days: 30                    # 前向评估窗（自然日）
+  auto_promote: false                # 人工确认：30 日窗 + 5 笔样本无法区分真实优势（Sharpe SE≈√(252/N)），
+                                     # 默认只报告「达到晋升条件」并保留挑战者工件，不自动替换生产模型
 
 # =====================================================================
 # 红线监控阈值 (red_lines) — 影子盘逐日输出的四条红线 + PAICC 量化面板展示。

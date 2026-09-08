@@ -153,6 +153,16 @@ def main() -> int:
             if key in locked_set:
                 locked_fills += 1
 
+    # minute-feature coverage of the window: the tail-volume entry gate treats a
+    # missing day as FAIL, so a gap silently suppresses entries (and the OOS
+    # number must be read with that in mind).
+    tail = frames.get("tail_vol") if frames else None
+    if tail is not None and len(tail):
+        covered = tail.index[(tail.index >= pd.Timestamp(args.start)) & (tail.index <= pd.Timestamp(args.end))]
+        coverage = round(len(set(pd.to_datetime(covered))) / max(1, len(dates)), 4)
+    else:
+        coverage = 0.0
+
     # cost consistency: ledger commission == sum of per-fill commissions
     if len(fills):
         cost_sum = float(fills["commission"].sum())
@@ -202,6 +212,7 @@ def main() -> int:
         "sharpe_t_stat": round(sharpe / sharpe_se, 3) if sharpe_se > 0 and sharpe_se != float("inf") else None,
         "max_calendar_gap_days": gap_days,
         "minute_frame_days": frame_days,
+        "minute_window_coverage": coverage,
         "fingerprint": probe,
         "production_fingerprint": prod_probe,
         "checks": checks,
@@ -212,6 +223,7 @@ def main() -> int:
 
     print(f"[oos] days={n_days} fills={result['n_fills']} "
           f"(intraday {result['n_intraday_fills']}) "
+          f"minute_coverage={coverage:.0%} "
           f"cum={status.get('equity', {}).get('total_return', 0):+.2%} "
           f"ann={status.get('equity', {}).get('annualized_return', 0):+.2%} "
           f"sharpe={sharpe:+.2f} (SE {sharpe_se:.2f}, t={result['sharpe_t_stat']}) "

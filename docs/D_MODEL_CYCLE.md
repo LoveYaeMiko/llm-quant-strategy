@@ -38,12 +38,21 @@
   `outputs/models/`（避免被 `_resolve_artifact` 最新优先逻辑误吞，晋升时才移入）。
 
 ### 1.4 晋升闸门（每月第一个周日）
-同时满足才晋升：
+同时满足才**具备晋升条件**：
 1. 上月 OOS 窗挑战者累计收益 > 现役实际收益 + **0.3pp 边际**（覆盖噪声与换手差）；
 2. 挑战者账本合法性审计**全零违规**；
 3. 挑战者成交 ≥ 5 笔（可评估性）。
-晋升 → 工件移入 `outputs/models/`（成为最新，D/A/B/C 生效）+ 决策归档；
-未晋升 → 删除挑战者工件（现役留任）。全程写入 `outputs/d_model_cycle.json`。
+
+> **人工确认（2026-09-09 起，默认）**：30 日窗 + 5 笔样本在统计上无法区分真实优势
+> （Sharpe 标准误 ≈ √(252/N)，见 `docs/D_TRACK_EVIDENCE.md` §五），因此
+> `d_model_cycle.auto_promote` 默认为 **false**：闸门只报告
+> `qualifies=true / pending_human_approval=true` 并**保留挑战者工件**，
+> 不会自动替换生产模型；只有显式设为 true 才执行复制。
+>
+> 具备条件且 `auto_promote: true` → 工件移入 `outputs/models/`（成为最新，D 轨生效）+ 决策归档；
+> 具备条件但未开启自动晋升 → 保留挑战者工件待人工确认（`challenger_kept=true`）；
+> 不具备条件 → 删除挑战者工件（现役留任，`challenger_dropped=true`）。
+> 全程写入 `outputs/d_model_cycle.json`。
 
 ### 1.5 替代周六/周日任务
 - 周日 18:00 `weekly` → 改为**月度重训+晋升**（每月第一个周日执行，其余周日跳过）。

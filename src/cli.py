@@ -1632,7 +1632,6 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
             stop_trigger=str(account.get("pb_stop_trigger", "low")),
             stop_buffer=float(account.get("pb_stop_buffer", 0.0)),
             stop_open_minutes=int(account.get("pb_stop_open_minutes", 0)),
-            intraday_basis_adjust=bool(account.get("pb_intraday_basis_adjust", True)),
         )
         # Kill-switch (defect D-6): the autopilot's gross multiplier must reach
         # the pullback book — otherwise a de-risk/halt decision is inert on the
@@ -1961,6 +1960,7 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
         book_long_pct=bl_pct,
         book_short_pct=bs_pct,
         book_cash=(float(account.get("cash")) if account and "cash" in account else None),
+        alpha_source=(str(account.get("alpha_source")) if account else None),
     )
     if account:
         status["account_name"] = account["name"]

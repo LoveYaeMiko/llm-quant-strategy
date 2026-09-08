@@ -292,9 +292,6 @@ def _pullback_params(acc):
         stop_trigger=str(acc.get("pb_stop_trigger", "close")),
         stop_buffer=float(acc.get("pb_stop_buffer", 0.0)),
         stop_open_minutes=int(acc.get("pb_stop_open_minutes", 0)),
-        # Diagnostic A/B switch (default True = correct): see
-        # PullbackParams.intraday_basis_adjust. Production never sets it False.
-        intraday_basis_adjust=bool(acc.get("pb_intraday_basis_adjust", True)),
     )
 
 
@@ -359,7 +356,14 @@ def decide_promotion(cfg, market=None, today: pd.Timestamp | None = None) -> dic
     clean = sum(violations.values()) == 0
     enough = n_fills >= min_fills
     wins = ch_ret > main_ret + margin
-    promote = wins and clean and enough
+    qualifies = bool(wins and clean and enough)
+    # A 30-day window with ≥5 challenger fills cannot distinguish a real edge
+    # (Sharpe SE ≈ √(252/N); see docs/D_TRACK_EVIDENCE.md §五), so promotion is
+    # HUMAN-IN-THE-LOOP by default: the gate reports that the challenger
+    # qualifies and keeps its artifacts, but never silently swaps the production
+    # model unless d_model_cycle.auto_promote is explicitly true.
+    auto_promote = bool(cyc.get("auto_promote", False))
+    promote = qualifies and auto_promote
 
     decision = {
         "date": date.today().isoformat(),
@@ -371,11 +375,19 @@ def decide_promotion(cfg, market=None, today: pd.Timestamp | None = None) -> dic
         "challenger_fills": n_fills,
         "violations": violations,
         "promote": bool(promote),
-        "reasons": [] if promote else [
-            *( [] if wins else ["收益未超现役+边际"]),
-            *( [] if clean else ["合法性审计存在违规"]),
-            *( [] if enough else [f"成交笔数不足 {min_fills}"]),
-        ],
+        "qualifies": qualifies,
+        "auto_promote": auto_promote,
+        "pending_human_approval": bool(qualifies and not auto_promote),
+        "reasons": (
+            [] if promote
+            else ["达到晋升条件，但 auto_promote=false —— 需人工确认（见 docs/D_MODEL_CYCLE.md）"]
+            if qualifies
+            else [
+                *( [] if wins else ["收益未超现役+边际"]),
+                *( [] if clean else ["合法性审计存在违规"]),
+                *( [] if enough else [f"成交笔数不足 {min_fills}"]),
+            ]
+        ),
     }
 
     if promote:
@@ -390,6 +402,9 @@ def decide_promotion(cfg, market=None, today: pd.Timestamp | None = None) -> dic
             shutil.copy2(paths["model"], dest_model)
             decision["promoted_artifact"] = dest_meta.name
             # the incumbent is kept on disk (artifact history); the newest file wins.
+    elif qualifies:
+        # keep the qualifying challenger artifacts so a human can promote them
+        decision["challenger_kept"] = True
     else:
         for old in CHALLENGER_DIR.glob("ml_*"):
             old.unlink(missing_ok=True)

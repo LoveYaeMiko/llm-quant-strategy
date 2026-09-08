@@ -46,18 +46,45 @@ D 轨的日内止损有"插针最低价触发"与"分钟收盘确认触发"两�
 
 审计发现两处问题，均已修复：
 
-1. **混合口径（D-8a）**：PIT 面板 `open/high/low` 为原始价、`close` 为前复权价
-   （ADR-0002）。真实波幅（TR）混用两者，在除权除息日的 bar 上会得到荒谬的 ATR。
-   修复：用逐 bar `adjust_factor` 把 high/low 换算到 close 的口径
-   （`PullbackPortfolio._adjust_factor_frame`）；分钟回放的原始成交价同样换算后再与
-   止损比较（`intraday_exits`）。
+1. **日线面板混合口径（D-8a）**：PIT 日线 `open/high/low` 为原始价、`close` 为前复权价
+   （ADR-0002；实测 000001.SZ 2026-01-05：raw_close 11.50 / close 11.1336 / factor
+   0.9681，high 11.51 low 11.41 为原始价）。真实波幅（TR）混用两者，在除权除息日的
+   bar 上会得到荒谬的 ATR。修复：用逐 bar `adjust_factor` 把 high/low 换算到 close
+   的口径（`PullbackPortfolio._adjust_factor_frame`）。
+   **分钟数据不需要换算**：AlphaFeed 分钟接口返回的就是前复权价（同日缓存最后一笔
+   11.1336 = PIT 前复权 close；raw 为 11.50），与账本/止损同口径，直接可比。
+   *（2026-09-09 曾一度对分钟价再乘 factor，导致双重复权、止损提前触发，
+   已回滚并加测试 `tests/test_pullback_atr_basis.py::test_minute_prints_are_compared_as_is`。）*
 2. **TR 被压成一维（D-8b）**：`pd.concat([...], axis=1).max(axis=1)` 把
    `(date × symbol)` 压成按日期的 Series，`_atr_pct.loc[d, symbol]` 恒为 NaN，
    `_stop_dist` 于是**一直退化到 2.5% 地板**——配置里写的"ATR 自适应 2.5–4%"从未生效。
    修复：`np.maximum.reduce` 保留二维结构。
 
 **A/B 实测影响**（生产同构装配、fresh ledger、2026-01-01 → 2026-08-28）：
-见 `outputs/d_atr_impact.json`（`flat_2p5` vs `atr_adaptive`）。
+见 `outputs/d_atr_impact.json`。
+
+| 变体 | 止损口径 | 累计 | 年化 | Sharpe | maxDD | 成交 | 日内 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `flat_2p5` | 固定 2.5%（一维 TR 缺陷实际造成的口径） | **+14.91%** | **+24.82%** | **1.53** | 6.18% | 245 | 53 |
+| `atr_adaptive` | ATR 自适应 2.5–4%（配置原文档口径，修复后真正生效） | +5.00% | +8.10% | 0.58 | 8.82% | 192 | 41 |
+
+**结论与部署决策（2026-09-09）**：
+
+1. `flat_2p5` 与生产账本同期（2026-01→08-28）量级一致 → A/B harness 与生产同构；
+   两者差异来自本轮其它修复（`always_rebalance` 空簿清仓、板块/日期感知涨跌停带宽、
+   尾盘量比门槛加载）。
+2. **ATR 自适应在修复后的真实口径下明显更差**（Sharpe 1.53 → 0.58）。原因是原
+   `pb_atr_mult / pb_stop_lo / pb_stop_hi` 是在 TR 缺陷下（止损恒为 2.5%）被网格
+   选出来的，从未在真实 ATR 口径下验证；止损放宽到 2.5–4% 后单次止损亏损变大，
+   而盈亏比（breakeven/trail 的 R 倍数按 stop_dist 缩放）反而滞后。
+3. 因此生产配置**显式固定** `pb_stop_lo = pb_stop_hi = 0.025`（固定 2.5% 止损），
+   与历史账本口径一致，避免同一条净值曲线混用两种止损规则。
+4. **待办（D-8c）**：在修复后口径下重新做止损宽度网格（`atr_mult × stop_hi`），
+   再决定是否恢复 ATR 自适应。在此之前不得引用"ATR 自适应 2.5–4%"作为部署口径。
+
+> 口径变更时点：**2026-09-09 起**生产账本使用修复后的代码（TR 二维 + 日线
+> high/low 口径一致），止损宽度显式固定 2.5%。此前（2026-01-01 → 2026-09-08）
+> 的历史段落同样是 2.5% 止损（因缺陷所致），因此净值曲线口径连续。
 
 > 口径变更时点：**2026-09-09 起**生产账本使用修复后的 ATR 止损。此前
 > （2026-01-01 → 2026-09-08）的历史段落按"固定 2.5% 止损"口径运行，两个口径不可

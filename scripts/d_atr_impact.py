@@ -59,12 +59,10 @@ def main() -> int:
         # is grid7's D_close_only shape and must reproduce its ~+33% to prove the
         # harness is unchanged.
         "no_intraday": {**base_account, **flat, "pb_intraday_stops": False},
-        # old mixed basis (raw prints vs adjusted stops) WITH intraday stops —
-        # reproduces grid7's D_close_skip30 shape (~+21%).
-        "buggy_basis": {**base_account, **atr, "pb_intraday_basis_adjust": False},
-        # corrected basis, flat 2.5% stop
+        # flat 2.5% stop: the width the buggy one-dimensional TR silently forced
+        # on EVERY day, so this variant ≈ the pre-fix production behaviour.
         "flat_2p5": {**base_account, **flat},
-        # corrected basis, deployed ATR-adaptive stop (2.5–4%)
+        # deployed ATR-adaptive stop (2.5–4%) with the two-dimensional TR fix.
         "atr_adaptive": {**base_account, **atr},
     }
     if only:
@@ -82,8 +80,7 @@ def main() -> int:
         ledger_path = ROOT / "outputs" / f"_datr_{label}.sqlite"
         ledger_path.unlink(missing_ok=True)
         print(f"\n=== {label} (stop_lo={account['pb_stop_lo']} stop_hi={account['pb_stop_hi']} "
-              f"intraday={account.get('pb_intraday_stops', True)} "
-              f"basis_adjust={account.get('pb_intraday_basis_adjust', True)}) ===", flush=True)
+              f"intraday={account.get('pb_intraday_stops', True)}) ===", flush=True)
         probe: dict = {}
         status, _ = _shadow_cycle(
             cfg, symbols, start, end, 1, skip_refresh=True, control_scale=None,
@@ -103,7 +100,6 @@ def main() -> int:
             "stop_lo": account["pb_stop_lo"],
             "stop_hi": account["pb_stop_hi"],
             "intraday_stops": bool(account.get("pb_intraday_stops", True)),
-            "intraday_basis_adjust": bool(account.get("pb_intraday_basis_adjust", True)),
             "cum_return": eq.get("total_return", 0.0),
             "ann_return": eq.get("annualized_return", 0.0),
             "sharpe": eq.get("sharpe", 0.0),

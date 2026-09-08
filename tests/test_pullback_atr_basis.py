@@ -95,8 +95,15 @@ def test_missing_records_falls_back_to_factor_one():
     assert book._basis_factor(book._dates[-1])["B"] == pytest.approx(1.0)
 
 
-def test_intraday_prints_are_converted_to_panel_basis():
-    """Raw minute prints must be compared with adjusted stops after scaling."""
+def test_minute_prints_are_compared_as_is():
+    """The minute cache is ALREADY adjustment-scaled — never convert it again.
+
+    Verified against the PIT store (2026-09-09): AlphaFeed's minute endpoint
+    returns 前复权 bars (for 000001.SZ on 2026-01-05 the cache's last print is
+    11.1336 — exactly the PIT adjusted close — while the raw close was 11.50).
+    Scaling a print again by ``adjust_factor`` double-adjusts it (~3% too low on
+    this fixture) and fires stops on noise.
+    """
     book = _book()
     last = book._dates[-1]
     sym = "B"
@@ -105,13 +112,18 @@ def test_intraday_prints_are_converted_to_panel_basis():
         "stop": 1.0, "stop_dist": 0.03, "peak": 1.0,
         "trail_active": False, "qty": 0.0, "cost": 0.0,
     })()
-    # A raw print of 9.9 (= 0.99 adjusted) breaches a stop of 1.0; the same
-    # raw print without the basis conversion would be compared as 9.9.
+    # 1.01 is above the stop → no exit, even though 1.01 × 0.1 (this symbol's
+    # adjustment factor) would look like a breach if the print were scaled.
     raw = pd.DataFrame({
         "timestamp": pd.to_datetime([f"{last.date()} 10:00:00"]),
-        "open": [9.9], "high": [9.9], "low": [9.9], "close": [9.9],
+        "open": [1.01], "high": [1.01], "low": [1.01], "close": [1.01],
     })
     book._minute_provider = lambda d, s: raw
+    assert book.intraday_exits(last) == []
+    assert sym in book._open
+    # A print AT the stop does exit, at the print itself.
+    raw2 = raw.assign(open=1.0, high=1.0, low=1.0, close=1.0)
+    book._minute_provider = lambda d, s: raw2
     exits = book.intraday_exits(last)
     assert len(exits) == 1
-    assert exits[0]["price"] == pytest.approx(0.99)
+    assert exits[0]["price"] == pytest.approx(1.0)

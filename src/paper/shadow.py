@@ -400,6 +400,7 @@ def build_shadow_status(
     book_long_pct: float | None = None,
     book_short_pct: float | None = None,
     book_cash: float | None = None,
+    alpha_source: str | None = None,
 ) -> dict[str, Any]:
     """Build the ``outputs/shadow_status.json`` payload PAICC consumes."""
     last_date, cash, positions = ledger.latest_state()
@@ -627,8 +628,21 @@ def build_shadow_status(
         # report or email can present the shadow track as live money.
         "deployment": _deployment_status(cfg),
         "refreshed": meta,
-        "red_lines": red_lines,
+        # Alpha-source-aware red lines: a long-only pullback book cannot have a
+        # short-leg imbalance and does not consume the PEAD tilt, so those two
+        # lines are omitted instead of permanently showing a meaningless
+        # "warning" (2026-09-08 audit follow-up).
+        "red_lines": _applicable_red_lines(red_lines, alpha_source),
     }
+
+
+def _applicable_red_lines(red_lines: list[dict[str, Any]], alpha_source: str | None) -> list[dict[str, Any]]:
+    """Drop red lines that cannot apply to this book's alpha source."""
+    src = str(alpha_source or "").lower()
+    if src != "pullback":
+        return red_lines
+    skip = {"pead_anomaly", "short_leg_deviation"}
+    return [rl for rl in red_lines if rl.get("name") not in skip]
 
 
 def _deployment_status(cfg) -> dict[str, Any]:
