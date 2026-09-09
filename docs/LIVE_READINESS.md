@@ -21,6 +21,10 @@
 | A5 | 集合竞价前提交委托 | [x] | 14:50 `cli.py preclose` 生成委托清单 → 15:00 竞价价成交；错过即当日零成交（不补单） |
 | A6 | 收盘后不再做日内决策 | [x] | 实时层决策窗口 09:30–11:30 / 13:00–15:00（`_in_trading_hours`） |
 | A7 | 成本模型为监管真实值 | [x] | 印花税 5bps 卖出、过户费 0.1bps 双边、佣金 2.5bps（最低 5 元）、滑点 2bps；周六 `dcycle audit-cost` 校验 |
+| A8 | 不得出现隐式杠杆（负现金） | [x] | `OrderExecutor` 先卖后买 + 买入按可用现金裁剪（`_affordable_shares`）；历史 12 天负现金原样保留并由 `equity.cash_guard` 披露（`tests/test_cash_guard.py`） |
+| A9 | 报价时间可信 | [x] | 分钟 bar 先归一化到本地时间；无时间戳 fail-closed；超前 >10 分钟视为时钟/数据偏移、不决策（`tests/test_live_trader_guards.py`、`scripts/clock_offset.py`） |
+| A10 | 交易日历 | [x] | PAICC `trading_calendar.py`（2026 已观测休市日 + `quant_holidays` 覆盖）；节假日不再拉起 live/preclose/日度闭环 |
+| A11 | 实时进程健康 | [x] | PAICC 每 5 分钟 `live_watchdog`：会话内检测 pid + 命令行，死亡则前向重启；`/quant/stop` 默认保护 live 进程 |
 
 ## B. 执行可靠性
 
