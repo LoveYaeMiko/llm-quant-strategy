@@ -1,0 +1,54 @@
+{
+  "paired": {
+    "n_days": 1,
+    "ready": false,
+    "reason": "insufficient paired days",
+    "switch": false,
+    "t_stat": null,
+    "mean_diff_pp": null,
+    "corr": null,
+    "cum_diff_pp": null,
+    "annualized_diff_pp": null,
+    "sd_diff_pp": null,
+    "hit_rate": null,
+    "days_needed_for_t": null,
+    "verdict": "hold",
+    "window_days": 120,
+    "t_min": 1.5,
+    "diff_gt": 0.0,
+    "note": "hold is a legitimate permanent outcome — the two books may never separate",
+    "rule_id": "atr_1p0_25_40",
+    "candidate_params": {
+      "pb_atr_mult": 1.0,
+      "pb_stop_lo": 0.025,
+      "pb_stop_hi": 0.04
+    },
+    "incumbent": "flat 3.5% (pb_stop_lo = pb_stop_hi = 0.035)",
+    "incumbent_ledger": "C:\\Users\\wyxwi\\Desktop\\FQA\\outputs\\shadow_ledger_D_5W.sqlite",
+    "candidate_ledger": "C:\\Users\\wyxwi\\Desktop\\FQA\\outputs\\forward\\candidate_atr_1p0_25_40\\ledger.sqlite",
+    "seed_cutoff": "2026-09-08",
+    "paired_from": "2026-09-09",
+    "paired_note": "paired days are those the candidate advanced independently; days at or before seed_cutoff are a copy of production history and cannot differ",
+    "switch_rule": {
+      "window_days": 120,
+      "paired_diff_gt": 0.0,
+      "t_min": 1.5,
+      "counts_as_new_trial": true,
+      "may_never_separate": true
+    },
+    "counts_as_new_trial": true,
+    "may_never_separate": true,
+    "counts_as_new_trial_note": "a switch would be a NEW trial: re-run scripts/prereg.py with trials.this_trial+1 before adopting the candidate"
+  },
+  "provenance": {
+    "window": {
+      "start": "2026-09-09",
+      "end": "2026-09-09"
+    },
+    "convention": "adjusted-close basis; identical universe/data/entry/exit/execution to the D_5W production book; only the stop width differs; close orders inherited from the production 14:50 order list; T+1; no leverage",
+    "data_as_of": "2026-09-09",
+    "artifact_sha256": "ee34413073928f55f15f8e9127e996925f3a09ab361f55a74a8c76332e3b372c",
+    "code_commit": "59fbb03503b11699b8b0ae5bf1f75c5ae1482163",
+    "code_dirty": true
+  }
+}

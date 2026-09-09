@@ -32,7 +32,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 from pathlib import Path
 
@@ -79,9 +78,14 @@ def _ledger_path(cfg, account: dict) -> Path:
 
 def _active_prereg(cfg, account: dict) -> dict | None:
     """Newest verified pre-registration whose scope names this account."""
-    from src.forward.prereg import list_preregistrations, verify_preregistration
+    from src.forward.prereg import DEFAULT_DIR, list_preregistrations, verify_preregistration
 
-    for rec in list_preregistrations(cfg.get("forward.prereg_dir")):
+    raw = cfg.get("forward.prereg_dir")
+    base = Path(str(raw)) if raw else DEFAULT_DIR
+    if not base.is_absolute():
+        base = ROOT / base          # the scheduler may run from any directory
+    fallback: dict | None = None
+    for rec in list_preregistrations(base):
         if rec.get("error"):
             continue
         scope = rec.get("scope") or {}
@@ -91,8 +95,12 @@ def _active_prereg(cfg, account: dict) -> dict | None:
             verify_preregistration(rec["_path"])
         except Exception:  # noqa: BLE001 — an invalid record must not become the window
             continue
-        return rec
-    return None
+        # prefer the record that governs the GATE itself; a candidate record
+        # shares the window but its decision is the switch rule, not the gate
+        if str((rec.get("trials") or {}).get("family")) == "d_forward_risk_gate":
+            return rec
+        fallback = fallback or rec
+    return fallback
 
 
 def _window(cfg, account: dict, args) -> tuple[str, str, dict | None]:
@@ -141,18 +149,12 @@ def _replay(cfg, account: dict, symbols: list[str], start: str, end: str,
     ``start``, so the replay begins from exactly the state the live book was in
     on the eve of the window — then the same code runs on today's data.
     """
-    import sqlite3
+    from src.paper.ledger import clone_ledger_before
 
     scratch = ROOT / "outputs" / f"_fwd_replay_{account['name']}.sqlite"
-    scratch.unlink(missing_ok=True)
-    shutil.copy2(prod_ledger, scratch)
-    con = sqlite3.connect(scratch)
-    try:
-        with con:
-            for table, col in (("daily_state", "date"), ("positions", "date"), ("fills", "date")):
-                con.execute(f"DELETE FROM {table} WHERE {col} >= ?", (str(start),))
-    finally:
-        con.close()
+    seed = clone_ledger_before(prod_ledger, scratch, start)
+    print(f"[fwd] replay state: days={seed['days']} positions={seed['positions']} "
+          f"fills={seed['fills']} (last {seed['last_date']})", flush=True)
 
     from src.cli import _build_market_for_paper, _shadow_cycle
     from src.autopilot.state import ControlState
@@ -278,7 +280,29 @@ def main() -> int:
           f"prereg={(prereg or {}).get('rule_id')}", flush=True)
 
     # ---- 1. tracking error ------------------------------------------------
+    # The FULL fill history is needed before the replay: a date on which the
+    # real-time layer executed a fill at a live print is an external market
+    # event the bar replay cannot reproduce (it is gated off on live dates by
+    # design), so it is excluded from the gate and reported separately.
+    fills_all = _fills(prod_ledger)
     recorded = _daily_returns(prod_ledger, start, end)
+    live_days: list[str] = []
+    if len(fills_all) and "source" in fills_all.columns:
+        live_rows = fills_all[fills_all["source"].astype(str) == "live"]
+        live_days = sorted({
+            str(pd.Timestamp(d).date()) for d in live_rows["date"]
+            if pd.Timestamp(start) <= pd.Timestamp(d) <= pd.Timestamp(end)
+        })
+    # Days recorded BEFORE the deployed configuration took effect cannot be
+    # reproduced by a replay under the CURRENT configuration (the 2026-09-09 stop
+    # width change alone moves exits): they are excluded like live-fill days, and
+    # counted so the gate can refuse to pass on too few measured days.
+    freeze = str(cfg.get("forward.config_freeze_date", "") or "")
+    pre_freeze_days: list[str] = []
+    if freeze:
+        pre_freeze_days = [str(pd.Timestamp(d).date()) for d in recorded.index
+                           if pd.Timestamp(d) < pd.Timestamp(freeze)]
+    exclude_days = sorted(set(live_days) | set(pre_freeze_days))
     market = None
     if args.no_replay:
         te = tracking_error(pd.Series(dtype=float), pd.Series(dtype=float))
@@ -286,14 +310,17 @@ def main() -> int:
     else:
         print("[fwd] replaying the window from the pre-window state …", flush=True)
         replay, market = _replay(cfg, account, symbols, start, end, prod_ledger)
-        te = tracking_error(recorded, replay)
+        te = tracking_error(recorded, replay, exclude_dates=exclude_days)
+        te["excluded_live_days"] = live_days
+        te["excluded_pre_freeze_days"] = pre_freeze_days
+        te["config_freeze_date"] = freeze or None
         print(f"[fwd] tracking error: {te['mean_abs_pp']}pp/day over {te['n_days']} days "
-              f"(sign bias p={te['sign_bias_p']})", flush=True)
+              f"(sign bias p={te['sign_bias_p']}; excluded {len(exclude_days)} day(s): "
+              f"{len(live_days)} live-fill + {len(pre_freeze_days)} pre-freeze; their mean "
+              f"|diff| {te['excluded_mean_abs_pp']}pp)", flush=True)
 
     # ---- 2. cost ----------------------------------------------------------
-    # The FULL fill history goes in (a position opened before the window and sold
-    # inside it is legal); only violations inside the window are counted.
-    fills_all = _fills(prod_ledger)
+    # (``fills_all`` was loaded above for the live-day exclusion.)
     fills = fills_all
     if len(fills_all):
         dts = pd.to_datetime(fills_all["date"])

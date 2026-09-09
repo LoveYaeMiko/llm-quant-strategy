@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Iterable, Mapping, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -80,7 +80,12 @@ def binom_two_sided_p(n_pos: int, n_neg: int) -> float:
 # --------------------------------------------------------------------------- #
 # 1.2/1.3 metric computations
 # --------------------------------------------------------------------------- #
-def tracking_error(recorded: pd.Series, replay: pd.Series) -> dict:
+def tracking_error(
+    recorded: pd.Series,
+    replay: pd.Series,
+    *,
+    exclude_dates: Optional[Iterable] = None,
+) -> dict:
     """Daily tracking error of the deployed book vs its replay, in pp/day.
 
     ``recorded`` and ``replay`` are DAILY RETURNS of the same book over the same
@@ -89,16 +94,35 @@ def tracking_error(recorded: pd.Series, replay: pd.Series) -> dict:
     not reproducible — the data moved (adjustment-anchor drift, a revised bar) or
     the code changed silently.
 
+    ``exclude_dates`` drops days whose outcome the replay CANNOT reproduce by
+    construction: a date on which the real-time layer executed a fill at a live
+    print (``source="live"``) is an external market event, not a deterministic
+    function of the bars. Leaving those days in would measure "live execution vs
+    bar replay" — a known, intended difference — instead of pipeline fidelity.
+    The excluded days are reported separately so the difference stays visible.
+
     Returns ``{n_days, mean_signed_pp, mean_abs_pp, max_abs_pp, rmse_pp,
-    n_pos, n_neg, sign_bias_p, worst_date}``.
+    n_pos, n_neg, sign_bias_p, worst_date, n_excluded, excluded_mean_abs_pp}``.
     """
     a = pd.Series(recorded).dropna()
     b = pd.Series(replay).dropna()
     idx = a.index.intersection(b.index)
-    if len(idx) == 0:
+    diff_all = (a.loc[idx] - b.loc[idx]).astype(float) * 100.0 if len(idx) else pd.Series(dtype=float)
+    excluded = {pd.Timestamp(d).normalize() for d in (exclude_dates or [])}
+    if len(diff_all) and excluded:
+        mask = ~pd.Index([pd.Timestamp(i).normalize() for i in diff_all.index]).isin(excluded)
+        mask = np.asarray(mask)
+        diff = diff_all[mask]
+        excl_diff = diff_all[~mask]
+    else:
+        diff = diff_all
+        excl_diff = pd.Series(dtype=float)
+    if len(diff) == 0:
         return {"n_days": 0, "mean_signed_pp": 0.0, "mean_abs_pp": 0.0, "max_abs_pp": 0.0,
-                "rmse_pp": 0.0, "n_pos": 0, "n_neg": 0, "sign_bias_p": 1.0, "worst_date": None}
-    diff = (a.loc[idx] - b.loc[idx]).astype(float) * 100.0
+                "rmse_pp": 0.0, "n_pos": 0, "n_neg": 0, "sign_bias_p": 1.0, "worst_date": None,
+                "n_excluded": int(len(excl_diff)),
+                "excluded_mean_abs_pp": (round(float(excl_diff.abs().mean()), 4)
+                                         if len(excl_diff) else None)}
     n_pos = int((diff > 0).sum())
     n_neg = int((diff < 0).sum())
     return {
@@ -111,6 +135,9 @@ def tracking_error(recorded: pd.Series, replay: pd.Series) -> dict:
         "n_neg": n_neg,
         "sign_bias_p": round(binom_two_sided_p(n_pos, n_neg), 4),
         "worst_date": str(pd.Timestamp(diff.abs().idxmax()).date()) if len(diff) else None,
+        "n_excluded": int(len(excl_diff)),
+        "excluded_mean_abs_pp": (round(float(excl_diff.abs().mean()), 4)
+                                 if len(excl_diff) else None),
     }
 
 
@@ -482,6 +509,7 @@ class GateThresholds:
 
     tracking_error_daily_pp_max: float = 0.2
     tracking_error_sign_bias_p_min: float = 0.05
+    tracking_error_min_days: int = 5
     cost_deviation_max: float = 0.20
     price_integrity_bps_max: float = 2.0
     violations_max: int = 0
@@ -528,15 +556,19 @@ def evaluate_gate(metrics: Mapping[str, Any], thresholds: Optional[GateThreshold
     cov_min = cov.get("min_coverage")
 
     hard = {
-        "tracking_error_measured": te_days > 0,
+        "tracking_error_measured": te_days >= th.tracking_error_min_days,
         "tracking_error_daily_pp": {
             "value": te_abs, "max": th.tracking_error_daily_pp_max,
-            "ok": bool(te_days > 0 and te_abs is not None and te_abs <= th.tracking_error_daily_pp_max),
+            "n_days": te_days, "min_days": th.tracking_error_min_days,
+            "n_excluded": te.get("n_excluded"),
+            "ok": bool(te_days >= th.tracking_error_min_days and te_abs is not None
+                       and te_abs <= th.tracking_error_daily_pp_max),
         },
         "tracking_error_sign_bias": {
             "value": te_p, "min_p": th.tracking_error_sign_bias_p_min,
             "n_pos": te.get("n_pos"), "n_neg": te.get("n_neg"),
-            "ok": bool(te_days > 0 and te_p is not None and te_p >= th.tracking_error_sign_bias_p_min),
+            "ok": bool(te_days >= th.tracking_error_min_days and te_p is not None
+                       and te_p >= th.tracking_error_sign_bias_p_min),
         },
         "cost_fee_deviation": {
             "value_pct": cost_fee, "max_pct": th.cost_deviation_max * 100.0,
@@ -585,6 +617,7 @@ def evaluate_gate(metrics: Mapping[str, Any], thresholds: Optional[GateThreshold
         "thresholds": {
             "tracking_error_daily_pp_max": th.tracking_error_daily_pp_max,
             "tracking_error_sign_bias_p_min": th.tracking_error_sign_bias_p_min,
+            "tracking_error_min_days": th.tracking_error_min_days,
             "cost_deviation_max": th.cost_deviation_max,
             "price_integrity_bps_max": th.price_integrity_bps_max,
             "violations_max": th.violations_max,
@@ -622,9 +655,14 @@ def paired_comparison(
     if len(idx) > window_days:
         idx = idx[-window_days:]
     if len(idx) < 2:
+        # same key set as the full result: a consumer must not need a special
+        # case for "not enough days yet" (that is the normal state on day 1)
         return {"n_days": int(len(idx)), "ready": False, "reason": "insufficient paired days",
                 "switch": False, "t_stat": None, "mean_diff_pp": None, "corr": None,
-                "window_days": window_days, "t_min": t_min, "diff_gt": diff_gt}
+                "cum_diff_pp": None, "annualized_diff_pp": None, "sd_diff_pp": None,
+                "hit_rate": None, "days_needed_for_t": None, "verdict": "hold",
+                "window_days": window_days, "t_min": t_min, "diff_gt": diff_gt,
+                "note": "hold is a legitimate permanent outcome — the two books may never separate"}
     ra, rb = a.loc[idx], b.loc[idx]
     diff = rb - ra
     n = len(diff)

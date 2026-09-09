@@ -1,0 +1,229 @@
+{
+  "account": "D_5W",
+  "window": {
+    "start": "2026-09-01",
+    "end": "2026-09-09"
+  },
+  "prereg": {
+    "rule_id": "d_forward_2026h2",
+    "version": 1,
+    "frozen_at": "2026-09-09T23:04:47",
+    "record_sha256": "ec6d436ec033e4c5b23c239ff937a55fe1cc98b12e4a7870029382208fc44348",
+    "trials": {
+      "family": "d_forward_risk_gate",
+      "prior_trials": 0,
+      "this_trial": 1,
+      "notes": "本族记录「前向期判定协议」本身；历史参数选择（止损宽度 8 变体网格 + 4 个 OOS 窗口 + 回补前/后重跑）另计，见 docs/D_TRACK_EVIDENCE.md §六；任何阈值修改 = 新的一次试验，必须升版本 + supersedes。"
+    }
+  },
+  "metrics": {
+    "tracking_error": {
+      "n_days": 1,
+      "mean_signed_pp": 2.3585,
+      "mean_abs_pp": 2.3585,
+      "max_abs_pp": 2.3585,
+      "rmse_pp": 2.3585,
+      "n_pos": 1,
+      "n_neg": 0,
+      "sign_bias_p": 1.0,
+      "worst_date": "2026-09-09",
+      "n_excluded": 5,
+      "excluded_mean_abs_pp": 0.7227,
+      "excluded_live_days": [],
+      "excluded_pre_freeze_days": [
+        "2026-09-02",
+        "2026-09-03",
+        "2026-09-04",
+        "2026-09-07",
+        "2026-09-08"
+      ],
+      "config_freeze_date": "2026-09-09"
+    },
+    "cost": {
+      "n_fills": 6,
+      "charged_total": 79.69,
+      "expected_total": 79.69,
+      "fee_deviation_pct": -0.0,
+      "price_integrity_bps": 0.0,
+      "price_integrity_abs_bps": 0.0,
+      "price_integrity_max_bps": 0.0,
+      "n_price_checked": 1,
+      "n_price_skipped": 5,
+      "price_check_sources": [
+        "auction"
+      ],
+      "slippage_model_bps": 2.0,
+      "price_integrity_bps_max": 2.0,
+      "unmeasured": [
+        "market_impact_bps"
+      ],
+      "by_source": {
+        "auction": {
+          "n_fills": 1,
+          "charged": 20.74,
+          "notional": 27287.0,
+          "price_checkable": true
+        },
+        "unlabelled": {
+          "n_fills": 5,
+          "charged": 58.96,
+          "notional": 107553.0,
+          "price_checkable": false
+        }
+      }
+    },
+    "violations": {
+      "t_plus_1": 0,
+      "lot_size": 0,
+      "tick_size": 0,
+      "limit_locked": 0,
+      "suspension": 0,
+      "total": 0,
+      "unmeasured": [],
+      "examples": []
+    },
+    "availability": {
+      "availability": null,
+      "unmeasured": true,
+      "n_days": 6,
+      "n_days_down": null,
+      "down_minutes": null,
+      "window_minutes": null,
+      "worst_day": null,
+      "note": "no live heartbeat recorded for this window (outputs/live_<acct>.jsonl)",
+      "measured_from": "2026-09-01"
+    },
+    "data_freshness": {
+      "bar_max_date": "2026-09-09",
+      "last_trading_day": "2026-09-09",
+      "lag_days": 0,
+      "source": "market panel max bar"
+    },
+    "symbol_coverage": {
+      "min_coverage": 1.0,
+      "n_symbols": 800,
+      "below_threshold": [],
+      "n_below_threshold": 0,
+      "threshold": 0.95
+    },
+    "soft": {
+      "sharpe": 5.896,
+      "sharpe_standard_error": 6.0,
+      "max_drawdown": -0.0161,
+      "total_return": 0.0504,
+      "excess_return": null,
+      "n_days": 7
+    }
+  },
+  "gate": {
+    "hard": {
+      "tracking_error_measured": false,
+      "tracking_error_daily_pp": {
+        "value": 2.3585,
+        "max": 0.2,
+        "n_days": 1,
+        "min_days": 5,
+        "n_excluded": 5,
+        "ok": false
+      },
+      "tracking_error_sign_bias": {
+        "value": 1.0,
+        "min_p": 0.05,
+        "n_pos": 1,
+        "n_neg": 0,
+        "ok": false
+      },
+      "cost_fee_deviation": {
+        "value_pct": -0.0,
+        "max_pct": 20.0,
+        "ok": true
+      },
+      "cost_price_integrity": {
+        "mean_abs_bps": 0.0,
+        "max_abs_bps": 0.0,
+        "limit_bps": 2.0,
+        "n_price_checked": 1,
+        "n_price_skipped": 5,
+        "unmeasured": [
+          "market_impact_bps"
+        ],
+        "ok": true
+      },
+      "violations": {
+        "value": 0,
+        "max": 0,
+        "unmeasured": [],
+        "ok": true
+      },
+      "availability": {
+        "value": null,
+        "min": 0.99,
+        "unmeasured": true,
+        "ok": false
+      },
+      "data_freshness": {
+        "value_days": 0,
+        "max_days": 1,
+        "ok": true
+      },
+      "symbol_minute_coverage": {
+        "value": 1.0,
+        "min": 0.95,
+        "ok": true
+      }
+    },
+    "soft": {
+      "record_only": [
+        "sharpe",
+        "max_drawdown",
+        "excess_return",
+        "hit_rate",
+        "n_fills",
+        "turnover"
+      ],
+      "values": {
+        "sharpe": 5.896,
+        "sharpe_standard_error": 6.0,
+        "max_drawdown": -0.0161,
+        "total_return": 0.0504,
+        "excess_return": null,
+        "n_days": 7
+      },
+      "note": "no forward-window power: never gates the verdict"
+    },
+    "failed": [
+      "tracking_error_daily_pp",
+      "tracking_error_sign_bias",
+      "availability"
+    ],
+    "verdict": "fail",
+    "thresholds": {
+      "tracking_error_daily_pp_max": 0.2,
+      "tracking_error_sign_bias_p_min": 0.05,
+      "tracking_error_min_days": 5,
+      "cost_deviation_max": 0.2,
+      "price_integrity_bps_max": 2.0,
+      "violations_max": 0,
+      "availability_min": 0.99,
+      "data_freshness_days_max": 1,
+      "symbol_minute_coverage_min": 0.95
+    }
+  },
+  "n_fills": 6,
+  "n_days": 6,
+  "fills_by_source": {
+    "unlabelled": 5,
+    "auction": 1
+  },
+  "provenance": {
+    "window": {
+      "start": "2026-09-01",
+      "end": "2026-09-09"
+    },
+    "convention": "adjusted-close price basis; daily close rebalance at the panel close; live dates fill intraday stops at the confirmed minute print and close orders at the 15:00 auction from outputs/preclose_orders_<acct>.json; T+1; no leverage",
+    "data_as_of": "2026-09-09",
+    "artifact_sha256": "462eb47e0ca115697301a256caab132f2f6b7a59796ab85b0d5e4b8ee530ebff",
+    "code_commit": "59fbb03503b11699b8b0ae5bf1f75c5ae1482163",
+    "code_dirty": true
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "rule_id": "d_forward_atr_candidate_2026h2",
+  "version": 1,
+  "frozen_at": "2026-09-09T23:04:48",
+  "scope": {
+    "account": "D_5W",
+    "universe": "hs300_500",
+    "window": [
+      "2026-09-10",
+      "2027-03-10"
+    ],
+    "params": {
+      "incumbent": {
+        "pb_stop_lo": 0.035,
+        "pb_stop_hi": 0.035
+      },
+      "candidate": {
+        "pb_atr_mult": 1.0,
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.04
+      },
+      "candidate_ledger": "outputs/forward/candidate_atr_1p0_25_40/ledger.sqlite",
+      "inherit_execution": "数据/代码/股票池/14:50 订单列表/15:00 拍卖成交全部与生产一致（pb_preclose_account=D_5W）"
+    },
+    "what_changes": "唯一差异：止损宽度 flat 3.5% → ATR 1.0 clipped 到 [2.5%, 4.0%]",
+    "level": "FORWARD candidate shadow (record only, no auto-switch)"
+  },
+  "decision": {
+    "test": "配对（同日差值）检验，而不是比较两个 Sharpe：两书日收益相关性实测 0.884",
+    "switch_rule": "前向 120 个配对交易日：配对日差均值 > 0 且 配对 t > 1.5 → 切换；否则保持现役",
+    "historical_evidence": {
+      "window": [
+        "2025-09-01",
+        "2025-12-31"
+      ],
+      "incumbent": {
+        "cum": 0.0164,
+        "sharpe": 0.4,
+        "max_dd": 0.05,
+        "fills": 106
+      },
+      "candidate": {
+        "cum": 0.0338,
+        "sharpe": 0.65,
+        "max_dd": 0.0725,
+        "fills": 114
+      },
+      "paired": {
+        "corr": 0.8841,
+        "mean_diff_pp_per_day": 0.0226,
+        "cum_diff_pp": 1.73,
+        "annualized_diff_pp": 5.68,
+        "t_stat": 0.376,
+        "hit_rate": 0.494,
+        "days_needed_for_t_1_5": 1291
+      },
+      "read": "历史窗口只能说明「值得前向跟踪」；按观测效应量需 ~1291 配对日（≈5.1 年）才能分离，超过制度有效期"
+    },
+    "verdict": "HOLD（保持现役）；切换需人工执行并重新预注册"
+  },
+  "stopping": {
+    "window_days": 120,
+    "kill": "候选与现役同时受 d_forward_2026h2 的风险闸门约束；任一 hard 失败即停机",
+    "may_never_separate": true,
+    "no_time_pressure": "不设切换截止日；不为「有结论」降低阈值；不因候选暂时领先而切换"
+  },
+  "trials": {
+    "family": "d_stop_width",
+    "prior_trials": 9,
+    "this_trial": 10,
+    "notes": "既往：8 个宽度变体网格（outputs/d_stop_grid.json）+ flat_3p5 的 OOS 选择 + 回补后重评 4 个候选（outputs/d_oos_oos_2025h2_v3_*）。一次切换 = 一次新试验，必须重新预注册并写明 supersedes。"
+  },
+  "notes": "切换会改变生产配置，因此其 trials 计数记在 d_stop_width 家族（参数选择史）而非 d_forward_risk_gate 家族。",
+  "supersedes": null,
+  "code_commit": "59fbb03503b11699b8b0ae5bf1f75c5ae1482163",
+  "config_sha256": "d50d85299f7d33e3df0f93733e1208fdb41715dd57bc23d4ec6ac8cbc7aaafa2",
+  "record_sha256": "b4d60830fec053f10672b235ce8597426cfec3a29256d7261be1d855acad5e37"
+}

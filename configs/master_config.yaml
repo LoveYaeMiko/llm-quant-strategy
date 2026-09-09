@@ -274,8 +274,10 @@ shadow:
       # 部署口径实测出处（生产同构装配、fresh ledger、2026-01-01→08-28，含现金约束修复后重跑）：
       #   outputs/d_stop_grid.json 的 flat_3p5 → +16.36% 累计 / +27.34% 年化 /
       #   Sharpe 1.66 / maxDD 6.12% / 200 笔（日内 40）。
-      # 注意：outputs/d_oos_*.json 是旧 2.5% 口径且 2025 窗口含 35 天分钟数据洞
-      #   （仅 274/800 标的），已标记 data_coverage_invalid，不得引用。
+      # 注意：outputs/d_oos_*.json 中的旧标签（is_2026 / oos_2025h2 / *_v2 / *_v3 早期版本）
+      #   是旧 2.5% 口径或含 35 天分钟数据洞（仅 274/800 标的），不得引用；
+      #   可引用的当前工件是 d_oos_is_2026_v4.json 与 d_oos_oos_2025h2_v5.json
+      #   （14 项断言全通过、含 provenance 五项，见 docs/evidence/README.md）。
       # 触发约定的敏感性研究（ATR 自适应止损口径）：outputs/d_track_grid7.json。
       alpha_source: "pullback"        # Martin Luk 回撤买入纪律（日线版，ML 扫描 + 改良）
       universe: "hs300_500"           # 扫描截面（与已退役 B/C 轨一致，便于对比）
@@ -294,7 +296,7 @@ shadow:
       pb_atr_mult: 1.5                # ATR 自适应系数（当前停用：stop_lo == stop_hi 使 ATR 通道失效）
       pb_stop_lo: 0.035               # 固定止损 3.5%（D-8c 止损宽度再调优的结论，见下）
       pb_stop_hi: 0.035               # 2026-09-09 D-8c：修复 TR 口径后扫描 8 个宽度变体（scripts/d_stop_grid.py，
-                                      # outputs/d_stop_grid.json），并对 4 个候选跑 2025-09→12 的 OOS（d_oos.py，11 项断言全通过）：
+                                      # outputs/d_stop_grid.json），并对 4 个候选跑 2025-09→12 的 OOS（d_oos.py，14 项断言全通过）：
                                       #   变体              IS Sharpe(2026)  OOS Sharpe(2025H2)  OOS 累计
                                       #   flat_2p5（旧部署）     1.53            −1.10            −6.14%   ← TR 缺陷造成的宽度，最差
                                       #   flat_3p5（现部署）     1.57            +1.60            +8.21%

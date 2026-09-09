@@ -1864,6 +1864,33 @@ def _refresh_shadow_data(cfg, symbols) -> dict:
     return meta
 
 
+def _stamp_shadow_status(status: dict, shadow: dict) -> dict:
+    """Attach the provenance block to a shadow-status payload (audit P-6).
+
+    Called at the WRITE site, not inside ``build_shadow_status``: the caller adds
+    ``account_name`` / ``account_config`` after that function returns, and a hash
+    computed before those writes would not describe the file on disk.
+    """
+    try:
+        from .provenance import stamp_artifact
+
+        curve = status.get("equity_curve") or []
+        last = str(status.get("last_trading_date") or status.get("as_of") or "")
+        first = str(curve[0].get("date")) if curve and isinstance(curve[0], dict) else last
+        return stamp_artifact(
+            status, window={"start": first, "end": last},
+            convention=(
+                "adjusted-close basis; daily close rebalance; live dates fill intraday "
+                "stops at the confirmed minute print and close orders at the 15:00 auction; "
+                "T+1; no leverage"
+            ),
+            data_as_of=last,
+        )
+    except Exception as exc:  # noqa: BLE001 — a status file must still be written
+        print(f"WARNING: provenance stamp failed ({exc})", file=sys.stderr)
+        return status
+
+
 def _make_preclose_provider(account: dict):
     """Close-execution provider for a pullback account (15:00 auction layer).
 
@@ -2080,6 +2107,10 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
         # OOS/validation runs must not clobber the production status/report/CSV.
         return status, ledger_path
     status_path.parent.mkdir(parents=True, exist_ok=True)
+    # Provenance is stamped HERE, after every mutation of ``status`` (the account
+    # name/config block above): a hash computed before those writes would not
+    # match the file on disk, which the provenance checker correctly rejects.
+    status = _stamp_shadow_status(status, shadow)
     status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     report_path.write_text(render_shadow_report(status, trades=trades), encoding="utf-8")
     # local trade archive — every fill is saved as CSV next to the status

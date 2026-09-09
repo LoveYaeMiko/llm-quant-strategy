@@ -1,0 +1,76 @@
+{
+  "rule_id": "d_forward_2026h2",
+  "version": 1,
+  "frozen_at": "2026-09-09T23:04:47",
+  "scope": {
+    "account": "D_5W",
+    "universe": "hs300_500",
+    "window": [
+      "2026-09-10",
+      "2027-03-10"
+    ],
+    "params": {
+      "pb_k": 6,
+      "pb_stop_lo": 0.035,
+      "pb_stop_hi": 0.035,
+      "pb_atr_mult": 1.5,
+      "pb_stop_trigger": "close",
+      "pb_stop_open_minutes": 30,
+      "pb_tail_vol_max": 0.5,
+      "pb_max_hold": 40,
+      "pb_full_invest": true
+    },
+    "what_changes": "前向期由「能力闸门」改为「风险闸门」：不再用前向 Sharpe 判定策略，只判定管线跟踪误差/成本标定/运行可靠性；Sharpe 与 maxDD 仅记录。",
+    "level": "FORWARD (live-only shadow, no retroactive trades)"
+  },
+  "decision": {
+    "hard": [
+      "tracking_error_daily_pp <= 0.2 (逐日 |实录-重放| 均值，pp/日)",
+      "tracking_error_sign_bias_p >= 0.05 (差值符号精确二项检验)",
+      "|fee_deviation_pct| <= 20% (账本计费 vs 预注册成本规格)",
+      "price_integrity_abs_bps <= 2.0 (成交价 vs 市场参考价，仅 live/auction/close 来源)",
+      "violations (T+1/整手/最小变动价位/涨跌停/停牌) == 0",
+      "availability >= 0.99 (决策窗口内心跳覆盖，间隔<=5min)",
+      "data_freshness_days <= 1",
+      "symbol_minute_coverage >= 0.95 (按各符号自身可交易日为分母)"
+    ],
+    "soft": [
+      "sharpe",
+      "max_drawdown",
+      "excess_return",
+      "hit_rate",
+      "n_fills",
+      "turnover"
+    ],
+    "unmeasured": [
+      "market_impact_bps"
+    ],
+    "verdict": "PASS 仅当全部 hard 通过；任一 hard 未测量即判失败（未测量≠通过）；soft 永不参与判定",
+    "tool": "python scripts/forward_health.py (退出码 0=pass, 1=fail)"
+  },
+  "stopping": {
+    "window_days": 120,
+    "kill": "任一 hard 闸门连续 3 个交易日失败 → 停机排查管线（不是「策略不行」）",
+    "power": {
+      "se_formula": "sqrt(252/N)",
+      "years_for_t_2_5": {
+        "sharpe_1.0": 6.3,
+        "sharpe_0.5": 25.0
+      },
+      "regime_matching_horizon_years": 3,
+      "conclusion": "前向窗口对 alpha 无功效；不得以「前向 N 个月」宣称 alpha"
+    },
+    "may_never_separate": true
+  },
+  "trials": {
+    "family": "d_forward_risk_gate",
+    "prior_trials": 0,
+    "this_trial": 1,
+    "notes": "本族记录「前向期判定协议」本身；历史参数选择（止损宽度 8 变体网格 + 4 个 OOS 窗口 + 回补前/后重跑）另计，见 docs/D_TRACK_EVIDENCE.md §六；任何阈值修改 = 新的一次试验，必须升版本 + supersedes。"
+  },
+  "notes": "预注册工件：docs/evidence/forward_prereg_d_forward_2026h2_v1.json；协议说明 docs/FORWARD_PROTOCOL.md；阈值来源 configs/forward_policy.yaml（config_sha256 记录冻结时的合并配置）。",
+  "supersedes": null,
+  "code_commit": "59fbb03503b11699b8b0ae5bf1f75c5ae1482163",
+  "config_sha256": "d50d85299f7d33e3df0f93733e1208fdb41715dd57bc23d4ec6ac8cbc7aaafa2",
+  "record_sha256": "ec6d436ec033e4c5b23c239ff937a55fe1cc98b12e4a7870029382208fc44348"
+}

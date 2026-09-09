@@ -102,12 +102,22 @@ def git_commit(repo_root: str | Path | None = None) -> str:
         return "unknown"
 
 
-def git_dirty(repo_root: str | Path | None = None) -> Optional[bool]:
+#: Paths whose uncommitted state changes what the numbers ARE (as opposed to how
+#: they are documented). A dirty README does not make a backtest unreproducible;
+#: a dirty ``src/`` or ``configs/`` file does.
+CODE_PREFIXES: tuple[str, ...] = ("src/", "scripts/", "configs/", "tests/")
+
+
+def git_dirty(repo_root: str | Path | None = None, *, code_only: bool = True) -> Optional[bool]:
     """True when the working tree has uncommitted changes (``None`` if unknown).
 
     ``code_commit`` alone is not enough: an artifact produced from a dirty tree is
     stamped with HEAD but was NOT produced by that commit. Recording the flag
     keeps the artifact honest without blocking the run.
+
+    ``code_only`` (the default) counts only changes under :data:`CODE_PREFIXES` —
+    editing a README after the fact must not make every artifact look
+    unreproducible. Pass ``code_only=False`` for the raw ``git status`` verdict.
     """
     try:
         out = subprocess.run(
@@ -119,7 +129,16 @@ def git_dirty(repo_root: str | Path | None = None) -> Optional[bool]:
         )
         if out.returncode != 0:
             return None
-        return bool((out.stdout or "").strip())
+        lines = [ln for ln in (out.stdout or "").splitlines() if ln.strip()]
+        if not code_only:
+            return bool(lines)
+        for ln in lines:
+            path = ln[3:].strip().strip('"')
+            if " -> " in path:                      # rename: check the new path
+                path = path.split(" -> ")[-1].strip()
+            if path.startswith(CODE_PREFIXES):
+                return True
+        return False
     except Exception:  # noqa: BLE001
         return None
 

@@ -1385,6 +1385,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
 
     out_path = ROOT / "outputs" / f"bias_stress_{args.label}.json"
+    # Provenance contract (audit P-6): this artifact is the ADMISSION GATE for the
+    # alpha-layer evolution loop, so it must state its slice, its convention and
+    # the code/data cut-off behind the verdict.
+    from src.provenance import stamp_artifact
+
+    window = result.get("window") or {"start": args.window_start, "end": args.window_end}
+    result = stamp_artifact(
+        result, window=window,
+        convention=(
+            "survivorship-bias stress test on the PIT universe/price records; "
+            "drag model entries_per_year * x * (1/k) * L; de-biased run uses the "
+            "production D-track assembly on a re-ranked subset"
+        ),
+        data_as_of=str(window.get("end") if isinstance(window, dict) else args.window_end),
+    )
     out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
 
     v = result["verdict"]

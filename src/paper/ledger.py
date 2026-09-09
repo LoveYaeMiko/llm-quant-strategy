@@ -279,3 +279,49 @@ class PaperLedger:
 
     def close(self) -> None:
         self._conn.close()
+
+
+def clone_ledger_before(
+    src: str | Path,
+    dst: str | Path,
+    before: str | pd.Timestamp,
+) -> dict:
+    """Copy ``src``'s state as of the day BEFORE ``before`` into ``dst``.
+
+    A shadow candidate or a replay must START from the same account state the
+    live book was in on the eve of the window — otherwise the first submitted
+    order list refers to holdings the copy does not have (found 2026-09-09: a
+    candidate with a fresh ledger executed production's sell list and opened a
+    short). This is a file-level copy plus a truncation, so it is exact and
+    cheap; the source ledger is opened read-only by ``shutil.copy2`` and never
+    modified.
+
+    Returns ``{days, positions, fills, first_date, last_date}`` describing the
+    cloned state (all zeros for an empty source).
+    """
+    import shutil
+    import sqlite3
+
+    cutoff = str(pd.Timestamp(before).date())
+    dst_path = Path(dst)
+    dst_path.parent.mkdir(parents=True, exist_ok=True)
+    dst_path.unlink(missing_ok=True)
+    shutil.copy2(Path(src), dst_path)
+    con = sqlite3.connect(str(dst_path))
+    try:
+        with con:
+            for table in ("daily_state", "positions", "fills"):
+                con.execute(f"DELETE FROM {table} WHERE date >= ?", (cutoff,))
+        row = con.execute("SELECT COUNT(*), MIN(date), MAX(date) FROM daily_state").fetchone()
+        n_pos = con.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        n_fills = con.execute("SELECT COUNT(*) FROM fills").fetchone()[0]
+    finally:
+        con.close()
+    return {
+        "days": int(row[0] or 0),
+        "first_date": row[1],
+        "last_date": row[2],
+        "positions": int(n_pos or 0),
+        "fills": int(n_fills or 0),
+        "cutoff": cutoff,
+    }

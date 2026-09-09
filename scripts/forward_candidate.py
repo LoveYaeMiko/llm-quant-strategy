@@ -108,6 +108,25 @@ def cmd_run(args) -> int:
                      ).replace(".json", "_D_5W.json")
     control = ControlState.load(state_path)
     cand_ledger.parent.mkdir(parents=True, exist_ok=True)
+    meta_path = cand_ledger.parent / "candidate_meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.is_file() else {}
+    # First run: fork the production account state as of the eve of the window.
+    # A candidate that starts FLAT cannot execute the 14:50 order list it inherits
+    # (the sells refer to holdings it does not have) — and starting from a
+    # different state than the incumbent would confound the paired comparison.
+    if not cand_ledger.is_file() or args.fresh:
+        from src.paper.ledger import clone_ledger_before
+
+        seed = clone_ledger_before(prod_ledger, cand_ledger, start)
+        # ``seed_cutoff`` is the last day whose history is COPIED from production:
+        # the paired comparison must ignore those days (the two books are
+        # identical there by construction) or the sample is silently inflated.
+        meta = {"rule_id": args.rule, "seeded_from": str(prod_ledger),
+                "seed_cutoff": seed["cutoff"], "seed_days": seed["days"],
+                "seeded_at": pd.Timestamp.now().isoformat(timespec="seconds")}
+        print(f"[fwd-cand] seeded from production (state < {start}): "
+              f"days={seed['days']} positions={seed['positions']} fills={seed['fills']} "
+              f"last={seed['last_date']}", flush=True)
     print(f"[fwd-cand] {args.rule} {start}..{end} ledger={cand_ledger}", flush=True)
     status, ledger_out = _shadow_cycle(
         cfg, symbols, start, end, 1, skip_refresh=True, control_scale=control.gross_scale,
@@ -118,8 +137,11 @@ def cmd_run(args) -> int:
     status_path.parent.mkdir(parents=True, exist_ok=True)
     status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2, default=str),
                            encoding="utf-8")
+    meta["last_run_date"] = str(status.get("last_trading_date") or end)
+    meta["last_run_at"] = pd.Timestamp.now().isoformat(timespec="seconds")
+    meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     eq = status.get("equity", {})
-    print(f"[fwd-cand] equity={eq.get('equity')} cum={eq.get('total_return')} "
+    print(f"[fwd-cand] equity={eq.get('latest')} cum={eq.get('total_return')} "
           f"sharpe={eq.get('sharpe')} fills={eq.get('n_fills')} → {status_path}", flush=True)
     return 0
 
@@ -149,9 +171,19 @@ def cmd_report(args) -> int:
 
     prod = _returns(prod_ledger)
     cand = _returns(cand_ledger)
-    if args.start:
-        prod = prod[prod.index >= pd.Timestamp(args.start)]
-        cand = cand[cand.index >= pd.Timestamp(args.start)]
+    # Only days the candidate advanced INDEPENDENTLY count as paired observations:
+    # before ``seed_cutoff`` its ledger is a byte-copy of production's history, so
+    # including those days would inflate the sample with days that cannot differ.
+    meta_path = cand_ledger.parent / "candidate_meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.is_file() else {}
+    seed_cutoff = str(meta.get("seed_cutoff") or "")
+    independent_from = (
+        (pd.Timestamp(seed_cutoff) + pd.Timedelta(days=1)).date().isoformat() if seed_cutoff else None
+    )
+    cut = max([d for d in (args.start, independent_from) if d] or [None]) if (args.start or independent_from) else None
+    if cut:
+        prod = prod[prod.index >= pd.Timestamp(cut)]
+        cand = cand[cand.index >= pd.Timestamp(cut)]
     out = paired_comparison(
         prod, cand,
         window_days=int(args.window_days or rule.get("window_days", 120)),
@@ -164,6 +196,12 @@ def cmd_report(args) -> int:
         "incumbent": "flat 3.5% (pb_stop_lo = pb_stop_hi = 0.035)",
         "incumbent_ledger": str(prod_ledger),
         "candidate_ledger": str(cand_ledger),
+        "seed_cutoff": seed_cutoff or None,
+        "paired_from": cut,
+        "paired_note": (
+            "paired days are those the candidate advanced independently; days at or "
+            "before seed_cutoff are a copy of production history and cannot differ"
+        ),
         "switch_rule": rule,
         "counts_as_new_trial": bool(rule.get("counts_as_new_trial", True)),
         "may_never_separate": bool(rule.get("may_never_separate", True)),
@@ -190,6 +228,9 @@ def cmd_report(args) -> int:
     print(f"[fwd-cand] {args.rule} vs flat 3.5%: n={p['n_days']} ready={p['ready']} "
           f"corr={p['corr']} mean_diff={p['mean_diff_pp']}pp/day "
           f"cum_diff={p['cum_diff_pp']}pp t={p['t_stat']} → {p['verdict'].upper()}")
+    if not p.get("ready"):
+        print(f"[fwd-cand] {p.get('reason', 'not enough paired days yet')} — HOLD "
+              f"({p['n_days']}/{p['window_days']} paired days)")
     if p.get("days_needed_for_t"):
         print(f"[fwd-cand] at the observed effect size, t>{p['t_min']} needs ~"
               f"{p['days_needed_for_t']} paired days")
@@ -212,6 +253,9 @@ def main() -> int:
     p = sub.add_parser("run", help="advance the candidate ledger by one day")
     p.add_argument("--date", default=None, help="date to advance (default: today)")
     p.add_argument("--start", default=None, help="window start (default: same as --date)")
+    p.add_argument("--fresh", action="store_true",
+                   help="re-seed from production state before --start (default: only "
+                        "when the candidate ledger does not exist yet)")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("report", help="paired comparison vs the incumbent")

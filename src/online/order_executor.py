@@ -45,6 +45,12 @@ class OrderResult:
     cash: float = 0.0
     positions: dict[str, float] = field(default_factory=dict)
     realized_pnl: float = 0.0
+    #: Orders that were skipped/clipped for a legality or state reason, e.g.
+    #: ``{"symbol": "601872.SH", "reason": "sell_exceeds_holding", "wanted": -1300,
+    #: "clipped": 0}``. Empty on a clean execution; surfaced so a mismatch between
+    #: the submitted order list and the account state is visible rather than
+    #: silently turning a long-only book into a short one.
+    skipped: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -388,6 +394,21 @@ class OrderExecutor:
             price = float(prices.get(symbol, np.nan))
             if not np.isfinite(price) or price <= 0:
                 continue  # suspended — no auction print, order lapses
+            if shares < 0:
+                # A-share long-only book: a sell may not exceed the holding.
+                # Without this clip a stale/mismatched order list silently OPENS
+                # a short position (found 2026-09-09 when a forward candidate
+                # with a fresh ledger executed production's sell list). The
+                # excess is reported, never filled.
+                held = float(self.positions.get(symbol, 0.0))
+                if held <= 0:
+                    result.skipped.append({"symbol": symbol, "reason": "sell_without_holding",
+                                           "wanted": shares, "clipped": 0.0})
+                    continue
+                if -shares > held + 1e-9:
+                    result.skipped.append({"symbol": symbol, "reason": "sell_exceeds_holding",
+                                           "wanted": shares, "clipped": -held})
+                    shares = -held
             if limit_locked is not None:
                 lv = limit_locked.get(symbol, np.nan)
                 if np.isfinite(lv):

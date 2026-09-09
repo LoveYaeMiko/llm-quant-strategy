@@ -19,6 +19,10 @@ forward:
   prereg_dir: "outputs/forward/prereg"
   health_json: "outputs/forward/forward_health.json"
   health_history_dir: "outputs/forward/history"
+  # 当前部署配置的生效日。该日之前的账本行由旧配置（止损宽度 2.5%、旧的 TR 口径等）
+  # 产出，用今天的配置重放必然不同 —— 这类日期不计入跟踪误差（与 live 成交日同理，
+  # 属「重放无法复现」而非「管线漂移」）。改部署参数后必须同步更新并重新预注册。
+  config_freeze_date: "2026-09-09"
 
   # --- 1.1 功效分析：前向窗口能证明什么 -------------------------------
   power:
@@ -43,6 +47,7 @@ forward:
     hard:
       tracking_error_daily_pp_max: 0.2     # 逐日跟踪误差上限（百分点/日）
       tracking_error_sign_bias_p_min: 0.05 # 符号偏差二项检验 p 值下限（低于=系统性单边）
+      tracking_error_min_days: 5           # 可计天数的下限（不足=未测量，判失败）
       cost_deviation_max: 0.20             # 费用偏差上限（20%）：账本计费 vs 预注册成本规格
       price_integrity_bps_max: 2.0         # 成交价与市场参考价（收盘/同时点分钟成交）偏差上限（bp）
                                            # —— 纸面账户无法观测冲击成本，只能验证「记录价是真实成交价」

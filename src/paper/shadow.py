@@ -640,27 +640,9 @@ def build_shadow_status(
         # "warning" (2026-09-08 audit follow-up).
         "red_lines": _applicable_red_lines(red_lines, alpha_source),
     }
-    # Provenance contract (audit P-6): the status file is read by the PAICC panel
-    # and quoted in reports, so it must state its window / convention / data cut /
-    # payload hash / code commit like every other external-facing artifact.
-    try:
-        from ..provenance import stamp_artifact
-
-        window = {
-            "start": str(equity_curve_out[0]["date"]) if equity_curve_out else str(last_date),
-            "end": str(last_date),
-        }
-        status = stamp_artifact(
-            status, window=window,
-            convention=(
-                "adjusted-close basis; daily close rebalance; live dates fill intraday "
-                "stops at the confirmed minute print and close orders at the 15:00 auction; "
-                "T+1; no leverage"
-            ),
-            data_as_of=str(last_date),
-        )
-    except Exception as exc:  # noqa: BLE001 — a status file must still be written
-        logger.warning("provenance stamp failed: %s", exc)
+    # NOTE: provenance is stamped by the WRITER (``src.cli._stamp_shadow_status``),
+    # not here — the caller mutates this dict (account_name / account_config)
+    # after this function returns, so a hash taken now would not match the file.
     return status
 
 

@@ -23,7 +23,9 @@ def _ex(**kw):
 
 def test_execute_orders_fills_at_auction_close():
     ex = _ex()
-    ex.restore(100_000.0, {})
+    # A-share long-only account: A02 is HELD before the sell order arrives
+    # (selling shares you do not own is not available to this account type).
+    ex.restore(100_000.0, {"A02": 100.0})
     prices = pd.Series({"A01": 10.00, "A02": 20.00})
     res = ex.execute_orders(
         [{"symbol": "A01", "shares": 100.0}, {"symbol": "A02", "shares": -100.0}],
@@ -37,9 +39,30 @@ def test_execute_orders_fills_at_auction_close():
     assert buy.price == pytest.approx(10.00 * 1.0002, abs=0.01)  # bid/ask slippage, tick
     assert sell.price == pytest.approx(20.00 * 0.9998, abs=0.01)
     assert buy.time == "15:00"  # auction fill timestamp
-    assert ex.positions == {"A01": 100.0, "A02": -100.0}
+    assert ex.positions == {"A01": 100.0}  # A02 closed, no short opened
     # fees: commission min 5 + transfer + stamp on the sell side
     assert buy.commission > 0 and sell.commission > buy.commission
+
+
+def test_execute_orders_never_opens_a_short():
+    """A sell the account cannot cover is clipped/skipped and REPORTED.
+
+    Regression (2026-09-09): a forward candidate started from an empty ledger
+    executed production's sell list and silently opened a short position.
+    """
+    ex = _ex()
+    ex.restore(100_000.0, {"A02": 100.0})
+    prices = pd.Series({"A01": 10.00, "A02": 20.00, "A03": 5.00})
+    res = ex.execute_orders(
+        [{"symbol": "A02", "shares": -250.0},   # more than held → clipped
+         {"symbol": "A03", "shares": -100.0}],  # not held → skipped
+        prices, pd.Timestamp("2026-09-07"),
+    )
+    assert [f.shares for f in res.fills] == [-100.0]
+    assert ex.positions == {}
+    reasons = {s["symbol"]: s["reason"] for s in res.skipped}
+    assert reasons == {"A02": "sell_exceeds_holding", "A03": "sell_without_holding"}
+    assert all(v >= 0 for v in ex.positions.values())
 
 
 def test_execute_orders_skips_locked_and_suspended():

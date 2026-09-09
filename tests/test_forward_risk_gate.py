@@ -78,6 +78,18 @@ def test_tracking_error_unmeasured_is_reported_as_zero_days():
     assert out["n_days"] == 0
 
 
+def test_tracking_error_excludes_live_fill_days():
+    """A live-print fill is an external event the bar replay cannot reproduce."""
+    idx = pd.date_range("2026-01-05", periods=4, freq="B")
+    rec = pd.Series([0.010, 0.010, 0.010, 0.010], index=idx)
+    rep = pd.Series([0.010, 0.000, 0.010, 0.010], index=idx)   # differs on day 2
+    raw = tracking_error(rec, rep)
+    assert raw["n_days"] == 4 and raw["mean_abs_pp"] > 0
+    out = tracking_error(rec, rep, exclude_dates=[idx[1]])
+    assert out["n_days"] == 3 and out["mean_abs_pp"] == 0.0
+    assert out["n_excluded"] == 1 and out["excluded_mean_abs_pp"] == pytest.approx(1.0)
+
+
 # --------------------------------------------------------------------------- #
 # cost model
 # --------------------------------------------------------------------------- #
@@ -293,6 +305,19 @@ def test_soft_metrics_never_gate():
     assert gate["verdict"] == "pass"
 
 
+def test_tracking_error_needs_a_minimum_number_of_days():
+    """A 2-day 'perfect' tracking error is not evidence of fidelity."""
+    gate = evaluate_gate(_bundle(tracking_error={"n_days": 2, "mean_abs_pp": 0.0,
+                                                 "sign_bias_p": 1.0, "n_pos": 1, "n_neg": 1}))
+    assert gate["verdict"] == "fail"
+    assert "tracking_error_daily_pp" in gate["failed"]
+    assert gate["hard"]["tracking_error_daily_pp"]["min_days"] == 5
+    # the same numbers over enough days pass
+    ok = evaluate_gate(_bundle(tracking_error={"n_days": 6, "mean_abs_pp": 0.0,
+                                               "sign_bias_p": 1.0, "n_pos": 3, "n_neg": 3}))
+    assert ok["verdict"] == "pass"
+
+
 def test_soft_metrics_arithmetic():
     idx = pd.date_range("2026-01-05", periods=60, freq="B")
     eq = pd.Series(np.linspace(100_000, 110_000, 60), index=idx)
@@ -346,6 +371,11 @@ def test_paired_comparison_needs_enough_days():
     a = pd.Series([0.01, 0.02], index=pd.date_range("2026-01-05", periods=2))
     out = paired_comparison(a, a, window_days=120)
     assert out["ready"] is False and out["switch"] is False
+    # the key set must match the full result so consumers need no special case
+    idx = pd.date_range("2026-01-05", periods=3)
+    full = paired_comparison(pd.Series([0.01, 0.02, 0.03], index=idx),
+                             pd.Series([0.01, 0.02, 0.03], index=idx))
+    assert set(out) - {"reason"} == set(full)
 
 
 def test_paired_comparison_reports_days_needed():

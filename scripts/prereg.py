@@ -36,6 +36,8 @@ from src.forward.prereg import (  # noqa: E402
 )
 from src.provenance import git_commit, sha256_of  # noqa: E402
 
+import pandas as pd  # noqa: E402
+
 
 def _template(rule_id: str) -> dict:
     return {
@@ -88,9 +90,17 @@ def cmd_new(args) -> int:
     except (OSError, ValueError) as exc:
         print(f"ERROR: cannot read {args.file}: {exc}", file=sys.stderr)
         return 2
-    missing = [f for f in PREREG_FIELDS if f not in raw]
+    # ``frozen_at`` is stamped by the CLI (now) unless explicitly supplied — a
+    # record can never be created with a future timestamp, and back-dating one
+    # requires saying so out loud (--frozen-at) because that is only legitimate
+    # when reconstructing a record that was frozen earlier elsewhere.
+    missing = [f for f in PREREG_FIELDS if f != "frozen_at" and f not in raw]
     if missing:
         print(f"ERROR: template is missing {missing}", file=sys.stderr)
+        return 2
+    frozen_at = args.frozen_at or raw.get("frozen_at")
+    if frozen_at and pd.Timestamp(frozen_at) > pd.Timestamp.now() + pd.Timedelta(minutes=5):
+        print(f"ERROR: frozen_at {frozen_at} is in the future", file=sys.stderr)
         return 2
     rec = new_record(
         rule_id=str(raw["rule_id"]),
@@ -101,6 +111,7 @@ def cmd_new(args) -> int:
         version=int(raw.get("version", 1)),
         supersedes=raw.get("supersedes"),
         notes=str(raw.get("notes", "")),
+        frozen_at=frozen_at,
         code_commit=args.code_commit or git_commit(ROOT),
         extra={"config_sha256": _config_sha()},
     )
@@ -178,6 +189,9 @@ def main() -> int:
 
     p = sub.add_parser("new", help="freeze a record from a JSON file")
     p.add_argument("--file", required=True)
+    p.add_argument("--frozen-at", default=None,
+                   help="override the freeze timestamp (only to reconstruct a record "
+                        "frozen earlier; a future value is refused)")
     p.add_argument("--code-commit", default=None, help="override HEAD (default: git HEAD)")
     p.add_argument("--force", action="store_true", help="repair an identical rewrite only")
     p.set_defaults(func=cmd_new)
