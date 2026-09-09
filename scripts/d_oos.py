@@ -314,6 +314,16 @@ def main() -> int:
     # the deployed configuration.
     is_candidate_run = bool(overrides)
     citable = bool(all(checks.values()) and params_match and not is_candidate_run)
+    # Data/assembly soundness alone — a CANDIDATE run can be compared on sound
+    # data even though it is not the deployed configuration.
+    data_checks = (
+        "ledger_was_fresh", "calendar_gap_within_tolerance",
+        "minute_symbol_coverage_ok", "no_fills_inside_data_hole",
+        "intraday_frames_loaded", "minute_provider_loaded",
+        "assembly_is_production", "t_plus_1_respected",
+        "no_fill_on_limit_locked_bar", "cost_model_consistent",
+    )
+    data_ok = bool(all(checks.get(k) for k in data_checks))
 
     result = {
         "label": args.label,
@@ -326,6 +336,9 @@ def main() -> int:
         #: TRUE only for a fresh-ledger, gap-free, production-config run — the
         #: only kind of artifact whose numbers may be quoted as evidence.
         "citable": citable,
+        #: data/assembly soundness only (a candidate run can be compared on
+        #: sound data even though it is not the deployed configuration)
+        "data_ok": data_ok,
         "ledger": str(ledger_path),
         "ledger_existed_before": bool(ledger_existed_before),
         "n_days": n_days,

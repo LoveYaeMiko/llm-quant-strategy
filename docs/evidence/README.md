@@ -17,13 +17,19 @@
 | `d_oos_oos_2025h2_atr1p0_25_35.json` | 2025-09→12（OOS）ATR 1.0/[2.5%,3.5%] 备选 | 同上 |
 | `d_oos_oos_2025h2_atr1p0_25_40.json` | 2025-09→12（OOS）ATR 1.0/[2.5%,4%] 备选 | 同上 |
 | `d_oos_oos_2025h2_v2.json` | 2025-09→12（OOS）**符号级覆盖探针**首次运行 | 同上 |
-| `d_oos_is_2026_v2.json` | 2026-01→08（IS）**部署口径 + 加固 harness**：13/13 通过、`citable=true` | `docs/D_TRACK_EVIDENCE.md` §六/§九 |
+| `d_oos_oos_2025h2_v3.json` | 2025-09→12（OOS）**回补后、可引用**：13/13 通过、`citable=true` | `docs/D_TRACK_EVIDENCE.md` §六/§九 |
+| `d_oos_oos_2025h2_v3_flat2p5.json` | 同上窗口的旧宽度 2.5%（候选，`citable=false`、`data_ok`） | §六「干净窗口重评」 |
+| `d_oos_oos_2025h2_v3_atr1p0_25_35.json` | 同上窗口的 ATR 1.0/[2.5%,3.5%]（候选） | 同上 |
+| `d_oos_oos_2025h2_v3_atr1p0_25_40.json` | 同上窗口的 ATR 1.0/[2.5%,4%]（候选，OOS 最优） | 同上 |
 
 ## 口径提醒
 
-- **`citable` 字段是唯一的引用许可**：只有 `citable=true` 的 OOS 工件数字可以引用。
-  上面 6 个 `d_oos_*` 全部为 `citable=false`（前 5 个是旧版断言 + 日期级覆盖探针，
-  第 6 个因窗口本身的数据洞而正确地判为不可引用）。
+- **`citable` 字段是唯一的引用许可**：只有 `citable=true` 的工件数字可以作为"健全口径"
+  引用。当前 `citable=true` 的只有两个：`d_oos_is_2026_v2.json`（IS 2026）与
+  `d_oos_oos_2025h2_v3.json`（OOS 2025H2，回补后）。其余 `d_oos_*` 为 `false`
+  ——旧版断言/日期级探针/窗口数据洞，或候选参数（`is_candidate_run`）。
+- **`data_ok`** 与 `citable` 分开：候选跑（`--set`）也可以是 `data_ok=true`，
+  用于在健全数据上比较参数，但不能当作部署配置的数字。
 - `d_track_grid3.json`、`d_track_grid4.json`、`d_track_intraday.json` 是 **D-8 修复前**
   （TR 被压成一维 → 止损恒为 2.5% 地板）的产物，且部分脚本当时未加载分钟特征包
   （尾盘量比门槛未生效）；只能用于"当时的决策背景"，不能当作当前口径的数字。
