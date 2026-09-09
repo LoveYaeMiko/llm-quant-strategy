@@ -35,10 +35,11 @@
 
 | # | 项 | 为何本轮不做 |
 | --- | --- | --- |
-| 1 | **回补 2025-10-27→12-12 的分钟数据**（重点沪市 468 只） | 已写好脚本 `scripts/backfill_minute_gap.py`（含 `--dry-run` 探针与前后覆盖对比，干跑确认 API 仍提供该窗口：000001.SZ 9,640 根 / 40 天）；**盘中批量抓取会与 14:40 深度快照、14:50 preclose 争用限流**，可能拖慢 preclose（必须 15:00 前完成）→ 收盘后（15:10+）执行：<br>`python scripts/backfill_minute_gap.py` → 再用 `python scripts/d_oos.py 2025-09-01 2025-12-31 --label oos_2025h2_v3` 复核到 `citable=true`。 |
+| 1 | ~~回补 2025-10-27→12-12 的分钟数据~~ | ✅ **已完成**（2026-09-09 15:25，收盘后）：`scripts/backfill_minute_gap.py` 80 次 API 调用约 5 分钟，最小覆盖 **273 → 794/800**、低覆盖日 **35 → 0**；重跑 2025 OOS 得 **+1.64%/Sharpe 0.40（t=0.23），13/13 断言通过、`citable=true`**。回补前同一配置为 +8.12%/1.58 —— **数据洞把 OOS 抬高了约 6.5pp**。 |
 | 2 | ML 排序器的 `test_window` 覆盖整个 OOS 窗口 | 属模型训练口径，改动会改变现役工件 → 需要重训 + 重新走晋升闸门，不能在盘中做。 |
 | 3 | 指纹缺 `code_commit` / `data_fingerprint`（hash 级） | `cash`/成本/上限/universe/数据切片**已补齐**（`_book_fingerprint` 的 `execution` / `universe_size` / `data`）；commit-hash 级指纹留作收尾项。 |
 | 4 | `read_trade_records` 仍读整本账计算移动成本 | 与 D-4 相关但不影响正确性；属性能/口径优化。 |
+| 5 | `atr_1p0_25_35` / `atr_1p0_25_40` 的 OOS 对比 | 那两个备选是在**回补前**的残缺窗口上比较的；要重评需用回补后数据重跑（下一步）。 |
 
 ## 二之二、本轮追加（写完后补充的项）
 
