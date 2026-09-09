@@ -1667,19 +1667,29 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
     return portfolio, overlays
 
 
-def _book_fingerprint(portfolio) -> dict:
-    """Wiring + parameter fingerprint of an assembled book.
+def _book_fingerprint(portfolio, *, runner_kwargs=None, universe=None, data=None) -> dict:
+    """Wiring + parameter + execution fingerprint of an assembled book.
 
     Used by the OOS harness to prove its run uses the SAME assembly as
-    production (same param values, same intraday/minute wiring, same live gate)
-    instead of a lookalike re-implementation.
+    production (same param values, same intraday/minute wiring, same live gate,
+    same cash/cost/cap governance, same data slice) instead of a lookalike
+    re-implementation. ``runner_kwargs`` (the PaperRunner arguments), ``universe``
+    (the symbol list) and ``data`` (last bar / bar count) are optional context.
     """
     import hashlib
 
     params = getattr(portfolio, "p", None)
     fields = dict(vars(params)) if params is not None else {}
+    exec_fields: dict = {}
+    if runner_kwargs:
+        for key in ("cash", "slippage_bps", "commission_bps", "min_commission",
+                    "stamp_tax_sell_bps", "transfer_fee_bps", "max_position_pct",
+                    "notional_floor", "band_frac", "rebalance_days", "pit_strict"):
+            if key in runner_kwargs:
+                exec_fields[key] = runner_kwargs[key]
     payload = json.dumps(
-        {"class": type(portfolio).__name__, "params": fields}, sort_keys=True, default=str
+        {"class": type(portfolio).__name__, "params": fields, "execution": exec_fields},
+        sort_keys=True, default=str,
     )
     frames = any(
         getattr(portfolio, attr, None) is not None
@@ -1689,6 +1699,9 @@ def _book_fingerprint(portfolio) -> dict:
         "book_class": type(portfolio).__name__,
         "params": fields,
         "params_hash": hashlib.sha256(payload.encode()).hexdigest()[:16],
+        "execution": exec_fields,
+        "universe_size": len(universe) if universe else None,
+        "data": data or {},
         "has_intraday_frames": bool(frames),
         "has_minute_provider": getattr(portfolio, "_minute_provider", None) is not None,
         "live_intraday_from": getattr(portfolio, "live_intraday_from", None),
@@ -1920,8 +1933,6 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
         portfolio, overlays = _build_account_portfolio(cfg, market, symbols, account, control_scale, ledger=ledger)
     else:
         portfolio, overlays = _build_paper_portfolio(cfg, market, symbols, control_scale=control_scale)
-    if probe is not None:
-        probe.update(_book_fingerprint(portfolio))
     if replay_live_date and account and str(account.get("alpha_source", "")) == "pullback":
         # outage re-simulation: clear the live gate so the intraday sweep
         # replays the live date minute-by-minute (point-in-time triggers).
@@ -1960,6 +1971,14 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
             return "__normal__"
 
         runner_kwargs["preclose_provider"] = _preclose_provider
+    if probe is not None:
+        probe.update(_book_fingerprint(
+            portfolio, runner_kwargs=runner_kwargs, universe=symbols,
+            data={
+                "last_bar": str(pd.Timestamp(market.price_panel.index.max()).date()),
+                "n_bars": int(len(market.price_panel.index)),
+            },
+        ))
     runner = PaperRunner(portfolio, market, ledger, symbols=symbols, seed=seed, **runner_kwargs)
     result = runner.run(start=start, end=end)
     if probe is not None:

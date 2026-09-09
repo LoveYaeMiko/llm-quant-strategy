@@ -59,6 +59,41 @@ def test_build_account_portfolio_wires_the_kill_switch(monkeypatch):
     assert set(weights.values()) == {0.0}
 
 
+def test_book_fingerprint_covers_execution_and_data_context():
+    """The OOS 'assembly is production' check needs more than the book params."""
+    from src.cli import _book_fingerprint
+
+    market = make_synthetic_market(symbols=8, days=90, seed=7)
+    symbols = list(market.price_panel.columns)
+    account = {
+        "name": "D_5W", "alpha_source": "pullback", "cash": 50_000,
+        "pb_rank_source": "momentum", "pb_k": 2, "pb_stop_lo": 0.035, "pb_stop_hi": 0.035,
+        "pb_use_intraday": False, "pb_intraday_stops": False, "pb_full_invest": True,
+        "pb_rank_min": 0.0, "pb_vol_shrink": False, "pb_pullback_min": 0.0,
+        "pb_zone_band": 1.0, "pb_entry_gate": -1.0, "pb_exit_gate": -1.0,
+    }
+    from src.cli import _build_account_portfolio
+
+    book, _ = _build_account_portfolio(None, market, symbols, account, 1.0)
+    fp = _book_fingerprint(
+        book,
+        runner_kwargs={"cash": 50_000.0, "slippage_bps": 2.0, "commission_bps": 2.5,
+                       "max_position_pct": 0.4, "notional_floor": 2000.0, "band_frac": 0.0},
+        universe=symbols,
+        data={"last_bar": "2026-09-09", "n_bars": 90},
+    )
+    assert fp["execution"]["cash"] == 50_000.0
+    assert fp["execution"]["max_position_pct"] == 0.4
+    assert fp["universe_size"] == len(symbols)
+    assert fp["data"]["n_bars"] == 90
+    assert fp["gross_scale_wired"] is True
+    # the hash covers the execution context too, so a cash/cost change moves it
+    fp2 = _book_fingerprint(
+        book, runner_kwargs={"cash": 60_000.0, "max_position_pct": 0.4}, universe=symbols
+    )
+    assert fp2["params_hash"] != fp["params_hash"]
+
+
 def test_preclose_order_list_contains_exits_for_unwanted_holdings(monkeypatch, tmp_path):
     """D-1 call site: an exited holding must appear as a SELL in the 14:50 list."""
     from src import preclose as pc

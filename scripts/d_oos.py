@@ -157,7 +157,17 @@ def main() -> int:
         prod_book, _ = _build_account_portfolio(
             cfg, market, symbols, prod_account, control.gross_scale, ledger=prod_ledger
         )
-        prod_probe = _book_fingerprint(prod_book)
+        from src.paper.shadow import paper_runner_kwargs
+
+        prod_kwargs = paper_runner_kwargs(cfg)
+        prod_kwargs.update({
+            "cash": float(prod_account.get("cash", prod_kwargs["cash"])),
+            "notional_floor": float(prod_account.get("notional_floor", 0.0)),
+            "band_frac": float(prod_account.get("band_frac", 0.0)),
+            "rebalance_days": int(prod_account.get("rebalance_days", 1)),
+            "max_position_pct": float(prod_account.get("max_position_pct", 0.05)),
+        })
+        prod_probe = _book_fingerprint(prod_book, runner_kwargs=prod_kwargs, universe=symbols)
     finally:
         prod_ledger.close()
         (ROOT / "outputs" / "_doos_prod_probe.sqlite").unlink(missing_ok=True)
@@ -267,6 +277,7 @@ def main() -> int:
         and probe.get("has_intraday_frames") == prod_probe.get("has_intraday_frames")
         and probe.get("has_minute_provider") == prod_probe.get("has_minute_provider")
         and probe.get("gross_scale_wired") == prod_probe.get("gross_scale_wired")
+        and probe.get("execution") == prod_probe.get("execution")
     )
     min_symbol_cov = round(float(symbol_cov.min()), 4) if len(symbol_cov) else 0.0
 
