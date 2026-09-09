@@ -35,10 +35,18 @@
 
 | # | 项 | 为何本轮不做 |
 | --- | --- | --- |
-| 1 | **回补 2025-10-27→12-12 的分钟数据**（重点沪市 468 只） | 需要长时间批量抓取；**盘中抓取会与 14:40/14:50 的行情抓取争用限流**，可能拖慢 preclose（15:00 前必须完成）。方案：收盘后运行 `python scripts/fetch_intraday.py --start 2025-10-20 --end 2025-12-15`（脚本已存在），随后 `scripts/refresh_intraday_daily.py` 重建 rollup，再重跑 `d_oos.py`。 |
+| 1 | **回补 2025-10-27→12-12 的分钟数据**（重点沪市 468 只） | 已写好脚本 `scripts/backfill_minute_gap.py`（含 `--dry-run` 探针与前后覆盖对比，干跑确认 API 仍提供该窗口：000001.SZ 9,640 根 / 40 天）；**盘中批量抓取会与 14:40 深度快照、14:50 preclose 争用限流**，可能拖慢 preclose（必须 15:00 前完成）→ 收盘后（15:10+）执行：<br>`python scripts/backfill_minute_gap.py` → 再用 `python scripts/d_oos.py 2025-09-01 2025-12-31 --label oos_2025h2_v3` 复核到 `citable=true`。 |
 | 2 | ML 排序器的 `test_window` 覆盖整个 OOS 窗口 | 属模型训练口径，改动会改变现役工件 → 需要重训 + 重新走晋升闸门，不能在盘中做。 |
-| 3 | 指纹缺 `cash` / 成本四参数 / `code_commit` / `data_fingerprint` | 结构性同构已由「同一条 `_shadow_cycle` 代码路径 + 同一账户配置」保证；补齐字段是下一步的收尾项。 |
+| 3 | 指纹缺 `code_commit` / `data_fingerprint`（hash 级） | `cash`/成本/上限/universe/数据切片**已补齐**（`_book_fingerprint` 的 `execution` / `universe_size` / `data`）；commit-hash 级指纹留作收尾项。 |
 | 4 | `read_trade_records` 仍读整本账计算移动成本 | 与 D-4 相关但不影响正确性；属性能/口径优化。 |
+
+## 二之二、本轮追加（写完后补充的项）
+
+| 项 | 说明 |
+| --- | --- |
+| 报价时钟偏移 | `scripts/clock_offset.py`：实测 AlphaFeed 分钟 bar 标签比本地（已与互联网校时，偏差 0 秒）超前约 1–5 分钟；守卫新增"超前 > `max_future_quote_minutes`(10) 不决策"，并保留小幅超前容忍。 |
+| 任务卡可读性 | PAICC 的 live/depth/preclose/intraday/challenger/watchdog 六个 job 原先只写操作日志 → 面板 `last_run/last_status` 恒为「—」；现由 `_recording()` 包装记录结果，watchdog 也已 `_stamp`。 |
+| PAICC 测试入口 | `README.md` 补充两条零安装跑法；`.venv\Scripts\python.exe -m unittest discover -s tests -t .` 实测 **56 tests OK**。 |
 
 ## 三、结论（不变）
 
