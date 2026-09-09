@@ -53,6 +53,7 @@ def _trader_stub(max_age_minutes: float = 5.0, limit_down: dict[str, float] | No
     """A LiveTrader with only the attributes the quote filter touches."""
     obj = LiveTrader.__new__(LiveTrader)
     obj.max_quote_age_minutes = max_age_minutes
+    obj.max_future_quote_minutes = 10.0
     obj._quote_blocks = {}
     obj._quote_ts = {}
     obj._logged_blocks = set()
@@ -94,6 +95,19 @@ def test_missing_timestamp_fails_closed_but_invalid_print_is_labelled():
     assert live == {}
     assert "timestamp" in t._quote_blocks["600000.SH"]
     assert t._quote_blocks["600001.SH"] == "invalid print"
+
+
+def test_gross_future_label_is_refused_but_a_small_lead_is_tolerated():
+    """A print labelled far ahead of the clock is a skew, not a traded price."""
+    now = datetime(2026, 9, 9, 13, 30, 0)
+    t = _trader_stub(max_age_minutes=5.0)
+    # AlphaFeed observed leading the local clock by ~1-5 minutes: tolerated
+    live = t._filter_quotes({"601872.SH": (19.0, pd.Timestamp("2026-09-09 13:35:00"))}, now)
+    assert live == {"601872.SH": 19.0}
+    # 30 minutes ahead is not a price that can exist yet
+    t2 = _trader_stub(max_age_minutes=5.0)
+    assert t2._filter_quotes({"601872.SH": (19.0, pd.Timestamp("2026-09-09 14:00:00"))}, now) == {}
+    assert "future" in t2._quote_blocks["601872.SH"]
 
 
 def test_prev_close_and_limit_down_use_panel_last_row():

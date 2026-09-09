@@ -120,6 +120,11 @@ class LiveTrader:
         self.max_quote_age_minutes = float(
             (cfg.section("live") or {}).get("max_quote_age_minutes", 5) or 5
         )
+        #: A print labelled this far ahead of the local clock is a clock/feed
+        #: skew, not a traded price (see _filter_quotes).
+        self.max_future_quote_minutes = float(
+            (cfg.section("live") or {}).get("max_future_quote_minutes", 10) or 10
+        )
         self._quote_blocks: dict[str, str] = {}
         self._logged_blocks: set[tuple[str, str]] = set()
         self._quote_ts: dict[str, pd.Timestamp] = {}
@@ -218,6 +223,15 @@ class LiveTrader:
             age = (now_ts - ts).total_seconds()
             if age > max_age:
                 self._quote_blocks[sym] = f"quote stale {int(age // 60)}m (no decision)"
+                continue
+            # A print labelled far in the FUTURE cannot be a traded price yet:
+            # either the feed or the machine clock is skewed. Tolerate a small
+            # lead (observed ~1-5 min on the AlphaFeed feed) but refuse a gross
+            # one instead of trading on an unknown-time quote.
+            if age < -self.max_future_quote_minutes * 60.0:
+                self._quote_blocks[sym] = (
+                    f"quote {int(-age // 60)}m in the future (clock/feed skew)"
+                )
                 continue
             lim = self._limit_down_price(sym, now_ts)
             if lim is not None and px <= lim + 1e-9:
