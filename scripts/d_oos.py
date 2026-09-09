@@ -46,6 +46,15 @@ MAX_CALENDAR_GAP_DAYS = 15
 #: day-level probe reported 100% — this threshold is what makes that visible.
 MIN_SYMBOL_COVERAGE = 0.90
 
+#: Minimum share of a SINGLE symbol's own tradable days (days with a daily price
+#: bar inside the window) that must carry a minute feature. The day-level probe
+#: above cannot see one name missing a month; this one can. The denominator is
+#: deliberately the symbol's tradable days, not the window's trading days: a
+#: suspension (信达证券 601059.SH, no bar 2025-11-20→12-17) and a pre-listing
+#: period (601112.SH, first bar 2026-01-29) are NOT data holes — a missing
+#: feature on a day the name actually traded is.
+MIN_SYMBOL_WINDOW_COVERAGE = 0.90
+
 #: Intraday decisions must stop at the close; the auction layer owns 15:00+.
 INTRADAY_CUTOFF = "15:00"
 
@@ -257,6 +266,47 @@ def main() -> int:
         low = set(low_cov_days)
         fills_in_low_cov = int(pd.to_datetime(fills["date"]).dt.date.astype(str).isin(low).sum())
 
+    # SYMBOL-WINDOW coverage — the day-level probe above answers "how much of the
+    # universe carries a feature today"; it cannot see a SINGLE name missing a
+    # month. Both defects it must catch (a per-name data hole vs a legitimate
+    # suspension/IPO) are separated by using the symbol's OWN tradable days (days
+    # with a daily price bar in the window) as the denominator.
+    sym_cov = pd.Series(dtype=float)
+    sym_cov_raw = pd.Series(dtype=float)
+    below_rows: list[dict] = []
+    if tail is not None and len(tail):
+        panel = market.price_panel
+        pwin = panel.loc[(panel.index >= pd.Timestamp(args.start)) & (panel.index <= pd.Timestamp(args.end))]
+        for sym in tail.columns:
+            if sym not in pwin.columns:
+                continue
+            tradable = pwin[sym].notna()
+            n_tr = int(tradable.sum())
+            if n_tr == 0:  # never traded in the window (pre-listing / halted) → no denominator
+                continue
+            have = tail[sym].reindex(pwin.index).notna()
+            n_have = int((have & tradable).sum())
+            tr_cov = n_have / n_tr
+            win_cov = float(have.mean())
+            sym_cov[sym] = tr_cov
+            sym_cov_raw[sym] = win_cov
+            if tr_cov < MIN_SYMBOL_WINDOW_COVERAGE:
+                missing = pwin.index[tradable & ~have]
+                below_rows.append(
+                    {
+                        "symbol": sym,
+                        "tradable_days": n_tr,
+                        "feature_days": n_have,
+                        "coverage_of_tradable_days": round(tr_cov, 4),
+                        "coverage_of_window_days": round(win_cov, 4),
+                        "n_missing_tradable_days": int(len(missing)),
+                        "first_missing": str(pd.Timestamp(missing.min()).date()) if len(missing) else None,
+                        "last_missing": str(pd.Timestamp(missing.max()).date()) if len(missing) else None,
+                    }
+                )
+    below_rows.sort(key=lambda r: (r["coverage_of_tradable_days"], r["symbol"]))
+    min_sym_cov = round(float(sym_cov.min()), 4) if len(sym_cov) else 0.0
+
     # cost consistency: ledger commission == sum of per-fill commissions
     if len(fills):
         cost_sum = float(fills["commission"].sum())
@@ -287,6 +337,11 @@ def main() -> int:
         "ledger_was_fresh": bool(not ledger_existed_before),
         "calendar_gap_within_tolerance": gap_days <= MAX_CALENDAR_GAP_DAYS,
         "minute_symbol_coverage_ok": bool(len(symbol_cov) and min_symbol_cov >= MIN_SYMBOL_COVERAGE),
+        # per-NAME hole detector: a symbol missing features on days it actually
+        # traded (suspensions/IPOs are excluded by construction)
+        "minute_symbol_window_coverage_ok": bool(
+            len(sym_cov) and min_sym_cov >= MIN_SYMBOL_WINDOW_COVERAGE
+        ),
         "no_fills_inside_data_hole": bool(fills_in_low_cov == 0),
         "intraday_frames_loaded": bool(
             probe.get("has_intraday_frames") and "tail_vol" in (frames or {})
@@ -318,7 +373,8 @@ def main() -> int:
     # data even though it is not the deployed configuration.
     data_checks = (
         "ledger_was_fresh", "calendar_gap_within_tolerance",
-        "minute_symbol_coverage_ok", "no_fills_inside_data_hole",
+        "minute_symbol_coverage_ok", "minute_symbol_window_coverage_ok",
+        "no_fills_inside_data_hole",
         "intraday_frames_loaded", "minute_provider_loaded",
         "assembly_is_production", "t_plus_1_respected",
         "no_fill_on_limit_locked_bar", "cost_model_consistent",
@@ -353,6 +409,10 @@ def main() -> int:
         "minute_frame_days": frame_days,
         "minute_window_coverage": coverage,
         "minute_min_symbol_coverage": min_symbol_cov,
+        "minute_min_symbol_tradable_coverage": min_sym_cov,
+        "symbols_below_90pct": [r["symbol"] for r in below_rows],
+        "symbol_coverage_below_90pct": below_rows,
+        "n_symbols_below_90pct": len(below_rows),
         "low_coverage_days": low_cov_days,
         "n_low_coverage_days": len(low_cov_days),
         "fills_in_low_coverage_days": fills_in_low_cov,
@@ -365,12 +425,34 @@ def main() -> int:
         "all_passed": bool(all(checks.values())),
     }
     out_path = ROOT / "outputs" / f"d_oos_{args.label}.json"
+    # Provenance (audit P-6): an OOS number is only quotable together with the
+    # slice, the convention and the code that produced it. ``data_as_of`` is the
+    # last bar actually present in the panel — a recent window on stale data
+    # (the exact failure mode that made the pre-backfill OOS artifact misleading)
+    # is now visible in the artifact itself.
+    from src.provenance import stamp_artifact
+
+    data_as_of = str(pd.Timestamp(market.price_panel.index.max()).date())
+    convention = (
+        "adjusted-close price basis; daily close rebalance at the panel close; "
+        f"intraday stop trigger={account.get('pb_stop_trigger')} "
+        f"open_minutes={account.get('pb_stop_open_minutes')}; "
+        f"live dates (>={account.get('pb_live_intraday_from')}) fill at the 15:00 "
+        "auction from outputs/preclose_orders_<acct>.json (no orders → no close trades); "
+        "T+1; no leverage; commission+stamp duty per the configured cost model"
+    )
+    result = stamp_artifact(
+        result, window={"start": args.start, "end": args.end},
+        convention=convention, data_as_of=data_as_of,
+    )
     out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
 
     print(f"[oos] days={n_days} fills={result['n_fills']} "
           f"(intraday {result['n_intraday_fills']}) "
           f"minute_coverage={coverage:.0%} (min symbol {min_symbol_cov:.0%}, "
           f"low-cov days {len(low_cov_days)}, fills in hole {fills_in_low_cov}) "
+          f"sym-window cov min={min_sym_cov:.1%} below-90%={len(below_rows)} "
+          f"{[r['symbol'] for r in below_rows[:6]]} "
           f"cum={status.get('equity', {}).get('total_return', 0):+.2%} "
           f"ann={status.get('equity', {}).get('annualized_return', 0):+.2%} "
           f"sharpe={sharpe:+.2f} (SE {sharpe_se:.2f}, t={result['sharpe_t_stat']}) "
@@ -379,6 +461,8 @@ def main() -> int:
         print(f"  [{'PASS' if ok else 'FAIL'}] {name}", flush=True)
     print(f"[oos] params_match_production={params_match} candidate={is_candidate_run} "
           f"citable={citable}", flush=True)
+    print(f"[oos] provenance: data_as_of={data_as_of} commit={result['provenance']['code_commit'][:12]} "
+          f"sha256={result['provenance']['artifact_sha256'][:16]}…", flush=True)
     print(f"[oos] all_passed={result['all_passed']} → {out_path}", flush=True)
     return 0 if citable else 1
 

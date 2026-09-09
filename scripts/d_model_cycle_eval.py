@@ -53,7 +53,7 @@ def _cfg_and_symbols():
 
 
 def _d_params(acc):
-    from src.paper.pullback_book import PullbackParams
+    from src.paper.pullback_book import FLAT_STOP_DEFAULT, PullbackParams
 
     return PullbackParams(
         k=int(acc.get("pb_k", 6)), rank_source="ml", rank_min=float(acc.get("pb_rank_min", 0.8)),
@@ -63,7 +63,8 @@ def _d_params(acc):
         ema_fast=int(acc.get("pb_ema_fast", 21)), ema_zone=int(acc.get("pb_ema_zone", 21)),
         zone_band=float(acc.get("pb_zone_band", 0.02)), pullback_min=float(acc.get("pb_pullback_min", 0.03)),
         vol_shrink=bool(acc.get("pb_vol_shrink", True)), atr_mult=float(acc.get("pb_atr_mult", 1.5)),
-        stop_lo=float(acc.get("pb_stop_lo", 0.025)), stop_hi=float(acc.get("pb_stop_hi", 0.04)),
+        stop_lo=float(acc.get("pb_stop_lo", FLAT_STOP_DEFAULT)),
+        stop_hi=float(acc.get("pb_stop_hi", FLAT_STOP_DEFAULT)),
         breakeven_r=float(acc.get("pb_breakeven_r", 1.0)), trail_r=float(acc.get("pb_trail_r", 1.5)),
         exit_into_strength_r=float(acc.get("pb_exit_into_strength_r", 0.0)),
         max_hold=int(acc.get("pb_max_hold", 40)), entry_gate=float(acc.get("pb_entry_gate", 0.0)),

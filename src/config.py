@@ -112,6 +112,10 @@ def load_config(
             CONFIGS_DIR / "master_config.yaml",
             CONFIGS_DIR / "factor_thresholds.yaml",
             CONFIGS_DIR / "llm_routing.yaml",
+            # forward-period policy: pre-registered risk gate + candidate switch
+            # rule (see docs/FORWARD_PROTOCOL.md). Loaded for every caller so the
+            # gate can never be evaluated against an unstated threshold set.
+            CONFIGS_DIR / "forward_policy.yaml",
         )
 
     _load_dotenv()  # API keys & db urls from .env, interpolated below

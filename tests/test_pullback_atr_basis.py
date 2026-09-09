@@ -48,9 +48,24 @@ def _market(factor_b: float = 0.1):
     return type("M", (), {"price_panel": closes, "long": long, "records": rec})()
 
 
-def _book(factor_b: float = 0.1) -> PullbackPortfolio:
-    params = PullbackParams(k=1, rank_source="momentum", rank_min=0.0, vol_shrink=False)
+def _book(factor_b: float = 0.1, **overrides) -> PullbackPortfolio:
+    params = PullbackParams(k=1, rank_source="momentum", rank_min=0.0, vol_shrink=False, **overrides)
     return PullbackPortfolio(_market(factor_b), params, symbols=["A", "B"])
+
+
+def test_default_stop_is_flat_3p5():
+    """The CODE default must be the deployed flat 3.5% stop.
+
+    Deleting ``pb_stop_lo``/``pb_stop_hi`` from the YAML must not silently revert
+    the book to the unvalidated ATR-adaptive band: with the class default the ATR
+    channel has to be inert (stop_lo == stop_hi).
+    """
+    params = PullbackParams()
+    assert params.stop_lo == params.stop_hi == pytest.approx(0.035)
+    book = _book()
+    last = book._dates[-1]
+    assert book._stop_dist("A", last) == pytest.approx(0.035)
+    assert book._stop_dist("B", last) == pytest.approx(0.035)
 
 
 def test_adjust_factor_frame_reads_records():
@@ -62,7 +77,9 @@ def test_adjust_factor_frame_reads_records():
 
 
 def test_atr_pct_is_basis_consistent():
-    book = _book()
+    # explicit ATR band: this test covers the RESEARCH path (the default is now
+    # the deployed flat 3.5% — see test_default_stop_is_flat_3p5)
+    book = _book(stop_lo=0.025, stop_hi=0.04)
     last = book._dates[-1]
     assert isinstance(book._atr_pct, pd.DataFrame)      # not a per-date Series
     assert book._atr_pct.shape[1] == 2

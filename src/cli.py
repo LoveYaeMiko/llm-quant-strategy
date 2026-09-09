@@ -139,6 +139,7 @@ def _attach_audit_store(market, store, price_recs: pd.DataFrame) -> None:
 
 def _market_from_records(records: pd.DataFrame):
     """Build a usable SyntheticMarket-like bundle from PIT price records."""
+    from .data.basis import BASIS_ADJUSTED, basis_report
     from .data.synthetic import SyntheticMarket
 
     store = PointInTimeStore()
@@ -156,7 +157,7 @@ def _market_from_records(records: pd.DataFrame):
     # returns that dominate return-based metrics (Sharpe/maxDD) while rank-IC
     # stays unaffected — the systematic `reject_high_risk` cause in Phase 8.1.
     fwd = close_wide.pct_change(fill_method=None).shift(-1).stack().rename("fwd")
-    return SyntheticMarket(
+    market = SyntheticMarket(
         records=store.records,
         long=long,
         price_panel=close_wide,
@@ -165,6 +166,16 @@ def _market_from_records(records: pd.DataFrame):
         n_symbols=len(close_wide.columns),
         n_days=len(close_wide),
     )
+    # Basis contract (defect C2, docs/BASIS_CONTRACT.md): this panel mixes an
+    # ADJUSTED close with RAW open/high/low, and those numbers are deliberately
+    # NOT re-based (that would rewrite every historical backtest and evidence
+    # artifact). Instead the basis of every column is made explicit and
+    # assertable here, so any consumer can record what its numbers are on;
+    # a consumer that needs one basis converts with src.data.basis.to_adjusted /
+    # to_raw rather than mixing.
+    market.basis = basis_report(rec)
+    market.basis_target = BASIS_ADJUSTED  # the basis of market.price_panel
+    return market
 
 
 def _attach_tradable_forward(market, config=None) -> SyntheticMarket:
@@ -1853,6 +1864,40 @@ def _refresh_shadow_data(cfg, symbols) -> dict:
     return meta
 
 
+def _make_preclose_provider(account: dict):
+    """Close-execution provider for a pullback account (15:00 auction layer).
+
+    On dates >= ``pb_live_intraday_from`` the close rebalance executes the order
+    list the 14:50 job submitted; if that job never ran, NO close trades happen
+    that day (as in reality). Earlier dates return ``"__normal__"`` — the runner
+    then computes the close targets itself.
+
+    ``pb_preclose_account`` (optional) redirects the lookup to ANOTHER account's
+    order file. A forward-period CANDIDATE uses it to inherit the production list:
+    the candidate differs from the incumbent in exactly one rule (e.g. the stop
+    width), so letting it read its own 14:50 file — which never exists — would
+    silently give it "no close trades" and confound the paired comparison with a
+    second, unintended difference.
+    """
+    live_from = str(account.get("pb_live_intraday_from", "") or "") or None
+    name = str(account.get("pb_preclose_account") or account["name"])
+
+    def provider(d, _live_from=live_from, _name=name):
+        if _live_from and pd.Timestamp(d) >= pd.Timestamp(_live_from):
+            path = ROOT / "outputs" / f"preclose_orders_{_name}.json"
+            if path.is_file():
+                try:
+                    data = json.loads(path.read_text(encoding="utf-8"))
+                    if str(data.get("date")) == str(pd.Timestamp(d).date()):
+                        return list(data.get("orders", []) or [])
+                except (ValueError, OSError):
+                    pass
+            return None  # live date without submitted orders → no close trades
+        return "__normal__"
+
+    return provider
+
+
 def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=None, account=None, shared_meta=None, replay_live_date=False, ledger_override=None, write_artifacts=True, probe=None, market_override=None):
     """Run one shadow cycle: refresh → build market+portfolio → advance the
     resumable ledger → emit ``shadow_status.json`` + ``shadow_report.md``.
@@ -1955,22 +2000,7 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
     # auction close; if the 14:55 job never ran, NO close trades happen that day
     # (as in reality). Historical dates keep the normal close-computed path.
     if account and str(account.get("alpha_source", "")) == "pullback":
-        live_from = str(account.get("pb_live_intraday_from", "") or "") or None
-
-        def _preclose_provider(d, _live_from=live_from, _name=account["name"]):
-            if _live_from and pd.Timestamp(d) >= pd.Timestamp(_live_from):
-                path = ROOT / "outputs" / f"preclose_orders_{_name}.json"
-                if path.is_file():
-                    try:
-                        data = json.loads(path.read_text(encoding="utf-8"))
-                        if str(data.get("date")) == str(pd.Timestamp(d).date()):
-                            return list(data.get("orders", []) or [])
-                    except (ValueError, OSError):
-                        pass
-                return None  # live date without submitted orders → no close trades
-            return "__normal__"
-
-        runner_kwargs["preclose_provider"] = _preclose_provider
+        runner_kwargs["preclose_provider"] = _make_preclose_provider(account)
     if probe is not None:
         probe.update(_book_fingerprint(
             portfolio, runner_kwargs=runner_kwargs, universe=symbols,
@@ -2024,8 +2054,8 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
                 "pullback_min": float(account.get("pb_pullback_min", 0.03)),
                 "vol_shrink": bool(account.get("pb_vol_shrink", True)),
                 "atr_mult": float(account.get("pb_atr_mult", 1.5)),
-                "stop_lo": float(account.get("pb_stop_lo", 0.025)),
-                "stop_hi": float(account.get("pb_stop_hi", 0.04)),
+                "stop_lo": float(account.get("pb_stop_lo", 0.035)),
+                "stop_hi": float(account.get("pb_stop_hi", 0.035)),
                 "breakeven_r": float(account.get("pb_breakeven_r", 1.0)),
                 "trail_r": float(account.get("pb_trail_r", 1.5)),
                 "exit_into_strength_r": float(account.get("pb_exit_into_strength_r", 0.0)),

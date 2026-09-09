@@ -38,6 +38,12 @@ class SyntheticMarket:
     # blueprint 方案 B): IC keeps the raw ``forward_returns``, portfolio
     # Sharpe/max-drawdown use this. None on the synthetic market (no limits).
     forward_returns_tradable: Optional[pd.Series] = None
+    # Basis contract (defect C2, docs/BASIS_CONTRACT.md): the report from
+    # ``src.data.basis.basis_report`` describing which price basis each column of
+    # ``long``/``price_panel`` is on. None for markets built without the read
+    # layer (e.g. this synthetic fixture, whose OHLC is all on one basis).
+    # Appended with a default so positional construction stays compatible.
+    basis: Optional[dict] = None
 
 
 def make_synthetic_market(

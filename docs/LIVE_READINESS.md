@@ -53,10 +53,16 @@
 
 | # | 项 | 状态 | 说明 |
 | --- | --- | --- | --- |
-| D1 | OOS 验证（与生产同构口径） | [x] | `scripts/d_oos.py`（11 项断言）→ `outputs/d_oos_*.json`；结论见 `docs/D_TRACK_EVIDENCE.md` |
+| D1 | OOS 验证（与生产同构口径） | [x] | `scripts/d_oos.py`（14 项断言，含符号级窗口覆盖）→ `outputs/d_oos_*.json`；结论见 `docs/D_TRACK_EVIDENCE.md` |
 | D2 | 实时执行样本量 | [ ] | 实时执行的日内止损样本仍偏少（见 D_TRACK_EVIDENCE 的 provenance 统计），需继续累积 |
 | D3 | 统计显著性 | [ ] | Sharpe 标准误 √(252/N)：当前样本量下置信区间仍宽，见 D_TRACK_EVIDENCE |
 | D4 | 回放/实时口径分离 | [x] | `fills.source` ∈ {live, replay, close, auction}，面板与日报分别计数 |
+| D5 | 工件 provenance 完整 | [x] | 每个对外 JSON 必含 `window / convention / data_as_of / artifact_sha256 / code_commit`；`scripts/check_provenance.py` 校验（缺项/哈希不符即失败） |
+| D6 | 前向风险闸门 | [x] | `scripts/forward_health.py`：跟踪误差/成本/违规/可用率/新鲜度/覆盖率；**未测量即判失败**。见 `docs/FORWARD_PROTOCOL.md` |
+| D7 | 预注册（改规则前先冻结） | [x] | `scripts/prereg.py`（六字段 + 哈希 + 只追加）；改规则须升版本 + `supersedes` |
+| D8 | 复权锚点可复现 | [x] | `scripts/check_adjust_anchor.py`（基线冻结 + 漂移检测）；见 `docs/ADJUST_ANCHOR.md` |
+| D9 | 数据偏差压力测试 | [ ] | 幸存者偏差上界须 < 0.3×目标 alpha（2.4pp/年）才能开启自进化；见 `docs/BIAS_STRESS.md` |
+| D10 | 成本模型标定（真实成交） | [ ] | 市场冲击成本在纸面账户**不可测**；实盘前必须用券商成交回填 `market_impact_bps`（`docs/FORWARD_PROTOCOL.md` §1.3） |
 
 ## 切换流程（草案）
 
@@ -66,3 +72,6 @@
 3. 券商适配器首次发单前打印并记录 `deployment_status(cfg)` 与 kill-switch 档位；
 4. 首日以最小额度（建议 ≤ 5 万）运行，收盘后按 C6 对账；
 5. 任何差异 → 立即回到 `observe`（只改通道，不改历史成交）。
+
+> D5–D8 是 2026-09-09 审计项 1.1–1.4 的落地检查点；D9/D10 是尚未满足的**阻断项**，
+> 未完成前不得把「前向期跑过 N 个月」当作 alpha 证据（前向窗口对 alpha 无功效）。

@@ -51,3 +51,6 @@ data/depth/
 
 # 复权因子事件缓存（AlphaFeed ex_factors 全量，可由 corp_actions.py 重新拉取）
 src/data/corp_actions/
+
+# 临时调试/缓存（.scratch 下的一次性脚本与 parquet 切片，不进版本库）
+.scratch/

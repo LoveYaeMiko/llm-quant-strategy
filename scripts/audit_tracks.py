@@ -173,7 +173,7 @@ def main() -> int:
     # + trend-gate construction the deployed shadow uses (identical semantics,
     # no feature rebuild).
     from src.paper.ledger import PaperLedger
-    from src.paper.pullback_book import PullbackParams, PullbackPortfolio
+    from src.paper.pullback_book import FLAT_STOP_DEFAULT, PullbackParams, PullbackPortfolio
     from src.paper.runner import PaperRunner
     from src.portfolio.alpha_core import _market_trend, long_book_weights
     from src.ml import load_artifact, score_artifact
@@ -297,8 +297,8 @@ def main() -> int:
                 pullback_min=float(account.get("pb_pullback_min", 0.03)),
                 vol_shrink=bool(account.get("pb_vol_shrink", True)),
                 atr_mult=float(account.get("pb_atr_mult", 1.5)),
-                stop_lo=float(account.get("pb_stop_lo", 0.025)),
-                stop_hi=float(account.get("pb_stop_hi", 0.04)),
+                stop_lo=float(account.get("pb_stop_lo", FLAT_STOP_DEFAULT)),
+                stop_hi=float(account.get("pb_stop_hi", FLAT_STOP_DEFAULT)),
                 breakeven_r=float(account.get("pb_breakeven_r", 1.0)),
                 trail_r=float(account.get("pb_trail_r", 1.5)),
                 exit_into_strength_r=float(account.get("pb_exit_into_strength_r", 0.0)),

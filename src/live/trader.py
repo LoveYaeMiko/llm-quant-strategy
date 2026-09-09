@@ -32,6 +32,7 @@ fees use the real cost model.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 import time
@@ -43,6 +44,8 @@ import pandas as pd
 
 from ..data.ingestion.alphafeed_adapter import normalize_bar_timestamps
 from ..online.order_executor import Fill
+
+logger = logging.getLogger(__name__)
 
 
 def _is_trading_day(d: pd.Timestamp) -> bool:
@@ -117,6 +120,12 @@ class LiveTrader:
         self.stamp_bps = float(cfg.section("s7_calibration").get("cost_model", {}).get("stamp_tax_sell_bps", 5.0))
         self.transfer_bps = float(cfg.section("s7_calibration").get("cost_model", {}).get("transfer_fee_bps", 0.1))
         self.status_path = Path("outputs") / f"live_{self.account_name}.json"
+        # Append-only heartbeat. The status JSON is overwritten every poll, so it
+        # can only ever show the LAST tick — which makes the forward risk gate's
+        # availability metric (share of decision-window minutes with a live
+        # process, docs/FORWARD_PROTOCOL.md §1.3) unmeasurable after the fact.
+        # One line per poll is ~5KB/day and survives a crash.
+        self.heartbeat_path = Path("outputs") / f"live_{self.account_name}.jsonl"
         self.max_quote_age_minutes = float(
             (cfg.section("live") or {}).get("max_quote_age_minutes", 5) or 5
         )
@@ -375,6 +384,29 @@ class LiveTrader:
         }
         self.status_path.parent.mkdir(parents=True, exist_ok=True)
         self.status_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        self._append_heartbeat(payload, now)
+
+    def _append_heartbeat(self, payload: dict, now: datetime) -> None:
+        """One append-only line per poll — the availability evidence trail.
+
+        Never raises: a full disk or a locked file must not take the trader down
+        (the trading decision has already been made and persisted to the ledger).
+        """
+        try:
+            line = json.dumps(
+                {
+                    "ts": payload.get("ts"),
+                    "equity_live": payload.get("equity_live"),
+                    "cash": payload.get("cash"),
+                    "n_positions": len(payload.get("positions") or []),
+                    "blocked": len(payload.get("blocked") or {}),
+                },
+                ensure_ascii=False,
+            )
+            with open(self.heartbeat_path, "a", encoding="utf-8") as fh:
+                fh.write(line + "\n")
+        except OSError as exc:  # noqa: BLE001 — telemetry must never break trading
+            logger.warning("heartbeat write failed (%s): %s", self.heartbeat_path, exc)
 
 
 __all__ = ["LiveTrader"]

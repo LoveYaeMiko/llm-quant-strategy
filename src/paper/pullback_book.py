@@ -9,8 +9,11 @@ onto the A-share daily-bar shadow loop, with the verified improvements baked in:
 * pullback entry — strong-momentum names (top cross-sectional rank of the 63d
   return) in an uptrend (close > rising EMA50) that pull back into the EMA
   zone below their recent high, with shrinking volume (seller exhaustion);
-* ATR-adaptive stop — stop distance clipped to [2.5%, 4%] around
-  ``atr_mult × ATR20``, so volatile names get room and calm names tight stops;
+* stop distance — ``clip(atr_mult × ATR20, stop_lo, stop_hi)``. The DEPLOYED
+  configuration is a FLAT 3.5% (``stop_lo == stop_hi``, see
+  :data:`FLAT_STOP_DEFAULT`); the ATR-adaptive band remains available for
+  research but is no longer the default (it was selected under the collapsed
+  true-range defect and lost the clean-window comparison);
 * asymmetric exits — breakeven stop after +1R, EMA(9) trailing exit after
   +1.5R, trend exit below EMA50, and a max-hold recycle — profits run, losses
   are cut fast;
@@ -31,6 +34,16 @@ import numpy as np
 import pandas as pd
 
 from ..portfolio.alpha_core import _market_trend
+
+
+#: The DEPLOYED D-track stop width: a FLAT 3.5%. With ``stop_lo == stop_hi`` the
+#: ATR channel is inert (``clip(mult*ATR, lo, hi) == lo`` for every finite ATR and
+#: for NaN), so this single number is the whole stop rule. It was selected on the
+#: clean 2025-09→12 window (``outputs/d_stop_grid.json``: flat_3p5 +16.36% cum /
+#: Sharpe 1.66 / maxDD 6.12% vs flat_2p5 −7.21%) and is now the CODE default, so
+#: deleting ``pb_stop_lo``/``pb_stop_hi`` from the YAML can no longer silently
+#: revert the book to the unvalidated ATR-adaptive band (0.025/0.04).
+FLAT_STOP_DEFAULT = 0.035
 
 
 @dataclass
@@ -61,9 +74,9 @@ class PullbackParams:
     zone_band: float = 0.02       # |close/EMA_zone - 1| <= zone_band
     pullback_min: float = 0.03    # at least 3% off the 10d high (a real pullback)
     vol_shrink: bool = True       # 5d volume < 20d volume (seller exhaustion)
-    atr_mult: float = 1.5         # stop = clip(atr_mult*ATR20, lo, hi)
-    stop_lo: float = 0.025
-    stop_hi: float = 0.04
+    atr_mult: float = 1.5         # stop = clip(atr_mult*ATR20, lo, hi); inert when lo == hi
+    stop_lo: float = FLAT_STOP_DEFAULT   # deployed flat 3.5% (see FLAT_STOP_DEFAULT)
+    stop_hi: float = FLAT_STOP_DEFAULT   # == stop_lo ⇒ ATR channel disabled by design
     breakeven_r: float = 1.0      # raise stop to entry after +R × stop_dist
     trail_r: float = 1.5          # activate EMA trailing after +R × stop_dist
     exit_into_strength_r: float = 0.0  # parabolic scale-out after +R (0 = off)

@@ -1,0 +1,92 @@
+# =====================================================================
+# 前向期政策 (forward policy) — 预注册、冻结、可校验
+#
+# 这份文件是「前向期能证明什么 / 不能证明什么」的唯一权威来源。任何数字若要作为
+# 前向期结论引用，必须先在这里预注册（scripts/prereg.py），再按此处的闸门评估
+# （scripts/forward_health.py）。改动本文件的任何阈值 = 一次新的试验（trials+1），
+# 必须重新预注册并写明 supersedes。
+#
+# 背景（2026-09-09 审计 1.1-1.4）：前向窗口在统计上无法证明 alpha。
+#   Sharpe 标准误 SE = sqrt(252/N)  ⇒  t = SR × sqrt(N/252)
+#   t=2.0 需要: SR=1.0 → N=1008 交易日 ≈ 4.0 年；SR=0.5 → N=4032 ≈ 16.0 年
+#   t=2.5 需要: SR=1.0 → N=1575 ≈ 6.3 年；SR=0.5 → N=6300 ≈ 25.0 年
+# 而风格/制度匹配的有效期只有 1-3 年 —— 等到窗口足够长，制度已经换了两轮。
+# 因此前向期只回答高信噪比问题：管线跟踪误差、成本模型标定、运行可靠性。
+# =====================================================================
+forward:
+  policy_version: 1
+  # 预注册记录的存放目录（append-only，见 src/forward/prereg.py）
+  prereg_dir: "outputs/forward/prereg"
+  health_json: "outputs/forward/forward_health.json"
+  health_history_dir: "outputs/forward/history"
+
+  # --- 1.1 功效分析：前向窗口能证明什么 -------------------------------
+  power:
+    target_alpha_annual: 0.08          # 设计目标年化超额（8pp）—— 一切阈值的基准
+    se_formula: "sqrt(252/N)"
+    years_for_t:
+      t_2_0: {sharpe_1_0: 4.0, sharpe_0_7: 8.2, sharpe_0_5: 16.0}
+      t_2_5: {sharpe_1_0: 6.3, sharpe_0_7: 12.8, sharpe_0_5: 25.0}
+    regime_matching_horizon_years: 3   # 超过此长度，参数与制度的匹配已失效
+    conclusion: "前向期不得用于宣称 alpha 显著；只能回答高信噪比问题"
+
+  # --- 1.2 前向期唯一能回答的三类高信噪比问题 -------------------------
+  questions:
+    - pipeline_tracking_error   # 实现是否忠实于冻结的规格
+    - cost_model_calibration    # 成本模型是否与真实成交一致
+    - operational_reliability   # 可用性/新鲜度/违规/覆盖率
+
+  # --- 1.3 风险闸门（替代原「能力闸门」）------------------------------
+  # hard：任一失败 ⇒ 前向期判定失败，必须停机排查（不是「策略不行」，而是
+  #       「管线不可信」）。soft：只记录，不参与判定（前向窗口对它们没有功效）。
+  risk_gate:
+    hard:
+      tracking_error_daily_pp_max: 0.2     # 逐日跟踪误差上限（百分点/日）
+      tracking_error_sign_bias_p_min: 0.05 # 符号偏差二项检验 p 值下限（低于=系统性单边）
+      cost_deviation_max: 0.20             # 费用偏差上限（20%）：账本计费 vs 预注册成本规格
+      price_integrity_bps_max: 2.0         # 成交价与市场参考价（收盘/同时点分钟成交）偏差上限（bp）
+                                           # —— 纸面账户无法观测冲击成本，只能验证「记录价是真实成交价」
+      violations_max: 0                    # T+1 / 整手 / 最小变动价位 / 涨跌停 / 停牌 全部为 0
+      availability_min: 0.99               # 决策窗口内实时层可用率 ≥ 99%
+      data_freshness_days_max: 1           # 行情截止日落后 ≤ 1 个自然日
+      symbol_minute_coverage_min: 0.95     # 符号级分钟覆盖 ≥ 95%（按各自可交易日计）
+    soft:
+      record_only: [sharpe, max_drawdown, excess_return, hit_rate, n_fills, turnover]
+
+  # --- 2 前向候选：atr_1p0_25_40 --------------------------------------
+  # 独立影子账本 + 独立状态文件；同一数据/同一代码/同一执行制度；只记录不自动切换。
+  # 与现役口径的日收益相关性 ≈ 0.84 ⇒ 必须做「配对」比较（差值序列），否则 120 日
+  # 窗口的噪声会淹没 3.4pp 的差异。
+  candidates:
+    atr_1p0_25_40:
+      enabled: true
+      account_suffix: "_FWD_ATR"
+      ledger: "outputs/forward/candidate_atr_1p0_25_40/ledger.sqlite"
+      status_json: "outputs/forward/candidate_atr_1p0_25_40/status.json"
+      params: {pb_atr_mult: 1.0, pb_stop_lo: 0.025, pb_stop_hi: 0.040}
+      # 候选只改止损宽度；入场/退出/执行制度必须与现役完全一致（含 14:50 订单列表），
+      # 否则配对比较混入了第二种差异。
+      inherit_execution: true
+      switch_rule:
+        window_days: 120            # 前向配对评估窗（交易日）
+        paired_diff_gt: 0.0         # 配对日差均值 > 0
+        t_min: 1.5                  # 且配对 t > 1.5
+        counts_as_new_trial: true   # 一次切换 = 一次新试验，必须重新预注册
+        may_never_separate: true    # 接受「永不分离」——不设时间压力，不追切
+      evidence:
+        # 干净窗口（2025-09-01→12-31，回补后）实测：候选好 1.74pp，但配对 t 仅 0.38；
+        # 按观测到的效应量，要达到 t>1.5 需要 ~1291 个配对交易日（≈5.1 年）。
+        window: ["2025-09-01", "2025-12-31"]
+        flat_3p5: {cum: 0.0164, sharpe: 0.40, max_dd: 0.0500, fills: 106}
+        atr_1p0_25_40: {cum: 0.0338, sharpe: 0.65, max_dd: 0.0725, fills: 114}
+        paired: {corr: 0.8841, mean_diff_pp_per_day: 0.0226, cum_diff_pp: 1.73,
+                 annualized_diff_pp: 5.68, t_stat: 0.376, days_needed_for_t_1p5: 1291}
+        note: "历史窗口只能说明「值得前向跟踪」，不能作为切换依据"
+
+  # --- 3 数据地基：偏差压力测试前置条件 -------------------------------
+  # 在开启任何 alpha 层自进化之前，必须证明幸存者偏差 < 0.3 × 目标 alpha。
+  bias_stress:
+    target_alpha_annual: 0.08
+    threshold_ratio: 0.3                 # 0.3 × 8pp = 2.4pp/年
+    blocking: true                       # 超过阈值 ⇒ 禁止开启自进化
+    artifact: "outputs/bias_stress_latest.json"
