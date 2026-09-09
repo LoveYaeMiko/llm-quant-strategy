@@ -35,8 +35,11 @@ def _market(factor_b: float = 0.1):
             f = 1.0 if sym == "A" else factor_b
             rows.append({
                 "date": d, "symbol": sym,
-                "open": raw_close, "high": raw_close * 1.02,
-                "low": raw_close * 0.98, "close": raw_close * f,
+                # ±1% intraday range → TR ≈ 2% of price → ATR% ≈ 2% → 1.5×ATR
+                # lands INSIDE the [2.5%, 4%] band (a wider range would clip to
+                # the cap and let a hardcoded 0.04 pass the assertion below).
+                "open": raw_close, "high": raw_close * 1.01,
+                "low": raw_close * 0.99, "close": raw_close * f,
                 "volume": 1_000_000.0,
             })
             records.append({"date": d, "symbol": sym, "adjust_factor": f})
@@ -71,7 +74,11 @@ def test_atr_pct_is_basis_consistent():
     # The stop distance follows 1.5×ATR% clipped to [2.5%, 4%] — i.e. the
     # adaptive path is alive, not the flat 2.5% floor (defect D-8b).
     assert book._stop_dist("A", last) == pytest.approx(book._stop_dist("B", last))
-    assert book._stop_dist("B", last) == pytest.approx(min(0.04, 1.5 * atr_b))
+    expected = float(np.clip(1.5 * atr_b, 0.025, 0.04))
+    assert book._stop_dist("B", last) == pytest.approx(expected)
+    # The fixture is tuned so the result is NOT the 4% cap: a hardcoded 0.04
+    # would fail here (the audit flagged the earlier version as vacuous).
+    assert expected < 0.04
     assert book._stop_dist("B", last) > 0.025
 
 

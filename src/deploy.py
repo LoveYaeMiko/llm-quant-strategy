@@ -38,6 +38,28 @@ class RealMoneyNotEnabled(RuntimeError):
     """Raised when a real-money path runs with the deployment gate closed."""
 
 
+def _as_bool(value: Any, default: bool = False) -> bool:
+    """Parse a YAML/env boolean without the ``bool("false") is True`` trap.
+
+    The config layer interpolates ``${ENV}`` values, so ``real_money_enabled``
+    can arrive as the STRING "false" — which ``bool()`` would turn into True and
+    silently open the gate. Anything unrecognised falls back to ``default``
+    (fail-closed for this module).
+    """
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in ("1", "true", "yes", "y", "on"):
+        return True
+    if text in ("0", "false", "no", "n", "off", ""):
+        return False
+    return default
+
+
 def deployment_status(cfg=None) -> dict[str, Any]:
     """Resolved deployment channel (config section ``deployment``)."""
     section: dict[str, Any] = {}
@@ -46,10 +68,14 @@ def deployment_status(cfg=None) -> dict[str, Any]:
             section = dict(cfg.section("deployment") or {})
         except Exception:  # noqa: BLE001 — a missing section is not an error
             section = {}
-    mode = str(section.get("mode", _DEFAULTS["mode"]) or MODE_OBSERVE).lower()
-    enabled = bool(section.get("real_money_enabled", _DEFAULTS["real_money_enabled"]))
+    mode = str(section.get("mode", _DEFAULTS["mode"]) or MODE_OBSERVE).strip().lower()
     if mode not in (MODE_OBSERVE, MODE_LIVE):
         mode = MODE_OBSERVE
+    enabled = _as_bool(section.get("real_money_enabled", _DEFAULTS["real_money_enabled"]))
+    # mode=observe is authoritative: even with the flag flipped (mis-edit, env
+    # interpolation, manual change), an observe deployment never submits.
+    if mode == MODE_OBSERVE:
+        enabled = False
     return {
         "mode": mode,
         "real_money_enabled": enabled,

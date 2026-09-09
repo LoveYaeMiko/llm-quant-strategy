@@ -55,9 +55,17 @@ def _in_trading_hours(now: datetime) -> bool:
     return (9, 30) <= t < (11, 30) or (13, 0) <= t < (15, 0)
 
 
-def _limit_pct(symbol: str) -> float:
-    """Daily price limit: 20% on ChiNext (300/301) and STAR (688/689), else 10%."""
-    return 0.20 if symbol[:3] in ("300", "301", "688", "689") else 0.10
+def _limit_pct(symbol: str, date: pd.Timestamp | None = None) -> float:
+    """Daily price limit via the shared, board- AND date-aware rule.
+
+    Single source of truth (``limit_locked.board_limit``): 主板 10%, 创业板 10%
+    until 2020-08-24 then 20%, 科创板 20%, 北交所 30%. The earlier local copy was
+    date-blind and treated 北交所 as 10%, which would have mis-flagged a 10–30%
+    drop on a BSE name as "limit-down, cannot sell" and skipped a real stop.
+    """
+    from ..backtest.limit_locked import board_limit
+
+    return board_limit(str(symbol), pd.Timestamp(date or pd.Timestamp.today()), True)
 
 
 
@@ -172,7 +180,7 @@ class LiveTrader:
         value = float(series.iloc[-1])
         return value if np.isfinite(value) and value > 0 else None
 
-    def _limit_down_price(self, symbol: str) -> float | None:
+    def _limit_down_price(self, symbol: str, date: pd.Timestamp | None = None) -> float | None:
         """Board-aware limit-down price from the previous close.
 
         The panel's close is adjustment-scaled while prints are raw, so this is
@@ -183,12 +191,17 @@ class LiveTrader:
         prev = self._prev_close(symbol)
         if prev is None:
             return None
-        return round(prev * (1.0 - _limit_pct(symbol)), 2)
+        return round(prev * (1.0 - _limit_pct(symbol, date)), 2)
 
     def _filter_quotes(
         self, raw: dict[str, tuple[float, pd.Timestamp | None]], now: datetime
     ) -> dict[str, float]:
-        """Drop stale quotes and limit-down prints from this decision cycle."""
+        """Drop stale quotes and limit-down prints from this decision cycle.
+
+        FAIL-CLOSED: a print without a usable timestamp cannot be proven fresh,
+        so it never decides. (The pre-fix code let it through — an API change or
+        a malformed frame would then have traded on an unknown-age price.)
+        """
         now_ts = pd.Timestamp(now)
         self._quote_blocks = {}
         self._quote_ts = {}
@@ -198,13 +211,15 @@ class LiveTrader:
             if not np.isfinite(px) or px <= 0:
                 self._quote_blocks[sym] = "invalid print"
                 continue
-            if ts is not None:
-                self._quote_ts[sym] = ts
-                age = (now_ts - ts).total_seconds()
-                if age > max_age:
-                    self._quote_blocks[sym] = f"quote stale {int(age // 60)}m (no decision)"
-                    continue
-            lim = self._limit_down_price(sym)
+            if ts is None:
+                self._quote_blocks[sym] = "no quote timestamp (no decision)"
+                continue
+            self._quote_ts[sym] = ts
+            age = (now_ts - ts).total_seconds()
+            if age > max_age:
+                self._quote_blocks[sym] = f"quote stale {int(age // 60)}m (no decision)"
+                continue
+            lim = self._limit_down_price(sym, now_ts)
             if lim is not None and px <= lim + 1e-9:
                 self._quote_blocks[sym] = f"limit-down {lim:.2f} — cannot sell"
                 continue

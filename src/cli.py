@@ -1605,6 +1605,16 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
 
             minute_provider = make_minute_provider(cfg)
 
+        # pb_stop_lo / pb_stop_hi are REQUIRED (see d_cycle._pullback_params):
+        # the class default ATR band was chosen under the collapsed true-range
+        # defect and is not validated, so a missing key must fail loudly rather
+        # than silently deploy an unvalidated stop width.
+        for _key in ("pb_stop_lo", "pb_stop_hi"):
+            if _key not in account:
+                raise ValueError(
+                    f"pullback account {account.get('name')!r} is missing {_key} — "
+                    "set it explicitly in configs/master_config.yaml"
+                )
         params = PullbackParams(
             k=int(account.get("pb_k", 8)),
             rank_source=rank_source,
@@ -1618,8 +1628,8 @@ def _build_account_portfolio(cfg, market, symbols, account, control_scale=None, 
             pullback_min=float(account.get("pb_pullback_min", 0.03)),
             vol_shrink=bool(account.get("pb_vol_shrink", True)),
             atr_mult=float(account.get("pb_atr_mult", 1.5)),
-            stop_lo=float(account.get("pb_stop_lo", 0.025)),
-            stop_hi=float(account.get("pb_stop_hi", 0.04)),
+            stop_lo=float(account["pb_stop_lo"]),
+            stop_hi=float(account["pb_stop_hi"]),
             breakeven_r=float(account.get("pb_breakeven_r", 1.0)),
             trail_r=float(account.get("pb_trail_r", 1.5)),
             exit_into_strength_r=float(account.get("pb_exit_into_strength_r", 0.0)),
@@ -1690,12 +1700,14 @@ def _book_fingerprint(portfolio) -> dict:
 def cmd_live(args) -> int:
     """实时盘中交易 — D 轨日内止损的实盘式执行。
 
-    Runs 09:30-15:10 on trading days: polls the latest minute print of every
-    held symbol and executes stop breaches AT THAT MOMENT (fill timestamp =
-    now, minute precision). Positions are marked at the latest print every poll
-    and written to ``outputs/live_<account>.json`` for the PAICC panel. The
-    17:30 close run merges today's live fills and never re-trades a past
-    timestamp (the replay sweep is gated by ``pb_live_intraday_from``).
+    Runs 09:30-15:00 on trading days (the 15:00 closing auction belongs to the
+    14:50 preclose order layer): polls the latest minute print of every held
+    symbol and executes stop breaches AT THAT MOMENT (fill timestamp = now,
+    minute precision). Prints that are stale, lack a timestamp or sit at the
+    limit-down price never decide. Positions are marked at the latest print
+    every poll and written to ``outputs/live_<account>.json`` for the PAICC
+    panel. The 15:10 close run merges today's live fills and never re-trades a
+    past timestamp (the replay sweep is gated by ``pb_live_intraday_from``).
     """
     _raise_process_priority("live")
     cfg = load_config()
@@ -1878,7 +1890,7 @@ def _shadow_cycle(cfg, symbols, start, end, seed, skip_refresh, control_scale=No
 
     # Pullback accounts with intraday features need today's row in the rollup or
     # their tail-volume entry gate silently blocks ALL new entries (missing =
-    # fail). Self-heal here so the 17:30 loop is never data-starved; the 15:30
+    # fail). Self-heal here so the 15:10 loop is never data-starved; the 15:02
     # scheduler job pre-fetches so this is usually a cheap no-op.
     if account and str(account.get("alpha_source", "")) == "pullback" and (
         bool(account.get("pb_use_intraday", False)) or bool(account.get("pb_intraday_stops", False))

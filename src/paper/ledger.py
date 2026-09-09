@@ -247,6 +247,32 @@ class PaperLedger:
         ).fetchall()
         return {(r[0] or "unlabelled"): int(r[1]) for r in rows}
 
+    def cash_stats(self) -> dict[str, float | int | str | None]:
+        """Cash discipline of the recorded days (audit finding V-1).
+
+        The pre-2026-09-09 executor could buy before its own sells settled and
+        drove cash negative on 12 days (max ≈ 8.7% of a 50k account = implicit
+        leverage). The guard is fixed; these historical days stay as recorded, so
+        the status/report must keep disclosing them instead of hiding the hole.
+        """
+        rows = self._conn.execute(
+            "SELECT date, cash FROM daily_state ORDER BY date"
+        ).fetchall()
+        if not rows:
+            return {"days": 0, "negative_cash_days": 0, "min_cash": None,
+                    "worst_date": None}
+        cash = [(str(r[0]), float(r[1])) for r in rows]
+        negatives = [(d, c) for d, c in cash if c < 0]
+        worst = min(cash, key=lambda kv: kv[1])
+        return {
+            "days": len(cash),
+            "negative_cash_days": len(negatives),
+            "min_cash": round(worst[1], 2),
+            "worst_date": worst[0],
+            "negative_cash_first": negatives[0][0] if negatives else None,
+            "negative_cash_last": negatives[-1][0] if negatives else None,
+        }
+
     def total_commission(self) -> float:
         row = self._conn.execute("SELECT COALESCE(SUM(commission), 0) FROM fills").fetchone()
         return float(row[0]) if row else 0.0

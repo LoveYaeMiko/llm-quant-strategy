@@ -119,6 +119,32 @@ class OrderExecutor:
         stamp = (notional * self.stamp_tax_sell_bps / 10_000.0) if side == "sell" else 0.0
         return commission + transfer + stamp
 
+    def _affordable_shares(self, symbol: str, want: float, price: float) -> float:
+        """Clip a BUY to the cash actually available (no implicit leverage).
+
+        The production ledger carried 12 days of negative cash (2026-01-08
+        −4,376 on a 50,000 account ≈ 8.7% implicit leverage) because a rebalance
+        could buy before its own sells had settled and nothing checked buying
+        power. Sells are now executed first and every buy is clipped here; a buy
+        that cannot afford one board lot is skipped entirely.
+        """
+        lot = _board_lot(symbol)
+        fill_price = float(round(self._quote(price, "buy"), 2))
+        if fill_price <= 0:
+            return 0.0
+        # reserve the fee: worst case is the minimum commission plus transfer
+        budget = max(0.0, float(self.cash)) - self.min_commission * 1.001
+        if budget <= 0:
+            return 0.0
+        max_shares = budget / fill_price
+        max_shares = (
+            np.floor(max_shares) if lot == 200 else np.floor(max_shares / lot) * lot
+        )
+        clipped = float(min(want, max_shares))
+        if clipped < lot:  # odd-lot buys are illegal outside a full close
+            return 0.0
+        return clipped
+
     def execute(
         self,
         targets: pd.DataFrame,
@@ -152,131 +178,168 @@ class OrderExecutor:
             prices_row = prices.loc[date] if date in prices.index else prices.iloc[0]
             px = prices_row.reindex(row.index).fillna(0.0)
             locked = limit_locked
+            planned: dict[str, float] = {}
             for symbol in row.index:
                 if symbol in self.blacklist:
                     continue
-                price = float(px.get(symbol, np.nan))
-                if not np.isfinite(price) or price <= 0:
+                delta = self._plan_delta(symbol, row, px, equity, date, locked)
+                if delta is None or abs(delta) < 1e-9:
                     continue
-                target_w = float(row[symbol])
-                # position cap in weight terms vs current equity
-                cap_shares = self.max_position_pct * equity / price
-                current = self.positions.get(symbol, 0.0)
-                target_shares = np.clip(target_w * equity / price, -cap_shares, cap_shares)
-                delta = target_shares - current
-                if abs(delta) < 1e-9:
-                    continue
-                # limit-lock legality — defer the trade to the next rebalance
-                if locked is not None:
-                    lv = locked.get(symbol, np.nan)
-                    if np.isfinite(lv):
-                        # board- AND date-aware band (主板 10%, 创业板 10% until
-                        # 2020-08-24 then 20%, 科创板 20%, 北交所 30%) — one
-                        # source of truth with the backtest mask.
-                        from ..backtest.limit_locked import board_limit
-
-                        lim = board_limit(symbol, pd.Timestamp(date), True)
-                        if delta > 0 and lv >= lim - 0.005:
-                            continue  # buying into a limit-up close
-                        if delta < 0 and lv <= -(lim - 0.005):
-                            continue  # selling into a limit-down close
-                # board lot — STAR Market (688) is 200-share min in 1-share
-                # increments; elsewhere whole 100-share lots, odd lots only when
-                # closing out
-                lot = _board_lot(symbol)
-                if delta > 0:
-                    if current < 0:
-                        # covering a short: the cover itself may close entirely
-                        # (odd lot OK), but any overshoot into a new long must be
-                        # a whole lot
-                        new_shares = current + delta
-                        if new_shares >= 0:
-                            if lot == 200:
-                                long_delta = np.floor(new_shares) if new_shares >= lot else 0.0
-                            else:
-                                long_delta = np.floor(new_shares / lot) * lot
-                            delta = -current + long_delta
-                            if delta <= 0:
-                                continue
-                        else:
-                            rounded_new = -np.ceil(abs(new_shares) / lot) * lot
-                            if rounded_new <= current:
-                                continue  # rounding would re-deepen the short
-                            delta = rounded_new - current
-                    else:
-                        if lot == 200:
-                            delta = np.floor(delta)
-                            if delta < lot:
-                                continue
-                        else:
-                            delta = np.floor(delta / lot) * lot
-                            if delta <= 0:
-                                continue
-                elif delta < 0:
-                    if current > 0:
-                        new_shares = current + delta
-                        if new_shares > 0:
-                            if lot == 200:
-                                if new_shares < lot:
-                                    delta = -current  # can't keep <200 — close out
-                                else:
-                                    delta = np.floor(new_shares) - current
-                                    if delta >= 0:
-                                        continue
-                            else:
-                                rounded_new = np.ceil(new_shares / lot) * lot
-                                if rounded_new >= current:
-                                    continue  # nothing sellable after lot rounding
-                                delta = rounded_new - current
-                        else:
-                            # flips through zero: close the long entirely (odd
-                            # lot OK), the overshoot (a new short) must be whole
-                            short_lots = np.floor(-new_shares / lot) * lot
-                            delta = -current - short_lots
-                            if delta >= 0:
-                                continue
-                    else:
-                        # adding to a short — whole lots
-                        delta = -np.floor(abs(delta) / lot) * lot
-                        if delta >= 0:
-                            continue
-                # cost governance — exits always execute (closing is one fill);
-                # entries/adjustments skip when too small to be worth the fees
-                is_exit = abs(target_w) < 1e-12
-                if not is_exit:
-                    trade_notional = abs(delta) * price
-                    if trade_notional < self.notional_floor:
+                planned[symbol] = float(delta)
+            # Two passes over the planned deltas: SELLS first (an exit frees cash
+            # and needs no buying power), then BUYS clipped to available cash.
+            # Without this a rebalance could buy before its own sells settled and
+            # drive cash negative — the production ledger carried 12 such days
+            # (see _affordable_shares).
+            for pass_side in ("sell", "buy"):
+                for symbol, delta in planned.items():
+                    if (delta < 0) != (pass_side == "sell"):
                         continue
-                    if self.band_frac > 0:
-                        current_w = abs(current) * price / equity
-                        if abs(target_w - current_w) < self.band_frac:
+                    price = float(px.get(symbol, np.nan))
+                    if not np.isfinite(price) or price <= 0:
+                        continue
+                    if pass_side == "buy":
+                        delta = self._affordable_shares(symbol, delta, price)
+                        if delta <= 0:
                             continue
-                side = "buy" if delta > 0 else "sell"
-                # fill on the 0.01 tick nearest the quoted price (tick
-                # quantization; the PIT band check tolerates one tick)
-                fill_price = float(round(self._quote(price, side), 2))
-                fee = self._fee(abs(delta) * fill_price, side)
-                self.cash -= delta * fill_price + fee
-                new_shares = current + delta
-                if abs(new_shares) < 1e-9:
-                    self.positions.pop(symbol, None)  # fully closed — drop the name
-                else:
-                    self.positions[symbol] = new_shares
-                result.fills.append(
-                    Fill(
-                        date=str(date),
-                        symbol=symbol,
-                        side=side,
-                        shares=float(delta),
-                        price=float(fill_price),
-                        commission=float(fee),
-                        notional=float(abs(delta) * fill_price),
-                        source=source,
+                    side = "buy" if delta > 0 else "sell"
+                    current = self.positions.get(symbol, 0.0)
+                    # fill on the 0.01 tick nearest the quoted price (tick
+                    # quantization; the PIT band check tolerates one tick)
+                    fill_price = float(round(self._quote(price, side), 2))
+                    fee = self._fee(abs(delta) * fill_price, side)
+                    self.cash -= delta * fill_price + fee
+                    new_shares = current + delta
+                    if abs(new_shares) < 1e-9:
+                        self.positions.pop(symbol, None)  # fully closed — drop the name
+                    else:
+                        self.positions[symbol] = new_shares
+                    result.fills.append(
+                        Fill(
+                            date=str(date),
+                            symbol=symbol,
+                            side=side,
+                            shares=float(delta),
+                            price=float(fill_price),
+                            commission=float(fee),
+                            notional=float(abs(delta) * fill_price),
+                            source=source,
+                        )
                     )
-                )
         result.cash = self.cash
         result.positions = dict(self.positions)
         return result
+
+    def _plan_delta(
+        self,
+        symbol: str,
+        row: pd.Series,
+        px: pd.Series,
+        equity: float,
+        date,
+        locked: Optional[pd.Series],
+    ) -> Optional[float]:
+        """Signed share delta for one symbol, after legality, lot and cost gates.
+
+        Pure planning: reads ``self.positions`` but never mutates cash or
+        positions, so the caller can execute the plan in two passes (sells then
+        cash-clipped buys).
+        """
+        price = float(px.get(symbol, np.nan))
+        if not np.isfinite(price) or price <= 0:
+            return None
+        target_w = float(row[symbol])
+        # position cap in weight terms vs current equity
+        cap_shares = self.max_position_pct * equity / price
+        current = self.positions.get(symbol, 0.0)
+        target_shares = np.clip(target_w * equity / price, -cap_shares, cap_shares)
+        delta = target_shares - current
+        if abs(delta) < 1e-9:
+            return None
+        # limit-lock legality — defer the trade to the next rebalance
+        if locked is not None:
+            lv = locked.get(symbol, np.nan)
+            if np.isfinite(lv):
+                # board- AND date-aware band (主板 10%, 创业板 10% until
+                # 2020-08-24 then 20%, 科创板 20%, 北交所 30%) — one
+                # source of truth with the backtest mask.
+                from ..backtest.limit_locked import board_limit
+
+                lim = board_limit(symbol, pd.Timestamp(date), True)
+                if delta > 0 and lv >= lim - 0.005:
+                    return None  # buying into a limit-up close
+                if delta < 0 and lv <= -(lim - 0.005):
+                    return None  # selling into a limit-down close
+        # board lot — STAR Market (688) is 200-share min in 1-share increments;
+        # elsewhere whole 100-share lots, odd lots only when closing out
+        lot = _board_lot(symbol)
+        if delta > 0:
+            if current < 0:
+                # covering a short: the cover itself may close entirely (odd lot
+                # OK), but any overshoot into a new long must be a whole lot
+                new_shares = current + delta
+                if new_shares >= 0:
+                    if lot == 200:
+                        long_delta = np.floor(new_shares) if new_shares >= lot else 0.0
+                    else:
+                        long_delta = np.floor(new_shares / lot) * lot
+                    delta = -current + long_delta
+                    if delta <= 0:
+                        return None
+                else:
+                    rounded_new = -np.ceil(abs(new_shares) / lot) * lot
+                    if rounded_new <= current:
+                        return None  # rounding would re-deepen the short
+                    delta = rounded_new - current
+            else:
+                if lot == 200:
+                    delta = np.floor(delta)
+                    if delta < lot:
+                        return None
+                else:
+                    delta = np.floor(delta / lot) * lot
+                    if delta <= 0:
+                        return None
+        elif delta < 0:
+            if current > 0:
+                new_shares = current + delta
+                if new_shares > 0:
+                    if lot == 200:
+                        if new_shares < lot:
+                            delta = -current  # can't keep <200 — close out
+                        else:
+                            delta = np.floor(new_shares) - current
+                            if delta >= 0:
+                                return None
+                    else:
+                        rounded_new = np.ceil(new_shares / lot) * lot
+                        if rounded_new >= current:
+                            return None  # nothing sellable after lot rounding
+                        delta = rounded_new - current
+                else:
+                    # flips through zero: close the long entirely (odd lot OK),
+                    # the overshoot (a new short) must be whole
+                    short_lots = np.floor(-new_shares / lot) * lot
+                    delta = -current - short_lots
+                    if delta >= 0:
+                        return None
+            else:
+                # adding to a short — whole lots
+                delta = -np.floor(abs(delta) / lot) * lot
+                if delta >= 0:
+                    return None
+        # cost governance — exits always execute (closing is one fill);
+        # entries/adjustments skip when too small to be worth the fees
+        is_exit = abs(target_w) < 1e-12
+        if not is_exit:
+            trade_notional = abs(delta) * price
+            if trade_notional < self.notional_floor:
+                return None
+            if self.band_frac > 0:
+                current_w = abs(current) * price / equity
+                if abs(target_w - current_w) < self.band_frac:
+                    return None
+        return float(delta)
 
     def settle(self, prices: pd.Series) -> float:
         """Mark the book to market at ``prices`` and return total equity.
@@ -310,8 +373,13 @@ class OrderExecutor:
         (closing) prices with the same slippage/tick/fee model as the intraday
         executor. Limit-locked or suspended names do NOT fill (the order simply
         lapses — as in reality). Fill ``time`` records the auction timestamp.
+
+        Same cash discipline as :meth:`execute`: sells settle first, then buys
+        are clipped to the proceeds (a pre-submitted list can be larger than the
+        account's cash — the old code filled it anyway and went negative).
         """
         result = OrderResult()
+        valid: list[tuple[str, float, float]] = []
         for o in orders:
             symbol = str(o["symbol"])
             shares = float(o["shares"])
@@ -320,7 +388,6 @@ class OrderExecutor:
             price = float(prices.get(symbol, np.nan))
             if not np.isfinite(price) or price <= 0:
                 continue  # suspended — no auction print, order lapses
-            side = "buy" if shares > 0 else "sell"
             if limit_locked is not None:
                 lv = limit_locked.get(symbol, np.nan)
                 if np.isfinite(lv):
@@ -333,29 +400,40 @@ class OrderExecutor:
                         continue  # buying into a limit-up close
                     if shares < 0 and lv <= -(lim - 0.005):
                         continue  # selling into a limit-down close
-            fill_price = float(round(self._quote(price, side), 2))
-            if fill_price <= 0:
-                continue
-            fee = self._fee(abs(shares) * fill_price, side)
-            self.cash -= shares * fill_price + fee
-            new_shares = self.positions.get(symbol, 0.0) + shares
-            if abs(new_shares) < 1e-9:
-                self.positions.pop(symbol, None)
-            else:
-                self.positions[symbol] = new_shares
-            result.fills.append(
-                Fill(
-                    date=str(date),
-                    symbol=symbol,
-                    side=side,
-                    shares=shares,
-                    price=float(fill_price),
-                    commission=float(fee),
-                    notional=float(abs(shares) * fill_price),
-                    time=str(fill_time),
-                    source=source,
+            valid.append((symbol, shares, price))
+
+        for pass_side in ("sell", "buy"):
+            for symbol, shares, price in valid:
+                if (shares < 0) != (pass_side == "sell"):
+                    continue
+                if pass_side == "buy":
+                    shares = self._affordable_shares(symbol, shares, price)
+                    if shares <= 0:
+                        continue
+                side = "buy" if shares > 0 else "sell"
+                fill_price = float(round(self._quote(price, side), 2))
+                if fill_price <= 0:
+                    continue
+                fee = self._fee(abs(shares) * fill_price, side)
+                self.cash -= shares * fill_price + fee
+                new_shares = self.positions.get(symbol, 0.0) + shares
+                if abs(new_shares) < 1e-9:
+                    self.positions.pop(symbol, None)
+                else:
+                    self.positions[symbol] = new_shares
+                result.fills.append(
+                    Fill(
+                        date=str(date),
+                        symbol=symbol,
+                        side=side,
+                        shares=shares,
+                        price=float(fill_price),
+                        commission=float(fee),
+                        notional=float(abs(shares) * fill_price),
+                        time=str(fill_time),
+                        source=source,
+                    )
                 )
-            )
         result.cash = self.cash
         result.positions = dict(self.positions)
         return result

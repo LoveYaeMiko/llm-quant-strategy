@@ -256,6 +256,27 @@ def run_challenger(cfg) -> dict[str, Any]:
         max_position_pct=float(acc.get("max_position_pct", 0.40)),
         pit_strict=True, seed=1,
     )
+    # Same closing-auction制度 as production (audit D-8): on and after
+    # pb_live_intraday_from the close rebalance must fill the 14:50 pre-submitted
+    # list, not compute a book at the close — otherwise the challenger trades a
+    # different mechanism than the incumbent and the comparison is invalid.
+    live_from = str(acc.get("pb_live_intraday_from", "") or "") or None
+    if live_from:
+        orders_path = ROOT / "outputs" / "preclose_orders_D_5W.json"
+
+        def _preclose_provider(d, _live_from=live_from, _path=orders_path):
+            if pd.Timestamp(d) < pd.Timestamp(_live_from):
+                return "__normal__"
+            if _path.is_file():
+                try:
+                    data = json.loads(_path.read_text(encoding="utf-8"))
+                    if str(data.get("date")) == str(pd.Timestamp(d).date()):
+                        return list(data.get("orders", []) or [])
+                except (ValueError, OSError):
+                    pass
+            return None  # live date without a submitted list → no close trades
+
+        runner.preclose_provider = _preclose_provider
     result = runner.run(start=start, end=latest)
     m = result["metrics"]
     ledger.close()
@@ -271,8 +292,22 @@ def run_challenger(cfg) -> dict[str, Any]:
 
 
 def _pullback_params(acc):
+    """Deployed pullback parameters from an account dict.
+
+    ``pb_stop_lo`` / ``pb_stop_hi`` are REQUIRED. The class defaults (ATR band
+    2.5–4%) were selected under the collapsed true-range defect and are not
+    validated; silently falling back to them when a key is deleted is exactly how
+    the deployed width drifted from the documented one. Fail loudly instead.
+    """
     from .paper.pullback_book import PullbackParams
 
+    for key in ("pb_stop_lo", "pb_stop_hi"):
+        if key not in acc:
+            raise ValueError(
+                f"pullback account {acc.get('name')!r} is missing {key} — the class "
+                "default (ATR 2.5–4%) is NOT the validated width; set it explicitly "
+                "in configs/master_config.yaml (see docs/D_TRACK_EVIDENCE.md §三)"
+            )
     return PullbackParams(
         k=int(acc.get("pb_k", 6)), rank_source="ml", rank_min=float(acc.get("pb_rank_min", 0.8)),
         mom_window=int(acc.get("pb_mom_window", 63)),
@@ -281,7 +316,7 @@ def _pullback_params(acc):
         ema_fast=int(acc.get("pb_ema_fast", 21)), ema_zone=int(acc.get("pb_ema_zone", 21)),
         zone_band=float(acc.get("pb_zone_band", 0.02)), pullback_min=float(acc.get("pb_pullback_min", 0.03)),
         vol_shrink=bool(acc.get("pb_vol_shrink", True)), atr_mult=float(acc.get("pb_atr_mult", 1.5)),
-        stop_lo=float(acc.get("pb_stop_lo", 0.025)), stop_hi=float(acc.get("pb_stop_hi", 0.04)),
+        stop_lo=float(acc["pb_stop_lo"]), stop_hi=float(acc["pb_stop_hi"]),
         breakeven_r=float(acc.get("pb_breakeven_r", 1.0)), trail_r=float(acc.get("pb_trail_r", 1.5)),
         exit_into_strength_r=float(acc.get("pb_exit_into_strength_r", 0.0)),
         max_hold=int(acc.get("pb_max_hold", 40)), entry_gate=float(acc.get("pb_entry_gate", 0.0)),
@@ -336,8 +371,16 @@ def decide_promotion(cfg, market=None, today: pd.Timestamp | None = None) -> dic
     from .paper.ledger import PaperLedger as _PL
 
     ch2 = _PL(str(challenger_path))
-    n_fills = ch2.n_fills()
+    # Count fills INSIDE the evaluation window, not the whole challenger ledger
+    # (audit D-8): the gate's "≥ min_fills" precondition must describe the same
+    # sample the returns are computed on.
+    ch_fills = ch2.fills()
     ch2.close()
+    if len(ch_fills):
+        fdates = pd.to_datetime(ch_fills["date"])
+        n_fills = int(((fdates >= start) & (fdates <= today)).sum())
+    else:
+        n_fills = 0
 
     from scripts.audit_tracks import legality_audit  # noqa: PLC0415
 

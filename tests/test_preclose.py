@@ -30,8 +30,10 @@ def test_execute_orders_fills_at_auction_close():
         prices, pd.Timestamp("2026-09-07"),
     )
     assert len(res.fills) == 2
-    buy = res.fills[0]
-    sell = res.fills[1]
+    # sells settle first (cash guard), then buys
+    assert [f.side for f in res.fills] == ["sell", "buy"]
+    sell = next(f for f in res.fills if f.side == "sell")
+    buy = next(f for f in res.fills if f.side == "buy")
     assert buy.price == pytest.approx(10.00 * 1.0002, abs=0.01)  # bid/ask slippage, tick
     assert sell.price == pytest.approx(20.00 * 0.9998, abs=0.01)
     assert buy.time == "15:00"  # auction fill timestamp

@@ -202,7 +202,12 @@ class PaperRunner:
                         source="replay",
                     ))
 
-            if (i - start_idx) % self.rebalance_days == 0:
+            # Rebalance phase is anchored to the WINDOW's first date, not to the
+            # resume point: ``(i - start_idx)`` reset the phase on every resume,
+            # so a 10-day book resumed after a crash rebalanced one day early
+            # (audit D-9). ``rebalance_days == 1`` made it harmless for the D
+            # track, but the multi-day books were silently phase-shifted.
+            if i % self.rebalance_days == 0:
                 # Closing-auction layer (three-way):
                 #   "__normal__" → compute the book at the close (historical path);
                 #   list        → execute the 14:55 order list at auction close;

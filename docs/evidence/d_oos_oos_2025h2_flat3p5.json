@@ -132,5 +132,8 @@
     "no_fill_on_limit_locked_bar": true,
     "cost_model_consistent": true
   },
-  "all_passed": true
+  "all_passed": true,
+  "data_coverage_invalid": true,
+  "data_coverage_caveat": "This artifact was produced BEFORE the symbol-level coverage probe existed (2026-09-09 audit P-1). The 2025-09-01..12-31 window contains 35 days on which only ~274/800 symbols carried minute features (every SH name missing), so its day-level minute_window_coverage=1.0 and all_passed=true are NOT evidence of usable data. Numbers from this file must not be cited as OOS evidence.",
+  "citable": false
 }

@@ -270,11 +270,12 @@ shadow:
       priority: 100                     # 实时拟真轨最高优先级，日度闭环最先处理
       cash: 50000
       # 部署口径 = 日内止损 + 确认式触发(close) + 开盘30分钟豁免 + 尾盘量比门槛 + 满仓化
-      #            + 固定 2.5% 止损（stop_lo == stop_hi，见下方说明）。
-      # 实测出处（生产同构装配、fresh ledger、2026-01-01→08-28）：
-      #   outputs/d_atr_impact.json 的 flat_2p5 → +14.91% 累计 / +24.82% 年化 /
-      #   Sharpe 1.53 / maxDD 6.18% / 245 笔（日内 53）；同一口径由 OOS harness
-      #   独立复现（outputs/d_oos_is_2026.json，11/11 断言通过，t=1.22 不显著）。
+      #            + 固定 3.5% 止损（stop_lo == stop_hi == 0.035，见 pb_stop_hi 处 D-8c 说明）。
+      # 部署口径实测出处（生产同构装配、fresh ledger、2026-01-01→08-28，含现金约束修复后重跑）：
+      #   outputs/d_stop_grid.json 的 flat_3p5 → +16.36% 累计 / +27.34% 年化 /
+      #   Sharpe 1.66 / maxDD 6.12% / 200 笔（日内 40）。
+      # 注意：outputs/d_oos_*.json 是旧 2.5% 口径且 2025 窗口含 35 天分钟数据洞
+      #   （仅 274/800 标的），已标记 data_coverage_invalid，不得引用。
       # 触发约定的敏感性研究（ATR 自适应止损口径）：outputs/d_track_grid7.json。
       alpha_source: "pullback"        # Martin Luk 回撤买入纪律（日线版，ML 扫描 + 改良）
       universe: "hs300_500"           # 扫描截面（与已退役 B/C 轨一致，便于对比）
@@ -316,8 +317,9 @@ shadow:
                                       # D_close_only 12.54% / D_low 12.93% / D_close_trig 13.96% / D_close_skip30 8.26%（年化）
                                       # —— 修复 TR 口径后"日内止损必损"的旧结论不再成立，故保留日内止损。
       pb_stop_open_minutes: 30        # 开盘 30 分钟豁免（集合竞价/开盘异动不扫损）。
-                                      # 部署口径实测（outputs/d_atr_impact.json）：带豁免 +24.82%/Sharpe 1.53
-                                      # vs 不带 +21.92%/1.35（2026-01→08-28，固定 2.5% 止损）→ 保留。
+                                      # 部署口径实测（旧 2.5% 宽度下的 outputs/d_atr_impact.json）：
+                                      # 带豁免 +24.82%/Sharpe 1.53 vs 不带 +21.92%/1.35 → 保留；
+                                      # 3.5% 宽度下尚未单独 A/B（列为待办）。
       pb_stop_buffer: 0.0             # 触发缓冲（v7 网格 0.5% 缓冲略逊，关闭）
       pb_live_intraday_from: "2026-09-04"  # 该日起日内止损由实时交易服务执行；收盘回放不再对当日历史时点补做交易
       pb_tail_vol_max: 0.5            # 尾盘 30 分钟量比 ≤ 0.5 才入场（outputs/d_track_intraday.json：D_tail50 年化 21.2% vs D_base 20.8%）

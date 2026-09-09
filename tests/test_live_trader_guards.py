@@ -36,11 +36,17 @@ def test_decision_window_ends_at_1500(hhmm, expected):
 
 
 def test_limit_pct_is_board_aware():
-    assert _limit_pct("300001.SZ") == 0.20
-    assert _limit_pct("301001.SZ") == 0.20
-    assert _limit_pct("688001.SH") == 0.20
-    assert _limit_pct("600000.SH") == 0.10
-    assert _limit_pct("000001.SZ") == 0.10
+    assert _limit_pct("300001.SZ") == 0.195
+    assert _limit_pct("301001.SZ") == 0.195
+    assert _limit_pct("688001.SH") == 0.195
+    assert _limit_pct("600000.SH") == 0.095
+    assert _limit_pct("000001.SZ") == 0.095
+    # BSE is 30%, not 10% — the old date-blind copy would have mis-flagged a
+    # 10–30% drop as "limit-down, cannot sell" and skipped a real stop.
+    assert _limit_pct("830001.BJ") == pytest.approx(0.295)
+    # ChiNext traded a 10% band before 2020-08-24.
+    assert _limit_pct("300001.SZ", pd.Timestamp("2020-01-02")) == pytest.approx(0.095)
+    assert _limit_pct("300001.SZ", pd.Timestamp("2021-01-04")) == pytest.approx(0.195)
 
 
 def _trader_stub(max_age_minutes: float = 5.0, limit_down: dict[str, float] | None = None) -> LiveTrader:
@@ -50,7 +56,7 @@ def _trader_stub(max_age_minutes: float = 5.0, limit_down: dict[str, float] | No
     obj._quote_blocks = {}
     obj._quote_ts = {}
     obj._logged_blocks = set()
-    obj._limit_down_price = lambda sym: (limit_down or {}).get(sym)  # type: ignore[method-assign]
+    obj._limit_down_price = lambda sym, date=None: (limit_down or {}).get(sym)  # type: ignore[method-assign]
     return obj
 
 
@@ -78,13 +84,15 @@ def test_limit_down_print_is_not_sold():
     assert live2 == {"600000.SH": 9.01}
 
 
-def test_missing_timestamp_is_allowed_but_invalid_print_is_not():
+def test_missing_timestamp_fails_closed_but_invalid_print_is_labelled():
+    """A print that cannot be proven fresh must never decide (audit A-2/D-3)."""
     t = _trader_stub()
     now = datetime(2026, 9, 8, 10, 30, 0)
     live = t._filter_quotes(
         {"600000.SH": (10.0, None), "600001.SH": (float("nan"), None)}, now
     )
-    assert live == {"600000.SH": 10.0}
+    assert live == {}
+    assert "timestamp" in t._quote_blocks["600000.SH"]
     assert t._quote_blocks["600001.SH"] == "invalid print"
 
 
@@ -96,7 +104,8 @@ def test_prev_close_and_limit_down_use_panel_last_row():
         index=pd.to_datetime(["2026-09-04", "2026-09-07"]),
     )
     assert t._prev_close("600000.SH") == pytest.approx(12.0)
-    assert t._limit_down_price("600000.SH") == pytest.approx(10.8)
+    # shared board_limit: 主板 band 9.5% → 12 × (1 − 0.095) = 10.86
+    assert t._limit_down_price("600000.SH") == pytest.approx(10.86)
     assert t._prev_close("999999.SZ") is None
     assert t._limit_down_price("999999.SZ") is None
 

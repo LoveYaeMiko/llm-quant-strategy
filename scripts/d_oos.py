@@ -41,6 +41,11 @@ import numpy as np
 #: 15 days tolerates the Spring-Festival break (a 10-11 day market closure).
 MAX_CALENDAR_GAP_DAYS = 15
 
+#: Minimum share of the universe that must carry a minute feature on EVERY day
+#: of the window. The 2025-10-27→12-12 hole had ~274/800 (0.34) while the
+#: day-level probe reported 100% — this threshold is what makes that visible.
+MIN_SYMBOL_COVERAGE = 0.90
+
 #: Intraday decisions must stop at the close; the auction layer owns 15:00+.
 INTRADAY_CUTOFF = "15:00"
 
@@ -100,6 +105,7 @@ def main() -> int:
     symbols = resolve_shadow_universe(cfg, account.get("universe"))
 
     ledger_path = ROOT / "outputs" / f"_doos_{args.label}.sqlite"
+    ledger_existed_before = ledger_path.exists()
     ledger_path.unlink(missing_ok=True)
 
     print(f"[oos] window=[{args.start}, {args.end}] account={args.account} "
@@ -111,30 +117,46 @@ def main() -> int:
 
     market = _build_market_for_paper(cfg, symbols, args.start, None, seed=args.seed)
     symbols = [s for s in symbols if s in market.price_panel.columns]
+    # Same kill-switch state as the production 15:10 run (a research run without
+    # the gate is NOT isomorphic once the gate leaves `normal`).
+    from src.autopilot.state import ControlState
+
+    state_path = str(
+        ROOT / str(cfg.get("autopilot.state_file", "outputs/autopilot_state.json"))
+    ).replace(".json", f"_{args.account}.json")
+    control = ControlState.load(state_path)
+    print(f"[oos] kill-switch: mode={control.mode} gross={control.gross_scale:g}", flush=True)
+
     probe: dict = {}
     status, ledger_out = _shadow_cycle(
         cfg, symbols, args.start, args.end, args.seed, skip_refresh=not args.refresh,
-        control_scale=None, account=account, ledger_override=str(ledger_path),
+        control_scale=control.gross_scale, account=account,
+        ledger_override=str(ledger_path),
         write_artifacts=False, probe=probe, market_override=market,
     )
 
     ledger = PaperLedger(str(ledger_path))
     fills = ledger.fills()
-    equity = ledger.equity_curve()
+    equity = ledger.curve() if hasattr(ledger, "curve") else ledger.equity_curve()
     ledger_cost = float(ledger.total_commission())
     ledger.close()
 
-    # ---- independent production assembly (fingerprint comparison) -----------
+    # ---- production assembly, built from the CONFIG account (no overrides) ---
+    # This is the real production fingerprint. Comparing the run against a probe
+    # built from the SAME override set (the earlier behaviour) is a self-
+    # comparison that can never detect "this is not the production config".
     prod_probe: dict = {}
-    from src.cli import _build_account_portfolio
+    from src.cli import _build_account_portfolio, _book_fingerprint
 
+    prod_account = next(
+        (a for a in (cfg.get("shadow.accounts") or []) if str(a.get("name")) == args.account),
+        account,
+    )
     prod_ledger = PaperLedger(str(ROOT / "outputs" / "_doos_prod_probe.sqlite"))
     try:
         prod_book, _ = _build_account_portfolio(
-            cfg, market, symbols, account, None, ledger=prod_ledger
+            cfg, market, symbols, prod_account, control.gross_scale, ledger=prod_ledger
         )
-        from src.cli import _book_fingerprint
-
         prod_probe = _book_fingerprint(prod_book)
     finally:
         prod_ledger.close()
@@ -200,15 +222,30 @@ def main() -> int:
                          "day_return": round(lv, 4)}
                     )
 
-    # minute-feature coverage of the window: the tail-volume entry gate treats a
-    # missing day as FAIL, so a gap silently suppresses entries (and the OOS
-    # number must be read with that in mind).
+    # minute-feature coverage of the window. TWO levels are needed:
+    #  * day level — does the rollup have a row for each trading day?
+    #  * SYMBOL level — on each day, how much of the universe actually carries a
+    #    feature? The 2025-10-27→12-12 hole had rows every day but only ~274/800
+    #    symbols (every SH name missing), and the tail-volume gate turns a missing
+    #    symbol into "no entry". A day-level 100% therefore said nothing.
     tail = frames.get("tail_vol") if frames else None
+    symbol_cov: pd.Series = pd.Series(dtype=float)
+    low_cov_days: list[str] = []
     if tail is not None and len(tail):
-        covered = tail.index[(tail.index >= pd.Timestamp(args.start)) & (tail.index <= pd.Timestamp(args.end))]
-        coverage = round(len(set(pd.to_datetime(covered))) / max(1, len(dates)), 4)
+        win = tail.index[(tail.index >= pd.Timestamp(args.start)) & (tail.index <= pd.Timestamp(args.end))]
+        sub = tail.loc[win]
+        if len(sub):
+            symbol_cov = sub.notna().sum(axis=1) / max(1, sub.shape[1])
+        coverage = round(len(set(pd.to_datetime(win))) / max(1, len(dates)), 4)
+        low_cov_days = [str(pd.Timestamp(d).date()) for d, v in symbol_cov.items() if v < MIN_SYMBOL_COVERAGE]
     else:
         coverage = 0.0
+
+    # fills that happened on a low-coverage day (they are inside a data hole)
+    fills_in_low_cov = 0
+    if len(fills) and low_cov_days:
+        low = set(low_cov_days)
+        fills_in_low_cov = int(pd.to_datetime(fills["date"]).dt.date.astype(str).isin(low).sum())
 
     # cost consistency: ledger commission == sum of per-fill commissions
     if len(fills):
@@ -221,15 +258,30 @@ def main() -> int:
     sharpe = float(status.get("equity", {}).get("sharpe", 0.0) or 0.0)
     sharpe_se = math.sqrt(252.0 / n_days) if n_days > 0 else float("inf")
 
+    n_live_dates = int(live_dates.sum()) if len(live_dates) else 0
+    params_match = bool(
+        probe.get("params_hash") and probe.get("params_hash") == prod_probe.get("params_hash")
+    )
+    assembly_match = bool(
+        probe.get("book_class") == prod_probe.get("book_class")
+        and probe.get("has_intraday_frames") == prod_probe.get("has_intraday_frames")
+        and probe.get("has_minute_provider") == prod_probe.get("has_minute_provider")
+        and probe.get("gross_scale_wired") == prod_probe.get("gross_scale_wired")
+    )
+    min_symbol_cov = round(float(symbol_cov.min()), 4) if len(symbol_cov) else 0.0
+
     checks = {
-        "fresh_ledger_not_resumed": bool(probe.get("resumed") is False),
-        "contiguous_window_no_gap": gap_days <= MAX_CALENDAR_GAP_DAYS,
-        "intraday_frames_loaded": bool(probe.get("has_intraday_frames")),
-        "minute_provider_loaded": bool(probe.get("has_minute_provider")),
-        "strategy_fingerprint_is_production": bool(
-            probe.get("params_hash") and probe.get("params_hash") == prod_probe.get("params_hash")
-            and probe.get("book_class") == prod_probe.get("book_class")
+        # the ledger is unlinked just above, so assert THAT instead of a result
+        # field that can only ever be False (the old check was a tautology).
+        "ledger_was_fresh": bool(not ledger_existed_before),
+        "calendar_gap_within_tolerance": gap_days <= MAX_CALENDAR_GAP_DAYS,
+        "minute_symbol_coverage_ok": bool(len(symbol_cov) and min_symbol_cov >= MIN_SYMBOL_COVERAGE),
+        "no_fills_inside_data_hole": bool(fills_in_low_cov == 0),
+        "intraday_frames_loaded": bool(
+            probe.get("has_intraday_frames") and "tail_vol" in (frames or {})
         ),
+        "minute_provider_loaded": bool(probe.get("has_minute_provider")),
+        "assembly_is_production": assembly_match,
         "no_fill_after_window_end": bool(
             not len(fills) or pd.to_datetime(fills["date"]).max() <= pd.Timestamp(args.end)
         ),
@@ -237,34 +289,50 @@ def main() -> int:
             not len(intraday)
             or (intraday["time"].astype(str).str.slice(0, 5) < INTRADAY_CUTOFF).all()
         ),
-        "live_dates_not_replayed": bool(not len(intraday) or live_dates.sum() == 0),
+        # only meaningful when the window actually contains live-execution dates
+        "live_dates_not_replayed": bool(not len(intraday) or n_live_dates == 0),
         "t_plus_1_respected": bool(t1_ok),
         "no_fill_on_limit_locked_bar": bool(locked_fills == 0),
         "cost_model_consistent": bool(
             abs(cost_sum - cost_from_metrics) < 0.01 and abs(cost_sum - ledger_cost) < 0.01
         ),
     }
+    # `params_match_production` is reported separately: a CANDIDATE run (--set) is
+    # expected to differ, so it must not be folded into all_passed — but it also
+    # must not be silently dropped, or a candidate artifact could be mistaken for
+    # the deployed configuration.
+    is_candidate_run = bool(overrides)
+    citable = bool(all(checks.values()) and params_match and not is_candidate_run)
 
     result = {
         "label": args.label,
         "window": {"start": args.start, "end": args.end},
         "account": args.account,
-        #: candidate parameter overrides (empty for the deployed configuration);
-        #: the fingerprint check still compares against the PRODUCTION assembly
-        #: built from the same override set, so it validates isomorphism rather
-        #: than parameter equality.
+        #: candidate parameter overrides (empty for the deployed configuration)
         "overrides": overrides,
+        "is_candidate_run": is_candidate_run,
+        "params_match_production": params_match,
+        #: TRUE only for a fresh-ledger, gap-free, production-config run — the
+        #: only kind of artifact whose numbers may be quoted as evidence.
+        "citable": citable,
         "ledger": str(ledger_path),
+        "ledger_existed_before": bool(ledger_existed_before),
         "n_days": n_days,
         "n_fills": int(len(fills)),
         "n_intraday_fills": int(len(intraday)),
         "n_close_fills": int(len(close_fills)),
+        "n_live_dates_in_window": n_live_dates,
         "metrics": status.get("equity", {}),
         "sharpe_standard_error": round(sharpe_se, 3),
         "sharpe_t_stat": round(sharpe / sharpe_se, 3) if sharpe_se > 0 and sharpe_se != float("inf") else None,
         "max_calendar_gap_days": gap_days,
         "minute_frame_days": frame_days,
         "minute_window_coverage": coverage,
+        "minute_min_symbol_coverage": min_symbol_cov,
+        "low_coverage_days": low_cov_days,
+        "n_low_coverage_days": len(low_cov_days),
+        "fills_in_low_coverage_days": fills_in_low_cov,
+        "kill_switch": {"mode": control.mode, "gross_scale": control.gross_scale},
         "limit_locked_fills": locked_fills,
         "limit_locked_examples": locked_examples,
         "fingerprint": probe,
@@ -277,15 +345,18 @@ def main() -> int:
 
     print(f"[oos] days={n_days} fills={result['n_fills']} "
           f"(intraday {result['n_intraday_fills']}) "
-          f"minute_coverage={coverage:.0%} "
+          f"minute_coverage={coverage:.0%} (min symbol {min_symbol_cov:.0%}, "
+          f"low-cov days {len(low_cov_days)}, fills in hole {fills_in_low_cov}) "
           f"cum={status.get('equity', {}).get('total_return', 0):+.2%} "
           f"ann={status.get('equity', {}).get('annualized_return', 0):+.2%} "
           f"sharpe={sharpe:+.2f} (SE {sharpe_se:.2f}, t={result['sharpe_t_stat']}) "
           f"maxDD={status.get('equity', {}).get('max_drawdown', 0):.2%}", flush=True)
     for name, ok in checks.items():
         print(f"  [{'PASS' if ok else 'FAIL'}] {name}", flush=True)
+    print(f"[oos] params_match_production={params_match} candidate={is_candidate_run} "
+          f"citable={citable}", flush=True)
     print(f"[oos] all_passed={result['all_passed']} → {out_path}", flush=True)
-    return 0 if result["all_passed"] else 1
+    return 0 if citable else 1
 
 
 if __name__ == "__main__":

@@ -22,8 +22,18 @@ def test_pullback_book_keeps_only_relevant_lines():
 
 
 def test_ml_book_keeps_every_line():
-    assert _applicable_red_lines(ALL_LINES, "ml") == ALL_LINES
+    out = _applicable_red_lines(ALL_LINES, "ml")
+    # compare CONTENT, not the same list object (the old assertion was tautological)
+    assert [rl["name"] for rl in out] == [rl["name"] for rl in ALL_LINES]
+    assert len(out) == len(ALL_LINES)
 
 
 def test_missing_alpha_source_keeps_every_line():
-    assert _applicable_red_lines(ALL_LINES, None) == ALL_LINES
+    out = _applicable_red_lines(ALL_LINES, None)
+    assert [rl["name"] for rl in out] == [rl["name"] for rl in ALL_LINES]
+
+
+def test_filter_does_not_mutate_the_input():
+    before = [dict(rl) for rl in ALL_LINES]
+    _applicable_red_lines(ALL_LINES, "pullback")
+    assert ALL_LINES == before

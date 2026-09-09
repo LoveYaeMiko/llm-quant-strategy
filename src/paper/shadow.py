@@ -618,6 +618,12 @@ def build_shadow_status(
             "fills_by_source": (
                 ledger.fills_by_source() if hasattr(ledger, "fills_by_source") else {}
             ),
+            # Historical cash discipline (audit V-1). The executor no longer
+            # permits negative cash; already-recorded days keep showing here so
+            # the defect stays visible instead of being silently rewritten.
+            "cash_guard": (
+                ledger.cash_stats() if hasattr(ledger, "cash_stats") else {}
+            ),
         },
         "positions": positions_out[:30],  # Top-30 by |weight| for the dashboard
         "equity_curve": equity_curve_out,

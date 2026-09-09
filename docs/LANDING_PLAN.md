@@ -2,14 +2,33 @@
 
 > 状态：**执行中** · 建立于 2026-09-08 · 本文件是"所有已探讨方案实际落地"的唯一权威清单。
 > 每完成一项，把 `[ ]` 改为 `[x]` 并补上验证证据（命令 / 文件 / 数字）。
-> **2026-09-09 更新**：阶段 0–5 全部落地（见下）；新增两项由落地过程发现的后续研究
-> 任务：**D-8c 止损宽度再调优**（`[ ]`）与已完成的 D-10/D-11。当前结论见
-> `docs/D_TRACK_EVIDENCE.md` §九：**两个窗口都没有统计显著的正 alpha 证据，
-> 系统保持 observe（模拟盘）**。
+> **2026-09-09 更新**：阶段 0–5 全部落地；**第二轮独立审计的 15 项处置见阶段 6**
+> （`docs/AUDIT_2026-09-09_FIXES.md`）。当前结论见 `docs/D_TRACK_EVIDENCE.md` §九：
+> **没有可引用的样本外证据（2025 窗口 citable=false），系统保持 observe（模拟盘）**。
 >
 > 总原则（用户长期约束，逐字保留）：
 > **"一切都建立在所有改动还有整套系统没有违规操作能够直接接入实盘的基础上"**
 > **"检查D轨日内操作应采取实盘实时操作的方式，不允许对过去已知时点进行买卖，应该实时更新持仓股票的盈亏情况，交易记录时间需要精确到分钟"**
+
+---
+
+## 阶段 6 — 第二轮独立审计（2026-09-09）处置
+
+| # | 事项 | 状态 | 落地动作 / 验收 |
+| --- | --- | --- | --- |
+| V-1 | 生产账本 12 天负现金（隐式杠杆） | [x] | `OrderExecutor` 先卖后买 + 买入按可用现金裁剪；`tests/test_cash_guard.py` 7 用例；`equity.cash_guard` 持续披露 |
+| A-1 | `fills.source` 历史为空、断言恒真 | [x] | 断言改为"列必须存在"+样本存在；`tests/test_fill_time_precision.py` 6 用例 |
+| A-2 | 实时 `_limit_pct` 日期盲 / 北交所 10% / 无时间戳 fail-open | [x] | 委托 `board_limit`；无时间戳 fail-closed；`tests/test_live_trader_guards.py` 15 用例 |
+| A-3 | D-1/D-2 调用点未锁定 | [x] | `tests/test_call_sites.py` 2 用例（真实 `build_preclose_orders` / `_build_account_portfolio`） |
+| A-4 | 闸门无执行点 + `bool("false")` | [x] | `src/live/broker.py`（`RealBroker` 构造即闸门）；`_as_bool` + `mode=observe` 一票否决；`test_deployment_gate.py` 20 用例 |
+| P-1 | 符号级覆盖探针缺失、旧工件误报 | [x] | `d_oos.py` 新增 `minute_symbol_coverage_ok` / `no_fills_inside_data_hole` / `citable`；2025 窗口实测 `citable=false`（最小覆盖 34%、45 笔洞内成交）；5 个旧工件标 `data_coverage_invalid` |
+| P-2 | OOS 被用于选参数 | [x]（披露） | 文档明确 `selection_window: OOS-2025H2`；干净窗口重定义为前向 live-only |
+| P-3/P-4 | PAICC 无交易日历 / 无看门狗 | [x] | `trading_calendar.py` + `quant_holidays` 设置；每 5 分钟 `live_watchdog`；`tests/test_quant_calendar.py` 9 用例 |
+| P-5/P-6 | 指纹自比较、OOS 无 kill-switch | [x] | 对照探针改由**配置账户**构建；OOS 读取 ControlState 并记录档位 |
+| PAICC-1..5 | UI 时间戳误标 / 缺 `quant_weekly_time` / preclose 到 15:10 / 午休 resume / `/quant/stop` 可杀 trader | [x] | 面板改「成交时刻」；补默认值；preclose 收到 14:56；resume 排除午休；`stop_command(force=False)` 保护 live |
+| D-8/D-9 | 挑战者制度/评估窗、调仓相位 | [x] | `run_challenger` 接入 14:50 委托层；`decide_promotion` 只数窗内成交；相位锚定窗口首日 |
+| 弱测试 | 3 处恒真/空转断言 | [x] | 全部重写（内容比较 + 样本存在 + 波动率调至带内） |
+| 数据回补 | 2025-10-27→12-12 分钟数据 | [ ] | **收盘后**运行 `python scripts/fetch_intraday.py --start 2025-10-20 --end 2025-12-15` → `refresh_intraday_daily.py` → 重跑 `d_oos.py` 至 `citable=true`（盘中抓取会与 14:40/14:50 争用限流） |
 
 ---
 
