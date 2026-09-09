@@ -27,6 +27,37 @@ def _to_ms(date: str | pd.Timestamp) -> int:
     return int(pd.Timestamp(date).value // 1_000_000)
 
 
+def normalize_bar_timestamps(df: pd.DataFrame) -> pd.DataFrame:
+    """Return ``df`` with a NAIVE Asia/Shanghai ``timestamp`` column.
+
+    The minute endpoint returns epoch milliseconds (UTC); every consumer in this
+    repo compares bar times with LOCAL naive timestamps (session windows, the
+    open-30-minute exemption, quote-staleness checks). Skipping this conversion
+    silently shifts every bar by the UTC offset — the 2026-09-09 pre-open smoke
+    test showed a 15:00 Beijing bar arriving as ``07:00:00``, which made a
+    freshness guard reject every print as 8 hours stale. The same conversion is
+    used by ``scripts/fetch_intraday.py`` when it writes the minute caches, so
+    live polls and cached bars now share one basis.
+    """
+    if df is None or len(df) == 0 or "timestamp" not in df.columns:
+        return df
+    out = df.copy()
+    col = out["timestamp"]
+    if pd.api.types.is_numeric_dtype(col):
+        out["timestamp"] = (
+            pd.to_datetime(col, unit="ms", utc=True)
+            .dt.tz_convert("Asia/Shanghai")
+            .dt.tz_localize(None)
+        )
+    else:
+        ts = pd.to_datetime(col)
+        if getattr(ts.dt, "tz", None) is not None:
+            out["timestamp"] = ts.dt.tz_convert("Asia/Shanghai").dt.tz_localize(None)
+        else:
+            out["timestamp"] = ts
+    return out
+
+
 class AlphaFeedAdapter:
     """Rate-limited facade over the official ``alphafeed`` client."""
 

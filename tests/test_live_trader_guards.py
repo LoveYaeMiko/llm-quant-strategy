@@ -99,3 +99,30 @@ def test_prev_close_and_limit_down_use_panel_last_row():
     assert t._limit_down_price("600000.SH") == pytest.approx(10.8)
     assert t._prev_close("999999.SZ") is None
     assert t._limit_down_price("999999.SZ") is None
+
+
+def test_utc_minute_bar_is_normalised_before_the_staleness_guard():
+    """The minute endpoint returns UTC epoch ms; the guard compares local time.
+
+    Without normalisation a bar printed one minute ago (Beijing 10:29 = 02:29
+    UTC) looks 8 hours old and EVERY print would be blocked for the whole
+    session — caught by scripts/live_smoke.py on the 2026-09-09 pre-open check.
+    """
+    from src.data.ingestion.alphafeed_adapter import normalize_bar_timestamps
+
+    ms = int(pd.Timestamp("2026-09-09 02:29:00", tz="UTC").value // 1_000_000)
+    frame = pd.DataFrame({"timestamp": [ms], "close": [19.0]})
+    local = normalize_bar_timestamps(frame)
+    assert str(local["timestamp"].iloc[0]) == "2026-09-09 10:29:00"
+
+    t = _trader_stub(max_age_minutes=5.0)
+    now = datetime(2026, 9, 9, 10, 30, 0)
+    # normalised timestamp → accepted
+    assert t._filter_quotes({"601872.SH": (19.0, local["timestamp"].iloc[0])}, now) == {
+        "601872.SH": 19.0
+    }
+    # the raw UTC timestamp would be rejected as stale
+    t2 = _trader_stub(max_age_minutes=5.0)
+    raw_ts = pd.Timestamp(ms, unit="ms")
+    assert t2._filter_quotes({"601872.SH": (19.0, raw_ts)}, now) == {}
+    assert "stale" in t2._quote_blocks["601872.SH"]

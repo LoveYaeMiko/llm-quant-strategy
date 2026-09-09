@@ -41,6 +41,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from ..data.ingestion.alphafeed_adapter import normalize_bar_timestamps
 from ..online.order_executor import Fill
 
 
@@ -134,7 +135,14 @@ class LiveTrader:
         return commission + transfer + stamp
 
     def _current_prices(self) -> dict[str, tuple[float, pd.Timestamp | None]]:
-        """Latest traded print + its minute timestamp per held symbol."""
+        """Latest traded print + its minute timestamp per held symbol.
+
+        The minute endpoint returns epoch milliseconds (UTC); the timestamp is
+        normalised to naive Asia/Shanghai before being compared with the local
+        clock — otherwise every print looks 8 hours stale and the freshness
+        guard would block the entire session (found by scripts/live_smoke.py on
+        the 2026-09-09 pre-open check).
+        """
         if not self.positions:
             return {}
         batch = self.adapter.fetch_minute_klines(list(self.positions), period="1m", count=1)
@@ -142,15 +150,12 @@ class LiveTrader:
         for sym, df in (batch or {}).items():
             if df is None or df.empty:
                 continue
+            df = normalize_bar_timestamps(df)
             px = float(df["close"].iloc[-1])
             ts: pd.Timestamp | None = None
             if "timestamp" in df.columns:
-                raw = df["timestamp"].iloc[-1]
                 try:
-                    if pd.api.types.is_numeric_dtype(df["timestamp"]):
-                        ts = pd.to_datetime(raw, unit="ms")
-                    else:
-                        ts = pd.to_datetime(raw)
+                    ts = pd.Timestamp(df["timestamp"].iloc[-1])
                 except (ValueError, TypeError, OverflowError):
                     ts = None
             out[sym] = (px, ts)
