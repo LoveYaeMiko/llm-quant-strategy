@@ -17,6 +17,7 @@
 | `d_oos_oos_2025h2_atr1p0_25_35.json` | 2025-09→12（OOS）ATR 1.0/[2.5%,3.5%] 备选 | 同上 |
 | `d_oos_oos_2025h2_atr1p0_25_40.json` | 2025-09→12（OOS）ATR 1.0/[2.5%,4%] 备选 | 同上 |
 | `d_oos_oos_2025h2_v2.json` | 2025-09→12（OOS）**符号级覆盖探针**首次运行 | 同上 |
+| `d_oos_is_2026_v2.json` | 2026-01→08（IS）**部署口径 + 加固 harness**：13/13 通过、`citable=true` | `docs/D_TRACK_EVIDENCE.md` §六/§九 |
 
 ## 口径提醒
 
