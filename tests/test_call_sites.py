@@ -94,6 +94,46 @@ def test_book_fingerprint_covers_execution_and_data_context():
     assert fp2["params_hash"] != fp["params_hash"]
 
 
+def test_preclose_survives_a_ledger_without_a_recorded_day(monkeypatch, tmp_path):
+    """A fresh/empty ledger returns cash=None — the 14:50 job must not crash."""
+    from src import preclose as pc
+    from src.paper.ledger import PaperLedger
+    from src.paper.pullback_book import PullbackPortfolio
+
+    (tmp_path / "outputs").mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(pc, "ROOT", tmp_path)
+    monkeypatch.setattr(PaperLedger, "latest_state", lambda self: (None, None, {}))
+    market = _tiny_market()
+    prov = {"600000.SH": {"open": 10.0, "high": 10.1, "low": 9.9, "close": 10.0, "volume": 1e6}}
+    score_index = pd.MultiIndex.from_product(
+        [market.price_panel.index, list(market.price_panel.columns)], names=["date", "symbol"]
+    )
+    monkeypatch.setattr(pc, "_today_provisional", lambda adapter, symbols, batch=25: (prov, {}))
+    monkeypatch.setattr(
+        pc, "_scores_as_of_yesterday", lambda *a, **k: pd.Series(0.5, index=score_index)
+    )
+    monkeypatch.setattr(pc, "_intraday_today", lambda *a, **k: {})
+    monkeypatch.setattr("src.data.intraday.load_intraday_frames", lambda cfg, symbols: {})
+    monkeypatch.setattr("src.cli._build_market_for_paper", lambda *a, **k: market)
+    monkeypatch.setattr(PullbackPortfolio, "compute_weights", lambda self, symbols, date: {})
+
+    class _Cfg:
+        def section(self, name):
+            return {"start_date": "2026-01-01"} if name == "shadow" else {}
+
+        def get(self, key, default=None):
+            return default
+
+    account = {
+        "name": "D_5W", "alpha_source": "pullback", "universe": "hs300", "cash": 50_000,
+        "pb_stop_lo": 0.035, "pb_stop_hi": 0.035, "pb_rank_source": "momentum",
+        "max_position_pct": 0.4, "notional_floor": 2000.0, "band_frac": 0.0,
+        "pb_use_intraday": False, "pb_intraday_stops": False,
+    }
+    out = pc.build_preclose_orders(_Cfg(), account, ["600000.SH"])
+    assert out["ok"] is True  # falls back to the configured starting cash
+
+
 def test_preclose_order_list_contains_exits_for_unwanted_holdings(monkeypatch, tmp_path):
     """D-1 call site: an exited holding must appear as a SELL in the 14:50 list."""
     from src import preclose as pc

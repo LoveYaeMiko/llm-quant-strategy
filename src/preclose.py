@@ -187,8 +187,19 @@ def _intraday_today(bars: dict[str, pd.DataFrame], prev_close: pd.Series, today:
     return frames
 
 
-def build_preclose_orders(cfg, account: dict[str, Any], symbols: list[str]) -> dict[str, Any]:
-    """Decide the 14:55 closing-auction order list for one account."""
+def build_preclose_orders(
+    cfg,
+    account: dict[str, Any],
+    symbols: list[str],
+    *,
+    out_dir: Optional[Path] = None,
+) -> dict[str, Any]:
+    """Decide the 14:55 closing-auction order list for one account.
+
+    ``out_dir`` (optional) redirects ONLY the order-list JSON — used by the
+    dry-run harness so it can exercise the real ledger/market path without
+    leaving a stale list for the 15:10 close run to execute.
+    """
     from .cli import _build_market_for_paper
     from .data.ingestion.alphafeed_adapter import AlphaFeedAdapter
     from .data.intraday import load_intraday_frames
@@ -271,6 +282,11 @@ def build_preclose_orders(cfg, account: dict[str, Any], symbols: list[str]) -> d
     ledger2.close()
 
     px_row = pd.Series({s: prov[s]["close"] for s in prov})
+    # A ledger with no recorded day yet (first run / fresh deployment) returns
+    # cash=None; fall back to the configured starting cash instead of crashing
+    # the 14:50 job (the runner uses the same fallback).
+    if cash is None:
+        cash = float(account.get("cash", 50_000))
     equity = float(cash)
     for s, sh in positions.items():
         px = px_row.get(s, np.nan)
@@ -308,7 +324,7 @@ def build_preclose_orders(cfg, account: dict[str, Any], symbols: list[str]) -> d
     else:
         note = ("no orders (no open position to exit and no entry candidate "
                 "passing the 14:55 filters)")
-    out_path = ROOT / "outputs" / f"preclose_orders_{name}.json"
+    out_path = (Path(out_dir) if out_dir is not None else ROOT / "outputs") / f"preclose_orders_{name}.json"
     payload = {
         "date": str(today.date()),
         "ts": time.strftime("%H:%M:%S"),
