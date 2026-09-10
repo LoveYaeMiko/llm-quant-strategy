@@ -151,7 +151,13 @@ python scripts/prereg.py list
 | `frozen_at` 早于窗口起点 | 规则必须在开窗前冻结（窗口内冻结 = 事后选择） |
 | **`policy_sha256` 运行时重算并比对** | 阈值/部署参数改动后，旧记录立即失效——看结果后改阈值不会通过 |
 | 评估窗口 == 冻结窗口 | 事后挑一个子区间 = 新的一次试验 |
-| `code_commit` == HEAD 且工作区干净 | 「冻结」冻结的是行为，不只是参数；漂移需显式 `--allow-code-drift` 记豁免 |
+| **`code_fingerprint` 比对**（行为代码内容哈希） | 冻结的是**行为**而不是提交号：只改文档的 commit 不会使冻结失效，而 `src/`、`scripts/`、`configs/`、`tests/` 下任何 `.py/.yaml` 的内容改动（**含未提交改动**）都会立即失效；漂移需显式 `--allow-code-drift` 记豁免 |
+
+> **为什么绑内容而不是绑 commit**（2026-09-10）：v2/v3 用 `code_commit` 绑定，结果我提交一次
+> 「证据/文档」就把刚通过的闸门打成失败——这会训练所有人条件反射式地重新冻结，反而把锁废掉。
+> 现在记录同时保存 `code_commit`（信息用）与 `code_fingerprint`（**判定用**，`src/`+`scripts/`+
+> `configs/`+`tests/` 下 `.py/.yaml` 的内容 SHA-256），既保住「跑出这些数字的代码就是被冻结的代码」
+> 这条性质，又不会被无关提交误伤。
 
 指纹覆盖 `forward`（闸门阈值/候选/切换规则）、`deployment`、`red_lines`、`paper`
 （执行器真实计费）与 `s7_calibration.cost_model`，以及部署账户 `D_5W` 的参数——

@@ -45,6 +45,7 @@ from typing import Any, Mapping, Optional
 
 import pandas as pd
 
+from ..provenance import code_fingerprint as code_fingerprint_of
 from ..provenance import git_commit, sha256_of
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -113,6 +114,7 @@ def prereg_gate(
     data_as_of: str,
     policy_sha256: str,
     code_commit: str,
+    code_fingerprint: Optional[str] = None,
     code_dirty: Optional[bool] = None,
     allow_code_drift: bool = False,
 ) -> dict:
@@ -190,14 +192,26 @@ def prereg_gate(
     out["policy_sha256_live"] = str(policy_sha256)[:16]
 
     stored_commit = str(record.get("code_commit") or "")
-    out["code_commit_match"] = bool(stored_commit) and stored_commit == code_commit
-    drift = ""
-    if not out["code_commit_match"]:
-        drift = (f"code drifted since the freeze: record {stored_commit[:12] or '—'} "
+    stored_fp = str(record.get("code_fingerprint") or "")
+    out["code_commit"] = stored_commit or None
+    out["code_fingerprint_stored"] = stored_fp[:16] or None
+    out["code_fingerprint_live"] = str(code_fingerprint or "")[:16] or None
+    if code_fingerprint and stored_fp:
+        # Preferred binding: the CONTENT of the behaviour-deciding code. Immune to
+        # docs-only commits, sensitive to any real edit (committed or not).
+        out["code_commit_match"] = stored_fp == code_fingerprint
+        drift = ("" if out["code_commit_match"] else
+                 "the behaviour-deciding code changed since the freeze "
+                 f"(record {stored_fp[:12]} vs live {str(code_fingerprint)[:12]})")
+    else:
+        # Fallback for records frozen before the fingerprint existed: commit sha.
+        out["code_commit_match"] = bool(stored_commit) and stored_commit == code_commit
+        drift = ("" if out["code_commit_match"] else
+                 f"code drifted since the freeze: record {stored_commit[:12] or '—'} "
                  f"vs HEAD {str(code_commit)[:12]}")
-    elif code_dirty:
-        # matching HEAD is not enough: an uncommitted working tree means the code
-        # that produced these numbers is NOT the frozen commit
+    if not drift and code_dirty and not code_fingerprint:
+        # the fingerprint already covers uncommitted edits; this only bites when
+        # the older commit-based binding is in use
         drift = "the working tree was DIRTY at evaluation time"
     if drift:
         if allow_code_drift:
@@ -231,6 +245,7 @@ def new_record(
     notes: str = "",
     code_commit: Optional[str] = None,
     policy_sha256: Optional[str] = None,
+    code_fingerprint: Optional[str] = None,
     repo_root: str | Path | None = None,
     extra: Optional[Mapping[str, Any]] = None,
 ) -> dict:
@@ -256,6 +271,7 @@ def new_record(
         "notes": notes,
         "supersedes": supersedes,
         "code_commit": (code_commit or git_commit(repo_root)).strip(),
+        "code_fingerprint": (code_fingerprint or code_fingerprint_of(repo_root)),
         "policy_sha256": policy_sha256,
     }
     if extra:

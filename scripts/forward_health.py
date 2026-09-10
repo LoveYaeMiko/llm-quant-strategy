@@ -299,7 +299,7 @@ def main() -> int:
 
     from src.config import load_config
     from src.forward.prereg import policy_fingerprint, prereg_gate, verify_preregistration
-    from src.provenance import git_commit, git_dirty
+    from src.provenance import code_fingerprint, git_commit, git_dirty
 
     cfg = load_config()
     account = _account(cfg, args.account)
@@ -328,15 +328,17 @@ def main() -> int:
     # ---- 0. pre-registration binding (the lock) ---------------------------
     code_commit = git_commit(ROOT)
     code_dirty = git_dirty(ROOT)
+    code_fp = code_fingerprint(ROOT)
     pol_sha = policy_fingerprint(cfg)
     binding = prereg_gate(
         record=prereg, window=(start, end), data_as_of=end,
-        policy_sha256=pol_sha, code_commit=code_commit, code_dirty=code_dirty,
+        policy_sha256=pol_sha, code_commit=code_commit,
+        code_fingerprint=code_fp, code_dirty=code_dirty,
         allow_code_drift=bool(args.allow_code_drift),
     )
     if binding["ok"]:
         print(f"[fwd] prereg bound: {binding['rule_id']} frozen {binding['frozen_at']} "
-              f"policy={pol_sha[:12]} commit={code_commit[:12]}"
+              f"policy={pol_sha[:12]} code={code_fp[:12]} commit={code_commit[:12]}"
               + (" (code drift WAIVED)" if binding.get("waived") else ""), flush=True)
     else:
         print("[fwd] PRE-REGISTRATION NOT BOUND — the evaluation is not evidence:", flush=True)

@@ -1,0 +1,79 @@
+{
+  "rule_id": "d_forward_2026h2",
+  "version": 4,
+  "frozen_at": "2026-09-10T16:41:41",
+  "scope": {
+    "account": "D_5W",
+    "universe": "hs300_500",
+    "window": [
+      "2026-09-11",
+      "2027-03-11"
+    ],
+    "params": {
+      "pb_k": 6,
+      "pb_stop_lo": 0.035,
+      "pb_stop_hi": 0.035,
+      "pb_atr_mult": 1.5,
+      "pb_stop_trigger": "close",
+      "pb_stop_open_minutes": 30,
+      "pb_tail_vol_max": 0.5,
+      "pb_max_hold": 40,
+      "pb_full_invest": true
+    },
+    "what_changes": "v2 把评估绑定到预注册本体（policy_sha256 运行时重算）、新增有效股票池/成交价完整性/预注册绑定三条硬闸门，并把测量窗口起点前移到冻结日之后；窗口因设计变更自 2026-09-11 重新起算（2026-09-10 那一天在旧设计下推进，作废）。",
+    "level": "FORWARD (live-only shadow, no retroactive trades)"
+  },
+  "decision": {
+    "hard": [
+      "prereg_binding: 存在通过 verify 的记录；frozen_at 早于窗口起点；policy_sha256 与运行时重算一致；评估窗口 == 冻结窗口；code_commit == HEAD（除非显式 --allow-code-drift 并在工件里记为豁免）",
+      "tracking_error_daily_pp <= 0.2 且可计天数 >= 5（min_days 的硬下限为 1，配置为 0 也不能关闭测量）",
+      "tracking_error_sign_bias_p >= 0.05（精确二项检验）",
+      "|fee_deviation_pct| <= 20%（计费 vs 预注册成本规格）",
+      "price_integrity_abs_bps <= 2.0（成交价 vs 市场参考价；仅 replay 来源不参与校验）",
+      "violations (T+1/整手/最小变动价位/涨跌停/停牌) == 0",
+      "availability >= 0.99（决策窗口内心跳覆盖，间隔 <=5 分钟）",
+      "data_freshness_days <= 1（行情截止日 vs 应有交易日；另报 ledger_lag_days）",
+      "symbol_minute_coverage >= 0.95（按各符号自身可交易日为分母）",
+      "effective_universe >= 0.95（已预热符号 / 声明池）"
+    ],
+    "soft": [
+      "sharpe",
+      "max_drawdown",
+      "excess_return",
+      "hit_rate",
+      "n_fills",
+      "turnover"
+    ],
+    "unmeasured": [
+      "market_impact_bps"
+    ],
+    "verdict": "PASS 仅当全部 hard 通过；任一 hard 未测量即判失败；soft 永不参与判定",
+    "tool": "python scripts/forward_health.py (退出码 0=pass, 1=fail)"
+  },
+  "stopping": {
+    "window_days": 120,
+    "kill": "任一 hard 闸门连续 3 个交易日失败 → 停机排查管线（不是「策略不行」）",
+    "power": {
+      "se_formula": "sqrt(252/N)",
+      "years_for_t_2_5": {
+        "sharpe_1.0": 6.3,
+        "sharpe_0.5": 25.0
+      },
+      "regime_matching_horizon_years": 3,
+      "conclusion": "前向窗口对 alpha 无功效；不得以「前向 N 个月」宣称 alpha"
+    },
+    "may_never_separate": true
+  },
+  "trials": {
+    "family": "d_forward_risk_gate",
+    "prior_trials": 3,
+    "this_trial": 4,
+    "notes": "v1（2026-09-09 冻结，窗口 2026-09-10 起）在开窗当天被 2026-09-10 审计判定为「锁没装上」：评估不绑定预注册、min_days 可被配置置零绕过、失败闸门在任务卡显示成功、面板渲染试跑工件、代码漂移不报警。修复改变了测量本身（绑定 + 三条新硬闸门 + 重放起点），因此按协议计为新的一次试验，窗口重新起算。  v3：重新冻结以绑定修复后的代码（工作区在 v2 冻结后被修改），窗口尚未开始，属开窗前的修正，不是设计变更。  v4：冻结改为绑定**代码内容指纹**（src/scripts/configs/tests 下 .py/.yaml 的内容哈希）而不是 commit —— 只改文档的提交不再使冻结失效，而任何行为相关改动（含未提交改动）仍会失效。窗口未开始，属开窗前修正。"
+  },
+  "notes": "政策指纹：configs/forward_policy.yaml（forward / deployment / red_lines / paper / s7_calibration.cost_model）+ 部署账户 D_5W 参数；运行时由 src.forward.prereg.policy_fingerprint 重算并与本记录比对。",
+  "supersedes": "d_forward_2026h2 (v3)",
+  "code_commit": "ca063e23e179960199eb00c389f00778b358f6dd",
+  "code_fingerprint": "52f9716c56d1cfa09f373698d924e2663d234d41a5cadbc43abb4e8eab5c2857",
+  "policy_sha256": "1221bae37c013b769cb6ee0bf1831421498619300140ef434b570da846c1306c",
+  "record_sha256": "f77b7ba1627784fe8d842f70068750e5944188ac845129054ac0c088de130de9"
+}

@@ -223,7 +223,7 @@ def test_prereg_gate_code_drift_needs_an_explicit_waiver():
 
 
 def test_prereg_gate_fails_on_a_dirty_working_tree():
-    """Matching HEAD is not enough: uncommitted code is not the frozen commit."""
+    """Records bound the OLD way (commit only) must still catch a dirty tree."""
     rec = _record(policy_sha256="p" * 64)
     dirty = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
                         policy_sha256="p" * 64, code_commit="a" * 40, code_dirty=True)
@@ -232,3 +232,48 @@ def test_prereg_gate_fails_on_a_dirty_working_tree():
     ok = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
                      policy_sha256="p" * 64, code_commit="a" * 40, code_dirty=False)
     assert ok["ok"]
+
+
+def test_prereg_gate_binds_to_the_code_fingerprint_not_the_commit():
+    """A docs-only commit must not invalidate a freeze; a code edit must.
+
+    Binding to HEAD made every commit — even a README — force a re-freeze, which
+    trains everyone to re-freeze reflexively and defeats the lock (found
+    2026-09-10 when an evidence commit tripped the gate it had just passed).
+    """
+    rec = _record(policy_sha256="p" * 64, code_fingerprint="c" * 64)
+    # same code content, different commit: still bound
+    same = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
+                       policy_sha256="p" * 64, code_commit="b" * 40,
+                       code_fingerprint="c" * 64, code_dirty=False)
+    assert same["ok"], same["issues"]
+    # code content changed (committed or not): NOT bound
+    moved = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
+                        policy_sha256="p" * 64, code_commit="b" * 40,
+                        code_fingerprint="d" * 64)
+    assert not moved["ok"] and not moved["code_commit_match"]
+    assert any("behaviour-deciding code changed" in i for i in moved["issues"])
+
+
+def test_code_fingerprint_tracks_content_not_commit(tmp_path):
+    from src.provenance import code_fingerprint
+
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "s.py").write_text("y = 2\n", encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "README.md").write_text("hello\n", encoding="utf-8")
+    first = code_fingerprint(tmp_path)
+    # a docs-only edit does not move it
+    (tmp_path / "docs" / "README.md").write_text("hello again\n", encoding="utf-8")
+    assert code_fingerprint(tmp_path) == first
+    # a code edit does
+    (tmp_path / "src" / "a.py").write_text("x = 2\n", encoding="utf-8")
+    assert code_fingerprint(tmp_path) != first
+    # a non-python artifact under a code prefix does not
+    (tmp_path / "src" / "notes.txt").write_text("nope\n", encoding="utf-8")
+    assert code_fingerprint(tmp_path) != first  # (already moved by a.py)
+    before = code_fingerprint(tmp_path)
+    (tmp_path / "src" / "notes.txt").write_text("changed\n", encoding="utf-8")
+    assert code_fingerprint(tmp_path) == before

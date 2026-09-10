@@ -143,6 +143,47 @@ def git_dirty(repo_root: str | Path | None = None, *, code_only: bool = True) ->
         return None
 
 
+def code_fingerprint(
+    repo_root: str | Path | None = None,
+    *,
+    prefixes: tuple[str, ...] = CODE_PREFIXES,
+    suffixes: tuple[str, ...] = (".py", ".yaml", ".yml"),
+) -> str:
+    """SHA-256 over the CONTENT of the behaviour-deciding code.
+
+    Why not the commit sha (2026-09-10): binding a pre-registration to ``HEAD``
+    makes any commit — including a README edit — invalidate the freeze, which
+    trains everyone to re-freeze reflexively and defeats the lock. Binding to the
+    FILES that decide behaviour keeps the property that matters ("the code that
+    produced these numbers is the code that was frozen") without the false
+    alarms. Uncommitted edits are captured too, because this reads the working
+    tree — so a dirty tree can no longer hide behind a matching commit.
+
+    Only ``src/``, ``scripts/``, ``configs/`` and ``tests/`` text files count
+    (``.py``/``.yaml``/``.yml``), ``__pycache__`` and ``outputs/`` are excluded.
+    Returns ``"unknown"`` when the tree cannot be read.
+    """
+    base = Path(repo_root) if repo_root else Path.cwd()
+    entries: list[tuple[str, str]] = []
+    try:
+        for prefix in prefixes:
+            root = base / prefix
+            if not root.is_dir():
+                continue
+            for path in sorted(root.rglob("*")):
+                if not path.is_file() or path.suffix not in suffixes:
+                    continue
+                if "__pycache__" in path.parts:
+                    continue
+                rel = path.relative_to(base).as_posix()
+                entries.append((rel, hashlib.sha256(path.read_bytes()).hexdigest()))
+    except Exception:  # noqa: BLE001 — provenance must never break the caller
+        return "unknown"
+    if not entries:
+        return "unknown"
+    return sha256_of({"code": entries})
+
+
 # --------------------------------------------------------------------------- #
 # stamp / check
 # --------------------------------------------------------------------------- #
@@ -302,13 +343,16 @@ def check_artifacts(paths: Iterable[str | Path], *, verify_hash: bool = True) ->
 
 
 __all__ = [
+    "CODE_PREFIXES",
     "PROVENANCE_REQUIRED",
     "ProvenanceError",
     "canonical_json",
     "check_artifact_file",
     "check_artifacts",
     "check_provenance",
+    "code_fingerprint",
     "git_commit",
+    "git_dirty",
     "require_provenance",
     "sha256_file",
     "sha256_of",

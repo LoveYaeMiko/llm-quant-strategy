@@ -34,7 +34,7 @@ from src.forward.prereg import (  # noqa: E402
     verify_preregistration,
     write_preregistration,
 )
-from src.provenance import git_commit, sha256_of  # noqa: E402
+from src.provenance import code_fingerprint, git_commit, sha256_of  # noqa: E402
 
 import pandas as pd  # noqa: E402
 
@@ -117,6 +117,7 @@ def cmd_new(args) -> int:
         frozen_at=frozen_at,
         code_commit=args.code_commit or git_commit(ROOT),
         policy_sha256=_config_sha(),
+        code_fingerprint=code_fingerprint(ROOT),
     )
     try:
         path = write_preregistration(rec, dir=args.dir or DEFAULT_DIR, force=args.force)
@@ -125,7 +126,8 @@ def cmd_new(args) -> int:
         return 1
     print(f"[prereg] frozen {rec['rule_id']} v{rec['version']} at {rec['frozen_at']}")
     print(f"[prereg] commit={rec['code_commit'][:12]} "
-          f"policy_sha256={str(rec.get('policy_sha256'))[:16]}…")
+          f"code={str(rec.get('code_fingerprint'))[:12]}… "
+          f"policy={str(rec.get('policy_sha256'))[:12]}…")
     print(f"[prereg] record_sha256={rec['record_sha256']}")
     print(f"[prereg] → {path}")
     return 0
