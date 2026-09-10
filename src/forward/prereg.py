@@ -328,8 +328,24 @@ def write_preregistration(
     Refuses to overwrite an existing file (``force=True`` only for repairing a
     truncated write of byte-identical content). Use a new ``version`` +
     ``supersedes`` to change a rule.
+
+    Also refuses a record with no policy binding. A freeze that does not name the
+    policy fingerprint cannot lock anything: :func:`prereg_gate` compares the
+    stored value against the live one, so a record without it fails the binding
+    check forever while still passing :func:`verify_preregistration` (which only
+    checks the six template fields and the self-hash). That asymmetry is a trap —
+    it was hit on 2026-09-10 by a re-signature script that called
+    :func:`new_record` directly instead of going through ``scripts/prereg.py new``
+    (the CLI stamps the fingerprint; ``new_record``'s ``policy_sha256`` defaults to
+    ``None``). The record was written, verified, and could never bind.
     """
     validate_record(record)
+    if not str(record.get("policy_sha256") or record.get("config_sha256") or ""):
+        raise PreregError(
+            "the record carries no policy binding (policy_sha256 / config_sha256) — "
+            "freeze it through `python scripts/prereg.py new --file <json>` (the CLI "
+            "stamps the live policy fingerprint) or pass policy_sha256 explicitly"
+        )
     path = record_path(str(record["rule_id"]), int(record.get("version", 1)), dir)
     if path.exists() and not force:
         existing = json.loads(path.read_text(encoding="utf-8"))

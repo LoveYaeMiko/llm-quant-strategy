@@ -38,6 +38,7 @@ def _record(**over) -> dict:
         trials={"family": "d_forward", "prior_trials": 2, "this_trial": 3},
         frozen_at="2026-09-08T18:00:00",
         code_commit="a" * 40,
+        policy_sha256="p" * 64,
     )
     kwargs.update(over)
     return new_record(**kwargs)
@@ -88,6 +89,27 @@ def test_identical_content_may_be_rewritten(tmp_path):
     rec = _record()
     path = write_preregistration(rec, dir=tmp_path)
     assert write_preregistration(rec, dir=tmp_path) == path  # idempotent repair
+
+
+def test_write_refuses_a_record_with_no_policy_binding(tmp_path):
+    """A freeze that cannot bind is not a freeze — refuse it at write time.
+
+    ``verify_preregistration`` only checks the six template fields and the
+    self-hash, so a record written without ``policy_sha256`` verifies happily and
+    then fails :func:`prereg_gate` forever. Hit on 2026-09-10 by a re-signature
+    script that bypassed ``scripts/prereg.py new`` (which stamps the fingerprint).
+    """
+    unbound = _record(policy_sha256=None)
+    assert unbound["policy_sha256"] is None          # new_record does not invent one
+    with pytest.raises(PreregError) as exc:
+        write_preregistration(unbound, dir=tmp_path)
+    assert "no policy binding" in str(exc.value)
+    # the CLI's `config_sha256` spelling (records frozen before the rename) is
+    # accepted as a binding too
+    legacy = _record(policy_sha256=None)
+    legacy["config_sha256"] = "c" * 64
+    legacy["record_sha256"] = record_sha256(legacy)
+    assert write_preregistration(legacy, dir=tmp_path).is_file()
 
 
 def test_missing_field_rejected():
