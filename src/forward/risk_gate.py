@@ -381,8 +381,12 @@ def availability(heartbeats: pd.DataFrame, trading_days: Sequence[pd.Timestamp],
     if len(hb) and "ts" in hb.columns:
         hb = hb.assign(ts=pd.to_datetime(hb["ts"], errors="coerce")).dropna(subset=["ts"])
     if not days:
-        return {"availability": 1.0, "n_days": 0, "n_days_down": 0, "down_minutes": 0,
-                "window_minutes": 0, "worst_day": None}
+        # An EMPTY window is unmeasured, not perfect: returning 1.0 here would let
+        # a window that has not started yet report full availability.
+        return {"availability": None, "unmeasured": True, "n_days": 0,
+                "n_days_down": None, "down_minutes": None, "window_minutes": None,
+                "worst_day": None,
+                "note": "no trading day in the window yet — availability unmeasured"}
     if not len(hb):
         # No heartbeat record at all: the mechanism did not exist for this window,
         # so availability is UNMEASURED — reporting 0.0 would claim we observed an
@@ -457,7 +461,9 @@ def symbol_minute_coverage(
     """
     tail = (frames or {}).get("tail_vol")
     if tail is None or not len(tail):
-        return {"min_coverage": 0.0, "n_symbols": 0, "below_threshold": [], "threshold": threshold}
+        return {"min_coverage": None, "n_symbols": 0, "below_threshold": [],
+                "threshold": threshold, "unmeasured": True,
+                "note": "no intraday feature frames loaded — coverage unmeasured"}
     pwin = price_panel.loc[(price_panel.index >= pd.Timestamp(start))
                            & (price_panel.index <= pd.Timestamp(end))]
     cov: dict[str, float] = {}
@@ -471,7 +477,12 @@ def symbol_minute_coverage(
         have = tail[sym].reindex(pwin.index).notna() & tradable
         cov[sym] = float(have.sum()) / n_tr
     if not cov:
-        return {"min_coverage": 0.0, "n_symbols": 0, "below_threshold": [], "threshold": threshold}
+        # no symbol had a tradable day inside the window (e.g. the window has not
+        # started): report UNMEASURED rather than a 0% coverage that would read
+        # like a data hole
+        return {"min_coverage": None, "n_symbols": 0, "below_threshold": [],
+                "threshold": threshold, "unmeasured": True,
+                "note": "no tradable day inside the window — coverage unmeasured"}
     below = sorted([s for s, v in cov.items() if v < threshold], key=lambda s: cov[s])
     return {
         "min_coverage": round(min(cov.values()), 4),

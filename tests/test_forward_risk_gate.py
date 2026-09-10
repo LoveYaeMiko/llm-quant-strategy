@@ -221,6 +221,18 @@ def test_availability_is_unmeasured_without_any_heartbeat():
     assert not gate["hard"]["availability"]["ok"]
 
 
+def test_an_empty_window_is_unmeasured_not_perfect():
+    """A window that has not started yet must not report full availability."""
+    out = availability(pd.DataFrame({"ts": []}), [])
+    assert out["availability"] is None and out["unmeasured"] is True
+    cov = symbol_minute_coverage({"tail_vol": pd.DataFrame()}, pd.DataFrame(), "2026-09-11",
+                                 "2027-03-11")
+    assert cov["min_coverage"] is None and cov.get("unmeasured") is True
+    gate = evaluate_gate({"availability": out, "symbol_coverage": cov})
+    assert not gate["hard"]["availability"]["ok"]
+    assert not gate["hard"]["symbol_minute_coverage"]["ok"]
+
+
 def test_availability_counts_a_long_gap():
     day = pd.Timestamp("2026-01-05")
     stamps = list(pd.date_range(day + pd.Timedelta(hours=9, minutes=30),
