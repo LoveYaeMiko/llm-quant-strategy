@@ -104,8 +104,15 @@ def git_commit(repo_root: str | Path | None = None) -> str:
 
 #: Paths whose uncommitted state changes what the numbers ARE (as opposed to how
 #: they are documented). A dirty README does not make a backtest unreproducible;
-#: a dirty ``src/`` or ``configs/`` file does.
+#: a dirty ``src/`` file does.
 CODE_PREFIXES: tuple[str, ...] = ("src/", "scripts/", "configs/", "tests/")
+
+#: What the CODE fingerprint covers. ``configs/`` is deliberately NOT here: a
+#: config's SEMANTICS are already bound by the pre-registration's ``policy_sha256``
+#: (which hashes the parsed values), so hashing the config FILES as well would let
+#: a comment-only edit invalidate a freeze — observed 2026-09-10, minutes after a
+#: record was signed. Code content and config values are separate locks.
+CODE_FINGERPRINT_PREFIXES: tuple[str, ...] = ("src/", "scripts/", "tests/")
 
 
 def git_dirty(repo_root: str | Path | None = None, *, code_only: bool = True) -> Optional[bool]:
@@ -146,10 +153,10 @@ def git_dirty(repo_root: str | Path | None = None, *, code_only: bool = True) ->
 def code_fingerprint(
     repo_root: str | Path | None = None,
     *,
-    prefixes: tuple[str, ...] = CODE_PREFIXES,
+    prefixes: tuple[str, ...] = CODE_FINGERPRINT_PREFIXES,
     suffixes: tuple[str, ...] = (".py", ".yaml", ".yml"),
 ) -> str:
-    """SHA-256 over the CONTENT of the behaviour-deciding code.
+    """SHA-256 over the CONTENT of the behaviour-deciding CODE.
 
     Why not the commit sha (2026-09-10): binding a pre-registration to ``HEAD``
     makes any commit — including a README edit — invalidate the freeze, which
@@ -159,9 +166,11 @@ def code_fingerprint(
     alarms. Uncommitted edits are captured too, because this reads the working
     tree — so a dirty tree can no longer hide behind a matching commit.
 
-    Only ``src/``, ``scripts/``, ``configs/`` and ``tests/`` text files count
-    (``.py``/``.yaml``/``.yml``), ``__pycache__`` and ``outputs/`` are excluded.
-    Returns ``"unknown"`` when the tree cannot be read.
+    ``src/``, ``scripts/`` and ``tests/`` are covered; ``configs/`` is NOT,
+    because a config's values are already bound by the pre-registration's
+    ``policy_sha256`` and a comment-only config edit must not break a freeze
+    (:data:`CODE_FINGERPRINT_PREFIXES`). ``__pycache__`` and ``outputs/`` are
+    excluded. Returns ``"unknown"`` when the tree cannot be read.
     """
     base = Path(repo_root) if repo_root else Path.cwd()
     entries: list[tuple[str, str]] = []

@@ -1,0 +1,1807 @@
+{
+  "label": "2026h1",
+  "account": "D_5W",
+  "window": {
+    "start": "2026-01-05",
+    "end": "2026-09-10"
+  },
+  "panel_eras": [
+    {
+      "start": "2026-01-01",
+      "end": "2026-09-07",
+      "symbols": 301,
+      "note": "daily incremental ingest covered ~300 names (measured 2026-09-10)"
+    },
+    {
+      "start": "2026-09-08",
+      "end": null,
+      "symbols": 800,
+      "note": "ingest widened to the declared hs300_500 universe"
+    }
+  ],
+  "recorded": {
+    "metrics": {
+      "return": 0.2458,
+      "max_drawdown": -0.102,
+      "n_days": 168,
+      "n_fills": 253,
+      "note": "NOT a single-convention number: it spans 6 convention segment(s) (see `segments`); quote a segment, or the replay below"
+    },
+    "equity_curve": [
+      {
+        "date": "2026-01-05",
+        "equity": 49990.44
+      },
+      {
+        "date": "2026-01-06",
+        "equity": 50106.32
+      },
+      {
+        "date": "2026-01-07",
+        "equity": 50130.03
+      },
+      {
+        "date": "2026-01-08",
+        "equity": 50265.87
+      },
+      {
+        "date": "2026-01-09",
+        "equity": 52008.55
+      },
+      {
+        "date": "2026-01-12",
+        "equity": 52011.7
+      },
+      {
+        "date": "2026-01-13",
+        "equity": 51777.23
+      },
+      {
+        "date": "2026-01-14",
+        "equity": 51465.63
+      },
+      {
+        "date": "2026-01-15",
+        "equity": 52304.9
+      },
+      {
+        "date": "2026-01-16",
+        "equity": 51452.82
+      },
+      {
+        "date": "2026-01-19",
+        "equity": 52683.21
+      },
+      {
+        "date": "2026-01-20",
+        "equity": 52930.86
+      },
+      {
+        "date": "2026-01-21",
+        "equity": 52496.68
+      },
+      {
+        "date": "2026-01-22",
+        "equity": 52132.06
+      },
+      {
+        "date": "2026-01-23",
+        "equity": 52266.43
+      },
+      {
+        "date": "2026-01-26",
+        "equity": 52747.17
+      },
+      {
+        "date": "2026-01-27",
+        "equity": 53247.18
+      },
+      {
+        "date": "2026-01-28",
+        "equity": 52961.82
+      },
+      {
+        "date": "2026-01-29",
+        "equity": 53108.47
+      },
+      {
+        "date": "2026-01-30",
+        "equity": 51777.33
+      },
+      {
+        "date": "2026-02-02",
+        "equity": 51098.17
+      },
+      {
+        "date": "2026-02-03",
+        "equity": 52243.54
+      },
+      {
+        "date": "2026-02-04",
+        "equity": 53138.53
+      },
+      {
+        "date": "2026-02-05",
+        "equity": 52394.6
+      },
+      {
+        "date": "2026-02-06",
+        "equity": 52429.97
+      },
+      {
+        "date": "2026-02-09",
+        "equity": 53365.26
+      },
+      {
+        "date": "2026-02-10",
+        "equity": 53563.22
+      },
+      {
+        "date": "2026-02-11",
+        "equity": 53638.07
+      },
+      {
+        "date": "2026-02-12",
+        "equity": 54179.46
+      },
+      {
+        "date": "2026-02-13",
+        "equity": 53623.84
+      },
+      {
+        "date": "2026-02-24",
+        "equity": 54843.85
+      },
+      {
+        "date": "2026-02-25",
+        "equity": 54651.91
+      },
+      {
+        "date": "2026-02-26",
+        "equity": 54555.86
+      },
+      {
+        "date": "2026-02-27",
+        "equity": 55110.46
+      },
+      {
+        "date": "2026-03-02",
+        "equity": 57072.3
+      },
+      {
+        "date": "2026-03-03",
+        "equity": 56983.55
+      },
+      {
+        "date": "2026-03-04",
+        "equity": 56991.15
+      },
+      {
+        "date": "2026-03-05",
+        "equity": 57139.53
+      },
+      {
+        "date": "2026-03-06",
+        "equity": 57224.79
+      },
+      {
+        "date": "2026-03-09",
+        "equity": 55666.44
+      },
+      {
+        "date": "2026-03-10",
+        "equity": 56478.73
+      },
+      {
+        "date": "2026-03-11",
+        "equity": 57293.98
+      },
+      {
+        "date": "2026-03-12",
+        "equity": 56820.43
+      },
+      {
+        "date": "2026-03-13",
+        "equity": 56244.7
+      },
+      {
+        "date": "2026-03-16",
+        "equity": 55761.92
+      },
+      {
+        "date": "2026-03-17",
+        "equity": 55467.86
+      },
+      {
+        "date": "2026-03-18",
+        "equity": 54823.12
+      },
+      {
+        "date": "2026-03-19",
+        "equity": 54898.76
+      },
+      {
+        "date": "2026-03-20",
+        "equity": 54773.18
+      },
+      {
+        "date": "2026-03-23",
+        "equity": 53751.18
+      },
+      {
+        "date": "2026-03-24",
+        "equity": 54949.37
+      },
+      {
+        "date": "2026-03-25",
+        "equity": 55825.71
+      },
+      {
+        "date": "2026-03-26",
+        "equity": 56451.65
+      },
+      {
+        "date": "2026-03-27",
+        "equity": 55791.94
+      },
+      {
+        "date": "2026-03-30",
+        "equity": 55769.8
+      },
+      {
+        "date": "2026-03-31",
+        "equity": 54948.41
+      },
+      {
+        "date": "2026-04-01",
+        "equity": 54632.76
+      },
+      {
+        "date": "2026-04-02",
+        "equity": 54691.63
+      },
+      {
+        "date": "2026-04-03",
+        "equity": 54460.46
+      },
+      {
+        "date": "2026-04-07",
+        "equity": 55468.04
+      },
+      {
+        "date": "2026-04-08",
+        "equity": 54983.55
+      },
+      {
+        "date": "2026-04-09",
+        "equity": 55178.8
+      },
+      {
+        "date": "2026-04-10",
+        "equity": 56278.9
+      },
+      {
+        "date": "2026-04-13",
+        "equity": 56085.5
+      },
+      {
+        "date": "2026-04-14",
+        "equity": 55732.36
+      },
+      {
+        "date": "2026-04-15",
+        "equity": 56109.51
+      },
+      {
+        "date": "2026-04-16",
+        "equity": 55960.51
+      },
+      {
+        "date": "2026-04-17",
+        "equity": 55552.87
+      },
+      {
+        "date": "2026-04-20",
+        "equity": 55696.91
+      },
+      {
+        "date": "2026-04-21",
+        "equity": 56606.86
+      },
+      {
+        "date": "2026-04-22",
+        "equity": 56754.49
+      },
+      {
+        "date": "2026-04-23",
+        "equity": 56980.29
+      },
+      {
+        "date": "2026-04-24",
+        "equity": 57120.37
+      },
+      {
+        "date": "2026-04-27",
+        "equity": 56723.43
+      },
+      {
+        "date": "2026-04-28",
+        "equity": 57392.26
+      },
+      {
+        "date": "2026-04-29",
+        "equity": 56162.55
+      },
+      {
+        "date": "2026-04-30",
+        "equity": 56084.65
+      },
+      {
+        "date": "2026-05-06",
+        "equity": 56306.94
+      },
+      {
+        "date": "2026-05-07",
+        "equity": 56490.03
+      },
+      {
+        "date": "2026-05-08",
+        "equity": 56107.04
+      },
+      {
+        "date": "2026-05-11",
+        "equity": 57431.24
+      },
+      {
+        "date": "2026-05-12",
+        "equity": 57419.62
+      },
+      {
+        "date": "2026-05-13",
+        "equity": 57356.6
+      },
+      {
+        "date": "2026-05-14",
+        "equity": 56547.57
+      },
+      {
+        "date": "2026-05-15",
+        "equity": 56032.58
+      },
+      {
+        "date": "2026-05-18",
+        "equity": 56378.93
+      },
+      {
+        "date": "2026-05-19",
+        "equity": 57397.6
+      },
+      {
+        "date": "2026-05-20",
+        "equity": 59103.5
+      },
+      {
+        "date": "2026-05-21",
+        "equity": 58955.1
+      },
+      {
+        "date": "2026-05-22",
+        "equity": 59259.1
+      },
+      {
+        "date": "2026-05-25",
+        "equity": 58791.1
+      },
+      {
+        "date": "2026-05-26",
+        "equity": 58331.1
+      },
+      {
+        "date": "2026-05-27",
+        "equity": 59599.1
+      },
+      {
+        "date": "2026-05-28",
+        "equity": 59481.1
+      },
+      {
+        "date": "2026-05-29",
+        "equity": 58247.1
+      },
+      {
+        "date": "2026-06-01",
+        "equity": 57919.1
+      },
+      {
+        "date": "2026-06-02",
+        "equity": 57339.1
+      },
+      {
+        "date": "2026-06-03",
+        "equity": 58185.1
+      },
+      {
+        "date": "2026-06-04",
+        "equity": 57575.1
+      },
+      {
+        "date": "2026-06-05",
+        "equity": 56101.1
+      },
+      {
+        "date": "2026-06-08",
+        "equity": 55553.1
+      },
+      {
+        "date": "2026-06-09",
+        "equity": 55893.1
+      },
+      {
+        "date": "2026-06-10",
+        "equity": 55859.1
+      },
+      {
+        "date": "2026-06-11",
+        "equity": 55359.1
+      },
+      {
+        "date": "2026-06-12",
+        "equity": 55877.1
+      },
+      {
+        "date": "2026-06-15",
+        "equity": 55311.1
+      },
+      {
+        "date": "2026-06-16",
+        "equity": 55603.1
+      },
+      {
+        "date": "2026-06-17",
+        "equity": 55700.95
+      },
+      {
+        "date": "2026-06-18",
+        "equity": 55085.34
+      },
+      {
+        "date": "2026-06-22",
+        "equity": 55078.39
+      },
+      {
+        "date": "2026-06-23",
+        "equity": 54771.13
+      },
+      {
+        "date": "2026-06-24",
+        "equity": 54447.73
+      },
+      {
+        "date": "2026-06-25",
+        "equity": 54210.57
+      },
+      {
+        "date": "2026-06-26",
+        "equity": 54145.89
+      },
+      {
+        "date": "2026-06-29",
+        "equity": 54253.69
+      },
+      {
+        "date": "2026-06-30",
+        "equity": 53822.49
+      },
+      {
+        "date": "2026-07-01",
+        "equity": 53693.13
+      },
+      {
+        "date": "2026-07-02",
+        "equity": 53757.81
+      },
+      {
+        "date": "2026-07-03",
+        "equity": 53520.65
+      },
+      {
+        "date": "2026-07-06",
+        "equity": 53908.73
+      },
+      {
+        "date": "2026-07-07",
+        "equity": 54447.73
+      },
+      {
+        "date": "2026-07-08",
+        "equity": 54771.13
+      },
+      {
+        "date": "2026-07-09",
+        "equity": 54383.05
+      },
+      {
+        "date": "2026-07-10",
+        "equity": 54684.89
+      },
+      {
+        "date": "2026-07-13",
+        "equity": 55454.89
+      },
+      {
+        "date": "2026-07-14",
+        "equity": 55146.89
+      },
+      {
+        "date": "2026-07-15",
+        "equity": 55058.89
+      },
+      {
+        "date": "2026-07-16",
+        "equity": 54618.89
+      },
+      {
+        "date": "2026-07-17",
+        "equity": 55410.89
+      },
+      {
+        "date": "2026-07-20",
+        "equity": 56026.89
+      },
+      {
+        "date": "2026-07-21",
+        "equity": 55476.89
+      },
+      {
+        "date": "2026-07-22",
+        "equity": 55542.89
+      },
+      {
+        "date": "2026-07-23",
+        "equity": 55586.89
+      },
+      {
+        "date": "2026-07-24",
+        "equity": 55630.89
+      },
+      {
+        "date": "2026-07-27",
+        "equity": 55850.89
+      },
+      {
+        "date": "2026-07-28",
+        "equity": 56466.89
+      },
+      {
+        "date": "2026-07-29",
+        "equity": 56444.89
+      },
+      {
+        "date": "2026-07-30",
+        "equity": 57192.89
+      },
+      {
+        "date": "2026-07-31",
+        "equity": 56928.89
+      },
+      {
+        "date": "2026-08-03",
+        "equity": 56048.89
+      },
+      {
+        "date": "2026-08-04",
+        "equity": 55278.89
+      },
+      {
+        "date": "2026-08-05",
+        "equity": 54970.89
+      },
+      {
+        "date": "2026-08-06",
+        "equity": 55300.89
+      },
+      {
+        "date": "2026-08-07",
+        "equity": 55212.89
+      },
+      {
+        "date": "2026-08-10",
+        "equity": 55344.89
+      },
+      {
+        "date": "2026-08-11",
+        "equity": 55564.89
+      },
+      {
+        "date": "2026-08-12",
+        "equity": 55586.89
+      },
+      {
+        "date": "2026-08-13",
+        "equity": 55718.89
+      },
+      {
+        "date": "2026-08-14",
+        "equity": 55586.89
+      },
+      {
+        "date": "2026-08-17",
+        "equity": 55718.89
+      },
+      {
+        "date": "2026-08-18",
+        "equity": 56004.89
+      },
+      {
+        "date": "2026-08-19",
+        "equity": 56268.89
+      },
+      {
+        "date": "2026-08-20",
+        "equity": 56092.89
+      },
+      {
+        "date": "2026-08-21",
+        "equity": 56224.89
+      },
+      {
+        "date": "2026-08-24",
+        "equity": 56510.89
+      },
+      {
+        "date": "2026-08-25",
+        "equity": 56510.89
+      },
+      {
+        "date": "2026-08-26",
+        "equity": 56532.89
+      },
+      {
+        "date": "2026-08-27",
+        "equity": 56312.89
+      },
+      {
+        "date": "2026-08-28",
+        "equity": 56576.89
+      },
+      {
+        "date": "2026-08-31",
+        "equity": 57178.15
+      },
+      {
+        "date": "2026-09-01",
+        "equity": 59290.96
+      },
+      {
+        "date": "2026-09-02",
+        "equity": 58648.28
+      },
+      {
+        "date": "2026-09-03",
+        "equity": 60453.28
+      },
+      {
+        "date": "2026-09-04",
+        "equity": 60795.28
+      },
+      {
+        "date": "2026-09-07",
+        "equity": 59904.28
+      },
+      {
+        "date": "2026-09-08",
+        "equity": 59816.19
+      },
+      {
+        "date": "2026-09-09",
+        "equity": 62278.45
+      },
+      {
+        "date": "2026-09-10",
+        "equity": 62278.45
+      }
+    ]
+  },
+  "segments": [
+    {
+      "signature": "None|None|None|None|None|None|None|None|None|replay|301|ATR x1.5 band [2.5%, 4.0%] — effectively flat 2.5%|collapsed (per-date true range, defect D-8b) so every stop sat on the floor|none (negative cash possible; audit V-1 found 12 such days)",
+      "days": [
+        "2026-01-05",
+        "2026-01-06",
+        "2026-01-07",
+        "2026-01-08",
+        "2026-01-09",
+        "2026-01-12",
+        "2026-01-13",
+        "2026-01-14",
+        "2026-01-15",
+        "2026-01-16",
+        "2026-01-19",
+        "2026-01-20",
+        "2026-01-21",
+        "2026-01-22",
+        "2026-01-23",
+        "2026-01-26",
+        "2026-01-27",
+        "2026-01-28",
+        "2026-01-29",
+        "2026-01-30",
+        "2026-02-02",
+        "2026-02-03",
+        "2026-02-04",
+        "2026-02-05",
+        "2026-02-06",
+        "2026-02-09",
+        "2026-02-10",
+        "2026-02-11",
+        "2026-02-12",
+        "2026-02-13",
+        "2026-02-24",
+        "2026-02-25",
+        "2026-02-26",
+        "2026-02-27",
+        "2026-03-02",
+        "2026-03-03",
+        "2026-03-04",
+        "2026-03-05",
+        "2026-03-06",
+        "2026-03-09",
+        "2026-03-10",
+        "2026-03-11",
+        "2026-03-12",
+        "2026-03-13",
+        "2026-03-16",
+        "2026-03-17",
+        "2026-03-18",
+        "2026-03-19",
+        "2026-03-20",
+        "2026-03-23",
+        "2026-03-24",
+        "2026-03-25",
+        "2026-03-26",
+        "2026-03-27",
+        "2026-03-30",
+        "2026-03-31",
+        "2026-04-01",
+        "2026-04-02",
+        "2026-04-03",
+        "2026-04-07",
+        "2026-04-08",
+        "2026-04-09",
+        "2026-04-10",
+        "2026-04-13",
+        "2026-04-14",
+        "2026-04-15",
+        "2026-04-16",
+        "2026-04-17",
+        "2026-04-20",
+        "2026-04-21",
+        "2026-04-22",
+        "2026-04-23",
+        "2026-04-24",
+        "2026-04-27",
+        "2026-04-28",
+        "2026-04-29",
+        "2026-04-30",
+        "2026-05-06",
+        "2026-05-07",
+        "2026-05-08",
+        "2026-05-11",
+        "2026-05-12",
+        "2026-05-13",
+        "2026-05-14",
+        "2026-05-15",
+        "2026-05-18",
+        "2026-05-19",
+        "2026-05-20",
+        "2026-05-21",
+        "2026-05-22",
+        "2026-05-25",
+        "2026-05-26",
+        "2026-05-27",
+        "2026-05-28",
+        "2026-05-29",
+        "2026-06-01",
+        "2026-06-02",
+        "2026-06-03",
+        "2026-06-04",
+        "2026-06-05",
+        "2026-06-08",
+        "2026-06-09",
+        "2026-06-10",
+        "2026-06-11",
+        "2026-06-12",
+        "2026-06-15",
+        "2026-06-16",
+        "2026-06-17",
+        "2026-06-18",
+        "2026-06-22",
+        "2026-06-23",
+        "2026-06-24",
+        "2026-06-25",
+        "2026-06-26",
+        "2026-06-29",
+        "2026-06-30",
+        "2026-07-01",
+        "2026-07-02",
+        "2026-07-03",
+        "2026-07-06",
+        "2026-07-07",
+        "2026-07-08",
+        "2026-07-09",
+        "2026-07-10",
+        "2026-07-13",
+        "2026-07-14",
+        "2026-07-15",
+        "2026-07-16",
+        "2026-07-17",
+        "2026-07-20",
+        "2026-07-21",
+        "2026-07-22",
+        "2026-07-23",
+        "2026-07-24",
+        "2026-07-27",
+        "2026-07-28",
+        "2026-07-29",
+        "2026-07-30",
+        "2026-07-31",
+        "2026-08-03",
+        "2026-08-04",
+        "2026-08-05",
+        "2026-08-06",
+        "2026-08-07",
+        "2026-08-10",
+        "2026-08-11",
+        "2026-08-12",
+        "2026-08-13",
+        "2026-08-14",
+        "2026-08-17",
+        "2026-08-18",
+        "2026-08-19",
+        "2026-08-20",
+        "2026-08-21",
+        "2026-08-24",
+        "2026-08-25",
+        "2026-08-26",
+        "2026-08-27",
+        "2026-08-28",
+        "2026-08-31",
+        "2026-09-01",
+        "2026-09-02",
+        "2026-09-03"
+      ],
+      "convention": {
+        "date": "2026-01-05",
+        "code_commit": "unknown",
+        "panel_symbols": 301,
+        "stop": "ATR x1.5 band [2.5%, 4.0%] — effectively flat 2.5%",
+        "tr_basis": "collapsed (per-date true range, defect D-8b) so every stop sat on the floor",
+        "cash_guard": "none (negative cash possible; audit V-1 found 12 such days)",
+        "params": {},
+        "live_regime": false,
+        "sources": [
+          "documented:2026-01-05 (docs/D_TRACK_EVIDENCE.md §三 (D-8b/D-8c) + §十 (V-1))"
+        ]
+      },
+      "metrics": {
+        "n_days": 163,
+        "return": 0.2093,
+        "max_drawdown": -0.102,
+        "n_fills": 251,
+        "first_equity": 49990.44,
+        "last_equity": 60453.28
+      }
+    },
+    {
+      "signature": "0.025|0.04|1.5|None|None|None|None|6|hs300_500|live|301|ATR x1.5 [0.025, 0.04]|collapsed (defect D-8b)|none",
+      "days": [
+        "2026-09-04"
+      ],
+      "convention": {
+        "date": "2026-09-04",
+        "code_commit": "5c23541a5e5d",
+        "panel_symbols": 301,
+        "stop": "ATR x1.5 [0.025, 0.04]",
+        "tr_basis": "collapsed (defect D-8b)",
+        "cash_guard": "none",
+        "params": {
+          "stop_lo": 0.025,
+          "stop_hi": 0.04,
+          "atr_mult": 1.5,
+          "stop_trigger": null,
+          "stop_open_minutes": null,
+          "tail_vol_max": null,
+          "full_invest": null,
+          "k": 6,
+          "universe": "hs300_500",
+          "live_from": null,
+          "live_enabled": null
+        },
+        "live_regime": true,
+        "sources": [
+          "documented:2026-09-04 (configs/master_config.yaml pb_live_intraday_from + docs/D_TRACK_EVIDENCE.md §四)",
+          "repo:5c23541a5e5d"
+        ]
+      },
+      "metrics": {
+        "n_days": 1,
+        "return": 0.0,
+        "max_drawdown": 0.0,
+        "n_fills": 0,
+        "first_equity": 60795.28,
+        "last_equity": 60795.28
+      }
+    },
+    {
+      "signature": "0.025|0.04|1.5|close|30|0.5|True|6|hs300_500|live|301|ATR x1.5 [0.025, 0.04]|collapsed (defect D-8b)|none",
+      "days": [
+        "2026-09-07"
+      ],
+      "convention": {
+        "date": "2026-09-07",
+        "code_commit": "2dd8300d7217",
+        "panel_symbols": 301,
+        "stop": "ATR x1.5 [0.025, 0.04]",
+        "tr_basis": "collapsed (defect D-8b)",
+        "cash_guard": "none",
+        "params": {
+          "stop_lo": 0.025,
+          "stop_hi": 0.04,
+          "atr_mult": 1.5,
+          "stop_trigger": "close",
+          "stop_open_minutes": 30,
+          "tail_vol_max": 0.5,
+          "full_invest": true,
+          "k": 6,
+          "universe": "hs300_500",
+          "live_from": "2026-09-04",
+          "live_enabled": true
+        },
+        "live_regime": true,
+        "sources": [
+          "documented:2026-09-04 (configs/master_config.yaml pb_live_intraday_from + docs/D_TRACK_EVIDENCE.md §四)",
+          "repo:2dd8300d7217"
+        ]
+      },
+      "metrics": {
+        "n_days": 1,
+        "return": 0.0,
+        "max_drawdown": 0.0,
+        "n_fills": 0,
+        "first_equity": 59904.28,
+        "last_equity": 59904.28
+      }
+    },
+    {
+      "signature": "0.025|0.04|1.5|close|30|0.5|True|6|hs300_500|live|800|ATR x1.5 [0.025, 0.04]|fixed (per-symbol true range)|sells-first + affordable-share clip",
+      "days": [
+        "2026-09-08"
+      ],
+      "convention": {
+        "date": "2026-09-08",
+        "code_commit": "05a594f9f1cf",
+        "panel_symbols": 800,
+        "stop": "ATR x1.5 [0.025, 0.04]",
+        "tr_basis": "fixed (per-symbol true range)",
+        "cash_guard": "sells-first + affordable-share clip",
+        "params": {
+          "stop_lo": 0.025,
+          "stop_hi": 0.04,
+          "atr_mult": 1.5,
+          "stop_trigger": "close",
+          "stop_open_minutes": 30,
+          "tail_vol_max": 0.5,
+          "full_invest": true,
+          "k": 6,
+          "universe": "hs300_500",
+          "live_from": "2026-09-04",
+          "live_enabled": true
+        },
+        "live_regime": true,
+        "sources": [
+          "documented:2026-09-08 (docs/D_TRACK_EVIDENCE.md §三/§十 (2026-09-08 audit fixes, defect D-8/V-1))",
+          "repo:05a594f9f1cf"
+        ]
+      },
+      "metrics": {
+        "n_days": 1,
+        "return": 0.0,
+        "max_drawdown": 0.0,
+        "n_fills": 1,
+        "first_equity": 59816.19,
+        "last_equity": 59816.19
+      }
+    },
+    {
+      "signature": "0.025|0.04|1.5|close|30|0.5|True|6|hs300_500|live|800|ATR x1.5 [0.025, 0.04]|fixed|sells-first + affordable-share clip",
+      "days": [
+        "2026-09-09"
+      ],
+      "convention": {
+        "date": "2026-09-09",
+        "code_commit": "ee3557cca04d",
+        "panel_symbols": 800,
+        "stop": "ATR x1.5 [0.025, 0.04]",
+        "tr_basis": "fixed",
+        "cash_guard": "sells-first + affordable-share clip",
+        "params": {
+          "stop_lo": 0.025,
+          "stop_hi": 0.04,
+          "atr_mult": 1.5,
+          "stop_trigger": "close",
+          "stop_open_minutes": 30,
+          "tail_vol_max": 0.5,
+          "full_invest": true,
+          "k": 6,
+          "universe": "hs300_500",
+          "live_from": "2026-09-04",
+          "live_enabled": true
+        },
+        "live_regime": true,
+        "sources": [
+          "documented:2026-09-09 (configs/master_config.yaml pb_stop_lo/hi + docs/D_TRACK_EVIDENCE.md §六)",
+          "repo:ee3557cca04d"
+        ]
+      },
+      "metrics": {
+        "n_days": 1,
+        "return": 0.0,
+        "max_drawdown": 0.0,
+        "n_fills": 1,
+        "first_equity": 62278.45,
+        "last_equity": 62278.45
+      }
+    },
+    {
+      "signature": "0.035|0.035|1.5|close|30|0.5|True|6|hs300_500|live|800|flat 3.5%|fixed|sells-first + affordable-share clip",
+      "days": [
+        "2026-09-10"
+      ],
+      "convention": {
+        "date": "2026-09-10",
+        "code_commit": "59fbb03503b1",
+        "panel_symbols": 800,
+        "stop": "flat 3.5%",
+        "tr_basis": "fixed",
+        "cash_guard": "sells-first + affordable-share clip",
+        "params": {
+          "stop_lo": 0.035,
+          "stop_hi": 0.035,
+          "atr_mult": 1.5,
+          "stop_trigger": "close",
+          "stop_open_minutes": 30,
+          "tail_vol_max": 0.5,
+          "full_invest": true,
+          "k": 6,
+          "universe": "hs300_500",
+          "live_from": "2026-09-04",
+          "live_enabled": true
+        },
+        "live_regime": true,
+        "sources": [
+          "documented:2026-09-09 (configs/master_config.yaml pb_stop_lo/hi + docs/D_TRACK_EVIDENCE.md §六)",
+          "repo:59fbb03503b1"
+        ]
+      },
+      "metrics": {
+        "n_days": 1,
+        "return": 0.0,
+        "max_drawdown": 0.0,
+        "n_fills": 0,
+        "first_equity": 62278.45,
+        "last_equity": 62278.45
+      }
+    }
+  ],
+  "replay_current_convention": {
+    "performed": true,
+    "window": {
+      "start": "2026-01-05",
+      "end": "2026-09-10"
+    },
+    "convention": "current configuration, corrected 800-name panel, flat start",
+    "metrics": {
+      "return": -0.0633,
+      "max_drawdown": -0.1562,
+      "n_days": 168,
+      "n_fills": 239,
+      "first_equity": 49973.17,
+      "last_equity": 46809.37
+    },
+    "equity_curve": [
+      {
+        "date": "2026-01-05",
+        "equity": 49973.17
+      },
+      {
+        "date": "2026-01-06",
+        "equity": 50861.28
+      },
+      {
+        "date": "2026-01-07",
+        "equity": 50306.44
+      },
+      {
+        "date": "2026-01-08",
+        "equity": 50308.17
+      },
+      {
+        "date": "2026-01-09",
+        "equity": 51899.92
+      },
+      {
+        "date": "2026-01-12",
+        "equity": 51637.38
+      },
+      {
+        "date": "2026-01-13",
+        "equity": 51218.09
+      },
+      {
+        "date": "2026-01-14",
+        "equity": 51169.3
+      },
+      {
+        "date": "2026-01-15",
+        "equity": 51545.98
+      },
+      {
+        "date": "2026-01-16",
+        "equity": 51130.92
+      },
+      {
+        "date": "2026-01-19",
+        "equity": 52877.55
+      },
+      {
+        "date": "2026-01-20",
+        "equity": 53073.63
+      },
+      {
+        "date": "2026-01-21",
+        "equity": 53060.89
+      },
+      {
+        "date": "2026-01-22",
+        "equity": 52840.25
+      },
+      {
+        "date": "2026-01-23",
+        "equity": 52999.22
+      },
+      {
+        "date": "2026-01-26",
+        "equity": 51905.93
+      },
+      {
+        "date": "2026-01-27",
+        "equity": 51841.4
+      },
+      {
+        "date": "2026-01-28",
+        "equity": 52335.51
+      },
+      {
+        "date": "2026-01-29",
+        "equity": 51721.53
+      },
+      {
+        "date": "2026-01-30",
+        "equity": 52129.71
+      },
+      {
+        "date": "2026-02-02",
+        "equity": 51107.56
+      },
+      {
+        "date": "2026-02-03",
+        "equity": 52187.63
+      },
+      {
+        "date": "2026-02-04",
+        "equity": 52345.37
+      },
+      {
+        "date": "2026-02-05",
+        "equity": 51573.9
+      },
+      {
+        "date": "2026-02-06",
+        "equity": 51152.7
+      },
+      {
+        "date": "2026-02-09",
+        "equity": 52110.1
+      },
+      {
+        "date": "2026-02-10",
+        "equity": 52141.5
+      },
+      {
+        "date": "2026-02-11",
+        "equity": 53259.53
+      },
+      {
+        "date": "2026-02-12",
+        "equity": 53563.44
+      },
+      {
+        "date": "2026-02-13",
+        "equity": 52884.77
+      },
+      {
+        "date": "2026-02-24",
+        "equity": 53432.22
+      },
+      {
+        "date": "2026-02-25",
+        "equity": 53584.4
+      },
+      {
+        "date": "2026-02-26",
+        "equity": 53257.63
+      },
+      {
+        "date": "2026-02-27",
+        "equity": 53753.89
+      },
+      {
+        "date": "2026-03-02",
+        "equity": 54776.05
+      },
+      {
+        "date": "2026-03-03",
+        "equity": 53505.82
+      },
+      {
+        "date": "2026-03-04",
+        "equity": 53204.31
+      },
+      {
+        "date": "2026-03-05",
+        "equity": 53639.06
+      },
+      {
+        "date": "2026-03-06",
+        "equity": 54069.59
+      },
+      {
+        "date": "2026-03-09",
+        "equity": 52133.46
+      },
+      {
+        "date": "2026-03-10",
+        "equity": 53127.54
+      },
+      {
+        "date": "2026-03-11",
+        "equity": 53539.57
+      },
+      {
+        "date": "2026-03-12",
+        "equity": 53205.17
+      },
+      {
+        "date": "2026-03-13",
+        "equity": 52566.75
+      },
+      {
+        "date": "2026-03-16",
+        "equity": 51904.77
+      },
+      {
+        "date": "2026-03-17",
+        "equity": 51444.64
+      },
+      {
+        "date": "2026-03-18",
+        "equity": 51114.51
+      },
+      {
+        "date": "2026-03-19",
+        "equity": 50388.09
+      },
+      {
+        "date": "2026-03-20",
+        "equity": 50665.07
+      },
+      {
+        "date": "2026-03-23",
+        "equity": 49051.09
+      },
+      {
+        "date": "2026-03-24",
+        "equity": 50615.26
+      },
+      {
+        "date": "2026-03-25",
+        "equity": 51659.65
+      },
+      {
+        "date": "2026-03-26",
+        "equity": 51353.53
+      },
+      {
+        "date": "2026-03-27",
+        "equity": 51022.73
+      },
+      {
+        "date": "2026-03-30",
+        "equity": 50487.81
+      },
+      {
+        "date": "2026-03-31",
+        "equity": 49597.7
+      },
+      {
+        "date": "2026-04-01",
+        "equity": 50162.51
+      },
+      {
+        "date": "2026-04-02",
+        "equity": 50261.48
+      },
+      {
+        "date": "2026-04-03",
+        "equity": 49536.13
+      },
+      {
+        "date": "2026-04-07",
+        "equity": 49521.52
+      },
+      {
+        "date": "2026-04-08",
+        "equity": 49797.13
+      },
+      {
+        "date": "2026-04-09",
+        "equity": 49469.62
+      },
+      {
+        "date": "2026-04-10",
+        "equity": 49478.45
+      },
+      {
+        "date": "2026-04-13",
+        "equity": 49043.26
+      },
+      {
+        "date": "2026-04-14",
+        "equity": 49146.5
+      },
+      {
+        "date": "2026-04-15",
+        "equity": 49850.33
+      },
+      {
+        "date": "2026-04-16",
+        "equity": 49900.29
+      },
+      {
+        "date": "2026-04-17",
+        "equity": 49305.6
+      },
+      {
+        "date": "2026-04-20",
+        "equity": 48908.48
+      },
+      {
+        "date": "2026-04-21",
+        "equity": 49768.19
+      },
+      {
+        "date": "2026-04-22",
+        "equity": 49612.51
+      },
+      {
+        "date": "2026-04-23",
+        "equity": 49926.0
+      },
+      {
+        "date": "2026-04-24",
+        "equity": 50355.92
+      },
+      {
+        "date": "2026-04-27",
+        "equity": 50143.71
+      },
+      {
+        "date": "2026-04-28",
+        "equity": 50121.46
+      },
+      {
+        "date": "2026-04-29",
+        "equity": 50736.41
+      },
+      {
+        "date": "2026-04-30",
+        "equity": 50297.95
+      },
+      {
+        "date": "2026-05-06",
+        "equity": 50873.0
+      },
+      {
+        "date": "2026-05-07",
+        "equity": 51124.26
+      },
+      {
+        "date": "2026-05-08",
+        "equity": 51039.69
+      },
+      {
+        "date": "2026-05-11",
+        "equity": 51132.78
+      },
+      {
+        "date": "2026-05-12",
+        "equity": 51435.09
+      },
+      {
+        "date": "2026-05-13",
+        "equity": 51424.54
+      },
+      {
+        "date": "2026-05-14",
+        "equity": 50552.03
+      },
+      {
+        "date": "2026-05-15",
+        "equity": 50352.11
+      },
+      {
+        "date": "2026-05-18",
+        "equity": 50063.0
+      },
+      {
+        "date": "2026-05-19",
+        "equity": 50949.88
+      },
+      {
+        "date": "2026-05-20",
+        "equity": 51628.58
+      },
+      {
+        "date": "2026-05-21",
+        "equity": 50823.63
+      },
+      {
+        "date": "2026-05-22",
+        "equity": 50900.05
+      },
+      {
+        "date": "2026-05-25",
+        "equity": 51510.74
+      },
+      {
+        "date": "2026-05-26",
+        "equity": 51412.41
+      },
+      {
+        "date": "2026-05-27",
+        "equity": 50512.92
+      },
+      {
+        "date": "2026-05-28",
+        "equity": 50467.14
+      },
+      {
+        "date": "2026-05-29",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-01",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-02",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-03",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-04",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-05",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-08",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-09",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-10",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-11",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-12",
+        "equity": 50511.82
+      },
+      {
+        "date": "2026-06-15",
+        "equity": 50475.54
+      },
+      {
+        "date": "2026-06-16",
+        "equity": 50249.82
+      },
+      {
+        "date": "2026-06-17",
+        "equity": 49591.58
+      },
+      {
+        "date": "2026-06-18",
+        "equity": 48923.62
+      },
+      {
+        "date": "2026-06-22",
+        "equity": 49049.47
+      },
+      {
+        "date": "2026-06-23",
+        "equity": 48653.62
+      },
+      {
+        "date": "2026-06-24",
+        "equity": 47865.74
+      },
+      {
+        "date": "2026-06-25",
+        "equity": 47298.86
+      },
+      {
+        "date": "2026-06-26",
+        "equity": 46218.86
+      },
+      {
+        "date": "2026-06-29",
+        "equity": 46868.86
+      },
+      {
+        "date": "2026-06-30",
+        "equity": 47013.68
+      },
+      {
+        "date": "2026-07-01",
+        "equity": 50171.07
+      },
+      {
+        "date": "2026-07-02",
+        "equity": 50978.97
+      },
+      {
+        "date": "2026-07-03",
+        "equity": 49406.91
+      },
+      {
+        "date": "2026-07-06",
+        "equity": 49364.09
+      },
+      {
+        "date": "2026-07-07",
+        "equity": 49464.89
+      },
+      {
+        "date": "2026-07-08",
+        "equity": 49997.39
+      },
+      {
+        "date": "2026-07-09",
+        "equity": 48788.39
+      },
+      {
+        "date": "2026-07-10",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-13",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-14",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-15",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-16",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-17",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-20",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-21",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-22",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-23",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-24",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-27",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-28",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-29",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-30",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-07-31",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-03",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-04",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-05",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-06",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-07",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-10",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-11",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-12",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-13",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-14",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-17",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-18",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-19",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-20",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-21",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-24",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-25",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-26",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-27",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-28",
+        "equity": 48177.55
+      },
+      {
+        "date": "2026-08-31",
+        "equity": 48150.24
+      },
+      {
+        "date": "2026-09-01",
+        "equity": 48045.74
+      },
+      {
+        "date": "2026-09-02",
+        "equity": 47583.94
+      },
+      {
+        "date": "2026-09-03",
+        "equity": 47608.91
+      },
+      {
+        "date": "2026-09-04",
+        "equity": 48253.91
+      },
+      {
+        "date": "2026-09-07",
+        "equity": 48027.91
+      },
+      {
+        "date": "2026-09-08",
+        "equity": 47748.91
+      },
+      {
+        "date": "2026-09-09",
+        "equity": 47467.91
+      },
+      {
+        "date": "2026-09-10",
+        "equity": 46809.37
+      }
+    ],
+    "comparison_note": "recorded vs replay is an AGGREGATE comparison only: the recorded curve spans several conventions on a 301-name cross-section, while the replay applies one convention to the corrected 800-name pool. They share a start date and a flat start, nothing else.",
+    "delta_vs_recorded": -0.3091,
+    "publishable": false,
+    "known_issue": "slice-start sensitivity (D-14): start=2026-01-01 → +5.72% at 08-28, identical to outputs/d_oos_is_2026_v5.json; start=2026-01-05 (this run) → −3.59% at 08-28 and −6.33% at 09-10, sitting in cash from late July. Same code, convention and panel; only the market slice's warmup start moves (start − 540 days). The two runs differ from the FIRST session (1 entry vs 4 entries), so the divergence is not a tail effect. Mechanism not yet identified — do not quote this curve."
+  },
+  "reading": [
+    "A segment is the smallest unit that may be quoted: within a segment the code commit, the D-track parameters, the execution regime and the cross-section width are all constant.",
+    "The recorded curve's headline return mixes segments and is therefore not comparable with any single-convention number.",
+    "The replay is the corrected series: one convention, corrected panel, flat start. Compare aggregates, never day-by-day.",
+    "The replay is marked publishable=false while the slice-start sensitivity recorded in replay_current_convention.known_issue is unexplained."
+  ],
+  "provenance": {
+    "window": {
+      "start": "2026-01-05",
+      "end": "2026-09-10"
+    },
+    "convention": "adjusted-close basis; recorded days annotated from the repository state in force at the time; replay from the current configuration on the corrected 800-name panel",
+    "data_as_of": "2026-09-10",
+    "artifact_sha256": "d1fc1e0c371e8c63139215f690ba6a9194ed2d3d942fc53447395744fa6b036f",
+    "code_commit": "42b3a91458f60265703fe9988eb3f33387cb828a",
+    "code_dirty": true
+  }
+}

@@ -1,0 +1,320 @@
+{
+  "label": "is_2026_800",
+  "window": {
+    "start": "2026-01-01",
+    "end": "2026-08-28"
+  },
+  "variants": {
+    "flat_1p5": {
+      "overrides": {
+        "pb_stop_lo": 0.015,
+        "pb_stop_hi": 0.015
+      },
+      "cum_return": -0.002222358962579163,
+      "ann_return": -0.0035421779682971444,
+      "sharpe": 0.0555786095508901,
+      "max_dd": 0.08387211109793591,
+      "n_days": 158,
+      "n_fills": 313,
+      "n_intraday": 98,
+      "cost": 2334.07,
+      "fills_by_source": {
+        "close": 215,
+        "replay": 98
+      },
+      "stop_width": {
+        "stop_lo": 0.015,
+        "stop_hi": 0.015,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.015,
+          0.015
+        ]
+      },
+      "params_hash": "962f0c76d3c6a938",
+      "n_symbols": 800,
+      "n_bars": 529,
+      "gross_scale_wired": true
+    },
+    "flat_2p0": {
+      "overrides": {
+        "pb_stop_lo": 0.02,
+        "pb_stop_hi": 0.02
+      },
+      "cum_return": -0.04073289086441578,
+      "ann_return": -0.06417480921087448,
+      "sharpe": -0.365468320826182,
+      "max_dd": 0.10153461566957256,
+      "n_days": 158,
+      "n_fills": 292,
+      "n_intraday": 84,
+      "cost": 2145.94,
+      "fills_by_source": {
+        "close": 208,
+        "replay": 84
+      },
+      "stop_width": {
+        "stop_lo": 0.02,
+        "stop_hi": 0.02,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.02,
+          0.02
+        ]
+      },
+      "params_hash": "c73a334fbd13dca5",
+      "n_symbols": 800,
+      "n_bars": 529,
+      "gross_scale_wired": true
+    },
+    "flat_2p5": {
+      "overrides": {
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.025
+      },
+      "cum_return": 0.012576686787667768,
+      "ann_return": 0.02013393668727237,
+      "sharpe": 0.20840693687086528,
+      "max_dd": 0.11712771835123037,
+      "n_days": 158,
+      "n_fills": 285,
+      "n_intraday": 70,
+      "cost": 2056.0,
+      "fills_by_source": {
+        "close": 215,
+        "replay": 70
+      },
+      "stop_width": {
+        "stop_lo": 0.025,
+        "stop_hi": 0.025,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.025,
+          0.025
+        ]
+      },
+      "params_hash": "6eddb39bdb972a36",
+      "n_symbols": 800,
+      "n_bars": 529,
+      "gross_scale_wired": true
+    },
+    "flat_3p0": {
+      "overrides": {
+        "pb_stop_lo": 0.03,
+        "pb_stop_hi": 0.03
+      },
+      "cum_return": 0.0082972664129497,
+      "ann_return": 0.013266241165434733,
+      "sharpe": 0.16185890300865582,
+      "max_dd": 0.10435358209970957,
+      "n_days": 158,
+      "n_fills": 248,
+      "n_intraday": 56,
+      "cost": 1791.87,
+      "fills_by_source": {
+        "close": 192,
+        "replay": 56
+      },
+      "stop_width": {
+        "stop_lo": 0.03,
+        "stop_hi": 0.03,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.03,
+          0.03
+        ]
+      },
+      "params_hash": "9625c449b030601f",
+      "n_symbols": 800,
+      "n_bars": 529,
+      "gross_scale_wired": true
+    },
+    "flat_3p5": {
+      "overrides": {
+        "pb_stop_lo": 0.035,
+        "pb_stop_hi": 0.035
+      },
+      "cum_return": 0.05721967542565798,
+      "ann_return": 0.0928033647887534,
+      "sharpe": 0.6710549792877266,
+      "max_dd": 0.08417705115063256,
+      "n_days": 158,
+      "n_fills": 236,
+      "n_intraday": 51,
+      "cost": 1704.04,
+      "fills_by_source": {
+        "close": 185,
+        "replay": 51
+      },
+      "stop_width": {
+        "stop_lo": 0.035,
+        "stop_hi": 0.035,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.035,
+          0.035
+        ]
+      },
+      "params_hash": "2aaab31dd7d36b36",
+      "n_symbols": 800,
+      "n_bars": 529,
+      "gross_scale_wired": true
+    },
+    "atr_1p0_25_35": {
+      "overrides": {
+        "pb_atr_mult": 1.0,
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.035
+      },
+      "cum_return": 0.09280648923537282,
+      "ann_return": 0.1520572693423723,
+      "sharpe": 0.9844510792424921,
+      "max_dd": 0.08306504983502194,
+      "n_days": 158,
+      "n_fills": 258,
+      "n_intraday": 56,
+      "cost": 1862.02,
+      "fills_by_source": {
+        "close": 202,
+        "replay": 56
+      },
+      "stop_width": {
+        "stop_lo": 0.025,
+        "stop_hi": 0.035,
+        "atr_mult": 1.0,
+        "flat": false,
+        "band": [
+          0.025,
+          0.035
+        ]
+      },
+      "params_hash": "e6849d61fb8ef3f2",
+      "n_symbols": 800,
+      "n_bars": 529,
+      "gross_scale_wired": true
+    },
+    "atr_1p0_25_40": {
+      "overrides": {
+        "pb_atr_mult": 1.0,
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.04
+      },
+      "cum_return": -0.01717941967930281,
+      "ann_return": -0.027259736722141215,
+      "sharpe": -0.12310913892815525,
+      "max_dd": 0.15376180699142417,
+      "n_days": 158,
+      "n_fills": 221,
+      "n_intraday": 55,
+      "cost": 1605.38,
+      "fills_by_source": {
+        "close": 166,
+        "replay": 55
+      },
+      "stop_width": {
+        "stop_lo": 0.025,
+        "stop_hi": 0.04,
+        "atr_mult": 1.0,
+        "flat": false,
+        "band": [
+          0.025,
+          0.04
+        ]
+      },
+      "params_hash": "e62f361914a206a7",
+      "n_symbols": 800,
+      "n_bars": 529,
+      "gross_scale_wired": true
+    },
+    "atr_1p5_25_40": {
+      "overrides": {
+        "pb_atr_mult": 1.5,
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.04
+      },
+      "cum_return": -0.018611207066561608,
+      "ann_return": -0.02951894543591993,
+      "sharpe": -0.1341424492755161,
+      "max_dd": 0.14769212860935876,
+      "n_days": 158,
+      "n_fills": 211,
+      "n_intraday": 51,
+      "cost": 1515.8,
+      "fills_by_source": {
+        "close": 160,
+        "replay": 51
+      },
+      "stop_width": {
+        "stop_lo": 0.025,
+        "stop_hi": 0.04,
+        "atr_mult": 1.5,
+        "flat": false,
+        "band": [
+          0.025,
+          0.04
+        ]
+      },
+      "params_hash": "074ecf298a9e8133",
+      "n_symbols": 800,
+      "n_bars": 529,
+      "gross_scale_wired": true
+    }
+  },
+  "panel": {
+    "n_columns": 800,
+    "as_of": "2026-08-28",
+    "n_with_price": 800,
+    "effective_ratio": 1.0,
+    "universe_size": null,
+    "n_warm_20": 800,
+    "n_warm_60": 800,
+    "lookback_days": 120,
+    "n_symbols": 800,
+    "n_declared": 800,
+    "n_bars": 529,
+    "last_bar": "2026-09-10"
+  },
+  "assembly": {
+    "book_class": "PullbackPortfolio",
+    "execution": {
+      "cash": 50000.0,
+      "slippage_bps": 2.0,
+      "commission_bps": 2.5,
+      "min_commission": 5.0,
+      "stamp_tax_sell_bps": 5.0,
+      "transfer_fee_bps": 0.1,
+      "max_position_pct": 0.4,
+      "notional_floor": 2000.0,
+      "band_frac": 0.0,
+      "rebalance_days": 1,
+      "pit_strict": true
+    },
+    "universe_size": 800,
+    "has_intraday_frames": true,
+    "has_minute_provider": true,
+    "always_rebalance": true,
+    "gross_scale_wired": true,
+    "live_intraday_from": "2026-09-04"
+  },
+  "kill_switch": {
+    "mode": "normal",
+    "gross_scale": 1.0,
+    "state_file": "C:\\Users\\wyxwi\\Desktop\\FQA\\outputs\\autopilot_state_D_5W.json"
+  },
+  "provenance": {
+    "window": {
+      "start": "2026-01-01",
+      "end": "2026-08-28"
+    },
+    "convention": "adjusted-close price basis; daily close rebalance at the panel close; intraday stops on minute bars below 15:00 (trigger=close, open_minutes=30); T+1; no leverage; commission+stamp duty per the configured cost model; ALL variants ran on the SAME market slice (one _build_market_for_paper per grid, handed to every variant through market_override), so they differ only in the stop-width override",
+    "data_as_of": "2026-09-10",
+    "artifact_sha256": "a8b73530592cc4feb294357948b92ee349547f88b3fa19cb191bbb0588dea771",
+    "code_commit": "42b3a91458f60265703fe9988eb3f33387cb828a",
+    "code_dirty": true
+  }
+}

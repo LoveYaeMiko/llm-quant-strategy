@@ -366,15 +366,31 @@ def fill_violations(
     return out
 
 
+#: The A-share decision window is TWO segments: the lunch break (11:30-13:00) is
+#: not downtime. Treating 09:30-15:00 as one interval counted the 90-minute break
+#: as an outage and reported ~62% availability on a perfectly healthy session
+#: (found 2026-09-10 by the forward-sample tool, whose first row showed a
+#: "91-minute gap" that was exactly the break).
+DECISION_WINDOWS: tuple[tuple[str, str], ...] = (("09:30", "11:30"), ("13:00", "15:00"))
+
+
+def _window_bounds(day: pd.Timestamp, start: str, end: str) -> tuple[pd.Timestamp, pd.Timestamp]:
+    def _at(hhmm: str) -> pd.Timestamp:
+        return day + pd.Timedelta(hours=int(hhmm[:2]), minutes=int(hhmm[3:]))
+
+    return _at(start), _at(end)
+
+
 def availability(heartbeats: pd.DataFrame, trading_days: Sequence[pd.Timestamp],
-                 *, window_start: str = "09:30", window_end: str = "15:00",
+                 *,
+                 windows: Sequence[tuple[str, str]] = DECISION_WINDOWS,
                  max_gap_minutes: int = 5) -> dict:
     """Share of decision-window minutes with a fresh heartbeat.
 
     ``heartbeats`` needs ``ts`` (parsed timestamps) — one row per live-layer poll.
     A trading day with no heartbeat at all counts as a total outage; a gap longer
-    than ``max_gap_minutes`` counts as downtime. Availability is measured only
-    over trading days and only inside the decision window.
+    than ``max_gap_minutes`` inside a decision segment counts as downtime. The
+    lunch break between the segments is NOT downtime.
     """
     days = [pd.Timestamp(d).normalize() for d in trading_days]
     hb = pd.DataFrame(heartbeats) if heartbeats is not None else pd.DataFrame()
@@ -400,32 +416,29 @@ def availability(heartbeats: pd.DataFrame, trading_days: Sequence[pd.Timestamp],
     n_down_days = 0
     worst_day, worst_down = None, -1
     for d in days:
-        start = d + pd.Timedelta(hours=int(window_start[:2]), minutes=int(window_start[3:]))
-        end = d + pd.Timedelta(hours=int(window_end[:2]), minutes=int(window_end[3:]))
-        minutes = int((end - start).total_seconds() // 60) + 1
-        window_minutes += minutes
-        stamps = (
-            hb.loc[(hb["ts"] >= start) & (hb["ts"] <= end), "ts"].sort_values().tolist()
-            if len(hb) else []
-        )
-        if not stamps:
-            down = minutes
-        else:
-            down = 0
-            cursor = start
-            for s in stamps:
-                gap = (s - cursor).total_seconds() / 60.0
-                if gap > max_gap_minutes:
-                    down += int(gap - max_gap_minutes)
-                cursor = max(cursor, s)
-            tail = (end - cursor).total_seconds() / 60.0
-            if tail > max_gap_minutes:
-                down += int(tail - max_gap_minutes)
-        down_minutes += down
-        if down > 0:
-            n_down_days += 1
-        if down > worst_down:
-            worst_down, worst_day = down, str(d.date())
+        for start_s, end_s in windows:
+            start, end = _window_bounds(d, start_s, end_s)
+            minutes = int((end - start).total_seconds() // 60) + 1
+            window_minutes += minutes
+            stamps = hb.loc[(hb["ts"] >= start) & (hb["ts"] <= end), "ts"].sort_values().tolist()
+            if not stamps:
+                down = minutes
+            else:
+                down = 0
+                cursor = start
+                for s in stamps:
+                    gap = (s - cursor).total_seconds() / 60.0
+                    if gap > max_gap_minutes:
+                        down += int(gap - max_gap_minutes)
+                    cursor = max(cursor, s)
+                tail = (end - cursor).total_seconds() / 60.0
+                if tail > max_gap_minutes:
+                    down += int(tail - max_gap_minutes)
+            down_minutes += down
+            if down > 0 and worst_day != str(d.date()):
+                n_down_days += 1
+            if down > worst_down:
+                worst_down, worst_day = down, str(d.date())
     return {
         "availability": round(1.0 - down_minutes / window_minutes, 4) if window_minutes else 1.0,
         "n_days": len(days),
@@ -434,6 +447,7 @@ def availability(heartbeats: pd.DataFrame, trading_days: Sequence[pd.Timestamp],
         "window_minutes": int(window_minutes),
         "worst_day": worst_day,
         "max_gap_minutes": int(max_gap_minutes),
+        "windows": [list(w) for w in windows],
     }
 
 
@@ -843,6 +857,7 @@ def paired_comparison(
 
 
 __all__ = [
+    "DECISION_WINDOWS",
     "GateThresholds",
     "PRICE_CHECKABLE_SOURCES",
     "TRADING_DAYS",

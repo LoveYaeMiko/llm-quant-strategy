@@ -29,8 +29,8 @@ import forward_candidate as fc  # noqa: E402
 
 SPEC = {
     "account_suffix": "_FWD_ATR",
-    "ledger": "outputs/forward/candidate_atr_1p0_25_40/ledger.sqlite",
-    "params": {"pb_atr_mult": 1.0, "pb_stop_lo": 0.025, "pb_stop_hi": 0.040},
+    "ledger": "outputs/forward/candidate_atr_1p0_25_35/ledger.sqlite",
+    "params": {"pb_atr_mult": 1.0, "pb_stop_lo": 0.025, "pb_stop_hi": 0.035},
     "switch_rule": {"window_days": 120, "paired_diff_gt": 0.0, "t_min": 1.5},
 }
 
@@ -45,7 +45,7 @@ def _cfg() -> Config:
                 "pb_live_intraday_from": "2026-09-04",
             }],
         },
-        "forward": {"candidates": {"atr_1p0_25_40": SPEC}},
+        "forward": {"candidates": {"atr_1p0_25_35": SPEC}},
     })
 
 
@@ -55,8 +55,10 @@ def test_arms_differ_only_in_the_stop_width():
     cand = fc._replay_account(cfg, SPEC, "candidate")
     diff = {k: (incumbent.get(k), cand.get(k)) for k in set(incumbent) | set(cand)
             if incumbent.get(k) != cand.get(k)}
-    assert set(diff) == {"name", "pb_atr_mult", "pb_stop_lo", "pb_stop_hi"}
-    assert cand["pb_stop_lo"] == 0.025 and cand["pb_stop_hi"] == 0.040
+    # the incumbent's flat 3.5% and the candidate's [2.5%, 3.5%] ATR band share the
+    # same CEILING; only the floor and the ATR multiplier differ
+    assert set(diff) == {"name", "pb_atr_mult", "pb_stop_lo"}
+    assert cand["pb_stop_lo"] == 0.025 and cand["pb_stop_hi"] == 0.035
     assert cand["pb_atr_mult"] == 1.0
     assert incumbent["pb_stop_lo"] == incumbent["pb_stop_hi"] == 0.035
     # everything else — cash, universe, k — is inherited unchanged
@@ -76,7 +78,7 @@ def test_arms_are_replays_not_live_inheritors():
 def test_ledger_paths_are_isolated():
     paths = fc._ledger_paths(_cfg(), SPEC)
     assert paths["production"].name == "shadow_ledger_D_5W.sqlite"
-    assert "candidate_atr_1p0_25_40" in str(paths["candidate"])
+    assert "candidate_atr_1p0_25_35" in str(paths["candidate"])
     assert "incumbent_replay" in str(paths["incumbent"])
     assert len({str(p) for p in paths.values()}) == 3, "three distinct ledgers"
 
@@ -84,11 +86,19 @@ def test_ledger_paths_are_isolated():
 def test_spec_missing_is_a_clear_error():
     cfg = Config({"forward": {"candidates": {}}})
     with pytest.raises(SystemExit):
-        fc._spec(cfg, "atr_1p0_25_40")
+        fc._spec(cfg, "atr_1p0_25_35")
 
 
-def test_default_rule_is_the_recorded_candidate():
-    assert fc.DEFAULT_RULE == "atr_1p0_25_40"
+def test_default_rule_is_the_enabled_candidate():
+    """The tracked candidate is the one the corrected 800-name grid supports.
+
+    It was ``atr_1p0_25_40`` until 2026-09-10, when the re-run on the corrected
+    pool showed that candidate is the WORST of the four wide variants on the
+    project's own max-min rule (IS Sharpe −0.12) while ``atr_1p0_25_35`` is the
+    best (min 0.29). The incumbent flat 3.5% still wins max-min (0.40), so the
+    deployment is unchanged — only the forward target moved.
+    """
+    assert fc.DEFAULT_RULE == "atr_1p0_25_35"
 
 
 def test_arm_meta_roundtrip(tmp_path):

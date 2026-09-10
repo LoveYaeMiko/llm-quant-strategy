@@ -240,8 +240,31 @@ def test_availability_counts_a_long_gap():
     stamps += list(pd.date_range(day + pd.Timedelta(hours=13),
                                  day + pd.Timedelta(hours=15), freq="60s"))
     out = availability(pd.DataFrame({"ts": stamps}), [day])
+    # the morning segment loses its last hour (10:31-11:30)
     assert 0.5 < out["availability"] < 0.9
-    assert out["down_minutes"] > 60
+    assert out["down_minutes"] >= 50
+
+
+def test_availability_ignores_the_lunch_break():
+    """11:30-13:00 is not an outage.
+
+    Found via the forward-sample tool on 2026-09-10: a healthy session showed a
+    "91-minute gap" — exactly the lunch break — which the single-interval version
+    scored as ~62% availability, i.e. an automatic gate failure every day.
+    """
+    day = pd.Timestamp("2026-01-05")
+    stamps = list(pd.date_range(day + pd.Timedelta(hours=9, minutes=30),
+                                day + pd.Timedelta(hours=11, minutes=30), freq="60s"))
+    stamps += list(pd.date_range(day + pd.Timedelta(hours=13),
+                                 day + pd.Timedelta(hours=15), freq="60s"))
+    out = availability(pd.DataFrame({"ts": stamps}), [day])
+    assert out["availability"] == 1.0, out
+    assert out["down_minutes"] == 0
+    assert out["windows"] == [["09:30", "11:30"], ["13:00", "15:00"]]
+    # a real outage INSIDE the afternoon segment is still counted
+    holed = [s for s in stamps if not (s.hour == 14 and s.minute < 20)]
+    out2 = availability(pd.DataFrame({"ts": holed}), [day])
+    assert out2["availability"] < 0.96 and out2["down_minutes"] >= 10
 
 
 def test_data_freshness():

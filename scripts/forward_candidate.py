@@ -55,7 +55,7 @@ import pandas as pd  # noqa: E402
 from src.forward.risk_gate import paired_comparison  # noqa: E402
 from src.provenance import stamp_artifact  # noqa: E402
 
-DEFAULT_RULE = "atr_1p0_25_40"
+DEFAULT_RULE = "atr_1p0_25_35"
 CONVENTION = (
     "adjusted-close basis; two REPLAY arms of the frozen D-track rule set on the "
     "same data slice and universe; the only difference is the stop width "

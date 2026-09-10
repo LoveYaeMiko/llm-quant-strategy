@@ -1,0 +1,320 @@
+{
+  "label": "oos_2025h2_800",
+  "window": {
+    "start": "2025-09-01",
+    "end": "2025-12-31"
+  },
+  "variants": {
+    "flat_1p5": {
+      "overrides": {
+        "pb_stop_lo": 0.015,
+        "pb_stop_hi": 0.015
+      },
+      "cum_return": -0.06820008609341455,
+      "ann_return": -0.1972886471762515,
+      "sharpe": -1.3675585898768154,
+      "max_dd": 0.11057484044784538,
+      "n_days": 81,
+      "n_fills": 231,
+      "n_intraday": 94,
+      "cost": 1556.2,
+      "fills_by_source": {
+        "close": 137,
+        "replay": 94
+      },
+      "stop_width": {
+        "stop_lo": 0.015,
+        "stop_hi": 0.015,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.015,
+          0.015
+        ]
+      },
+      "params_hash": "962f0c76d3c6a938",
+      "n_symbols": 800,
+      "n_bars": 610,
+      "gross_scale_wired": true
+    },
+    "flat_2p0": {
+      "overrides": {
+        "pb_stop_lo": 0.02,
+        "pb_stop_hi": 0.02
+      },
+      "cum_return": -0.05754179892394473,
+      "ann_return": -0.16837693320068814,
+      "sharpe": -1.0967034938017466,
+      "max_dd": 0.10842555330586612,
+      "n_days": 81,
+      "n_fills": 194,
+      "n_intraday": 75,
+      "cost": 1312.12,
+      "fills_by_source": {
+        "close": 119,
+        "replay": 75
+      },
+      "stop_width": {
+        "stop_lo": 0.02,
+        "stop_hi": 0.02,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.02,
+          0.02
+        ]
+      },
+      "params_hash": "c73a334fbd13dca5",
+      "n_symbols": 800,
+      "n_bars": 610,
+      "gross_scale_wired": true
+    },
+    "flat_2p5": {
+      "overrides": {
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.025
+      },
+      "cum_return": -0.07212520655376453,
+      "ann_return": -0.20776169076053963,
+      "sharpe": -1.3309720328048733,
+      "max_dd": 0.11357422186292676,
+      "n_days": 81,
+      "n_fills": 180,
+      "n_intraday": 70,
+      "cost": 1214.16,
+      "fills_by_source": {
+        "close": 110,
+        "replay": 70
+      },
+      "stop_width": {
+        "stop_lo": 0.025,
+        "stop_hi": 0.025,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.025,
+          0.025
+        ]
+      },
+      "params_hash": "6eddb39bdb972a36",
+      "n_symbols": 800,
+      "n_bars": 610,
+      "gross_scale_wired": true
+    },
+    "flat_3p0": {
+      "overrides": {
+        "pb_stop_lo": 0.03,
+        "pb_stop_hi": 0.03
+      },
+      "cum_return": -0.11230333259418157,
+      "ann_return": -0.3096880533710995,
+      "sharpe": -2.1903827764924606,
+      "max_dd": 0.11178810071309842,
+      "n_days": 81,
+      "n_fills": 152,
+      "n_intraday": 58,
+      "cost": 1026.8,
+      "fills_by_source": {
+        "close": 94,
+        "replay": 58
+      },
+      "stop_width": {
+        "stop_lo": 0.03,
+        "stop_hi": 0.03,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.03,
+          0.03
+        ]
+      },
+      "params_hash": "9625c449b030601f",
+      "n_symbols": 800,
+      "n_bars": 610,
+      "gross_scale_wired": true
+    },
+    "flat_3p5": {
+      "overrides": {
+        "pb_stop_lo": 0.035,
+        "pb_stop_hi": 0.035
+      },
+      "cum_return": 0.01642821435696762,
+      "ann_return": 0.05200168838816821,
+      "sharpe": 0.39620642850193877,
+      "max_dd": 0.05002871033004286,
+      "n_days": 81,
+      "n_fills": 106,
+      "n_intraday": 33,
+      "cost": 723.88,
+      "fills_by_source": {
+        "close": 73,
+        "replay": 33
+      },
+      "stop_width": {
+        "stop_lo": 0.035,
+        "stop_hi": 0.035,
+        "atr_mult": 1.5,
+        "flat": true,
+        "band": [
+          0.035,
+          0.035
+        ]
+      },
+      "params_hash": "2aaab31dd7d36b36",
+      "n_symbols": 800,
+      "n_bars": 610,
+      "gross_scale_wired": true
+    },
+    "atr_1p0_25_35": {
+      "overrides": {
+        "pb_atr_mult": 1.0,
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.035
+      },
+      "cum_return": 0.010974853327622158,
+      "ann_return": 0.034541139740327464,
+      "sharpe": 0.2906219740957303,
+      "max_dd": 0.06326290205448792,
+      "n_days": 81,
+      "n_fills": 120,
+      "n_intraday": 40,
+      "cost": 815.48,
+      "fills_by_source": {
+        "close": 80,
+        "replay": 40
+      },
+      "stop_width": {
+        "stop_lo": 0.025,
+        "stop_hi": 0.035,
+        "atr_mult": 1.0,
+        "flat": false,
+        "band": [
+          0.025,
+          0.035
+        ]
+      },
+      "params_hash": "e6849d61fb8ef3f2",
+      "n_symbols": 800,
+      "n_bars": 610,
+      "gross_scale_wired": true
+    },
+    "atr_1p0_25_40": {
+      "overrides": {
+        "pb_atr_mult": 1.0,
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.04
+      },
+      "cum_return": 0.03383483377172958,
+      "ann_return": 0.10907053604724637,
+      "sharpe": 0.6547880107166358,
+      "max_dd": 0.07250375042670876,
+      "n_days": 81,
+      "n_fills": 114,
+      "n_intraday": 33,
+      "cost": 781.68,
+      "fills_by_source": {
+        "close": 81,
+        "replay": 33
+      },
+      "stop_width": {
+        "stop_lo": 0.025,
+        "stop_hi": 0.04,
+        "atr_mult": 1.0,
+        "flat": false,
+        "band": [
+          0.025,
+          0.04
+        ]
+      },
+      "params_hash": "e62f361914a206a7",
+      "n_symbols": 800,
+      "n_bars": 610,
+      "gross_scale_wired": true
+    },
+    "atr_1p5_25_40": {
+      "overrides": {
+        "pb_atr_mult": 1.5,
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.04
+      },
+      "cum_return": 0.060594987590422145,
+      "ann_return": 0.20084665324966777,
+      "sharpe": 1.0999869938910032,
+      "max_dd": 0.048042876845698745,
+      "n_days": 81,
+      "n_fills": 95,
+      "n_intraday": 24,
+      "cost": 655.31,
+      "fills_by_source": {
+        "close": 71,
+        "replay": 24
+      },
+      "stop_width": {
+        "stop_lo": 0.025,
+        "stop_hi": 0.04,
+        "atr_mult": 1.5,
+        "flat": false,
+        "band": [
+          0.025,
+          0.04
+        ]
+      },
+      "params_hash": "074ecf298a9e8133",
+      "n_symbols": 800,
+      "n_bars": 610,
+      "gross_scale_wired": true
+    }
+  },
+  "panel": {
+    "n_columns": 800,
+    "as_of": "2025-12-31",
+    "n_with_price": 797,
+    "effective_ratio": 0.9988,
+    "universe_size": null,
+    "n_warm_20": 799,
+    "n_warm_60": 795,
+    "lookback_days": 120,
+    "n_symbols": 800,
+    "n_declared": 800,
+    "n_bars": 610,
+    "last_bar": "2026-09-10"
+  },
+  "assembly": {
+    "book_class": "PullbackPortfolio",
+    "execution": {
+      "cash": 50000.0,
+      "slippage_bps": 2.0,
+      "commission_bps": 2.5,
+      "min_commission": 5.0,
+      "stamp_tax_sell_bps": 5.0,
+      "transfer_fee_bps": 0.1,
+      "max_position_pct": 0.4,
+      "notional_floor": 2000.0,
+      "band_frac": 0.0,
+      "rebalance_days": 1,
+      "pit_strict": true
+    },
+    "universe_size": 800,
+    "has_intraday_frames": true,
+    "has_minute_provider": true,
+    "always_rebalance": true,
+    "gross_scale_wired": true,
+    "live_intraday_from": "2026-09-04"
+  },
+  "kill_switch": {
+    "mode": "normal",
+    "gross_scale": 1.0,
+    "state_file": "C:\\Users\\wyxwi\\Desktop\\FQA\\outputs\\autopilot_state_D_5W.json"
+  },
+  "provenance": {
+    "window": {
+      "start": "2025-09-01",
+      "end": "2025-12-31"
+    },
+    "convention": "adjusted-close price basis; daily close rebalance at the panel close; intraday stops on minute bars below 15:00 (trigger=close, open_minutes=30); T+1; no leverage; commission+stamp duty per the configured cost model; ALL variants ran on the SAME market slice (one _build_market_for_paper per grid, handed to every variant through market_override), so they differ only in the stop-width override",
+    "data_as_of": "2026-09-10",
+    "artifact_sha256": "3bb199ac448bfedcdd934f2e483f00ed55f6f409b3555de7e9e7761730f5ab9c",
+    "code_commit": "42b3a91458f60265703fe9988eb3f33387cb828a",
+    "code_dirty": true
+  }
+}

@@ -271,13 +271,15 @@ shadow:
       cash: 50000
       # 部署口径 = 日内止损 + 确认式触发(close) + 开盘30分钟豁免 + 尾盘量比门槛 + 满仓化
       #            + 固定 3.5% 止损（stop_lo == stop_hi == 0.035，见 pb_stop_hi 处 D-8c 说明）。
-      # 部署口径实测出处（生产同构装配、fresh ledger、2026-01-01→08-28，含现金约束修复后重跑）：
-      #   outputs/d_stop_grid.json 的 flat_3p5 → +16.36% 累计 / +27.34% 年化 /
-      #   Sharpe 1.66 / maxDD 6.12% / 200 笔（日内 40）。
-      # 注意：outputs/d_oos_*.json 中的旧标签（is_2026 / oos_2025h2 / *_v2 / *_v3 早期版本）
-      #   是旧 2.5% 口径或含 35 天分钟数据洞（仅 274/800 标的），不得引用；
-      #   可引用的当前工件是 d_oos_is_2026_v4.json 与 d_oos_oos_2025h2_v5.json
-      #   （14 项断言全通过、含 provenance 五项，见 docs/evidence/README.md）。
+      # 部署口径实测出处（生产同构装配、fresh ledger、2026-01-01→08-28，**修正后的 800 只池**）：
+      #   outputs/d_oos_is_2026_v5.json 与 outputs/d_stop_grid_is_2026_800.json 的 flat_3p5
+      #   → +5.72% 累计 / +9.28% 年化 / Sharpe 0.67 / maxDD 8.42% / 236 笔。
+      # ⚠ 2026-09-10 更正：此前本处引用的 +16.36%/Sharpe 1.66 是在**只有 301 只标的**的
+      #   截面上得到的（当时日度入库只覆盖约 300 只），已作废；补齐 800 只后 IS 数字下降
+      #   约三分之二 → 见 docs/D_TRACK_EVIDENCE.md §六。
+      # 注意：outputs/d_oos_*.json 中的旧标签（is_2026 / oos_2025h2 / *_v2 / *_v3 / *_v4 早期版本）
+      #   是旧口径或含数据洞/缺陷截面，不得引用；可引用的当前工件是
+      #   d_oos_is_2026_v5.json 与 d_oos_oos_2025h2_v5.json（14 项断言全通过、含 provenance 五项）。
       # 触发约定的敏感性研究（ATR 自适应止损口径）：outputs/d_track_grid7.json。
       alpha_source: "pullback"        # Martin Luk 回撤买入纪律（日线版，ML 扫描 + 改良）
       universe: "hs300_500"           # 扫描截面（与已退役 B/C 轨一致，便于对比）
@@ -295,17 +297,18 @@ shadow:
       pb_vol_shrink: true             # 缩量回调确认（5 日均量 < 20 日均量）
       pb_atr_mult: 1.5                # ATR 自适应系数（当前停用：stop_lo == stop_hi 使 ATR 通道失效）
       pb_stop_lo: 0.035               # 固定止损 3.5%（D-8c 止损宽度再调优的结论，见下）
-      pb_stop_hi: 0.035               # 2026-09-09 D-8c：修复 TR 口径后扫描 8 个宽度变体（scripts/d_stop_grid.py，
-                                      # outputs/d_stop_grid.json），并对 4 个候选跑 2025-09→12 的 OOS（d_oos.py，14 项断言全通过）：
-                                      #   变体              IS Sharpe(2026)  OOS Sharpe(2025H2)  OOS 累计
-                                      #   flat_2p5（旧部署）     1.53            −1.10            −6.14%   ← TR 缺陷造成的宽度，最差
-                                      #   flat_3p5（现部署）     1.57            +1.60            +8.21%
-                                      #   atr_1p0_25_35         1.95            +1.33            +6.85%
-                                      #   atr_1p0_25_40         0.97            +1.58            +9.47%
-                                      # 选择规则：跨两窗口的最差 Sharpe 最大（max-min）→ flat_3p5 胜出，且实现最简单、
-                                      # 不依赖 ATR 曲面（ATR 曲面很尖：上限差 0.5pp 时 IS Sharpe 摆动 ~1.0）。
-                                      # 注意：样本短（159/82 日）、|t|<1，属"证据方向一致但统计不显著"；
-                                      # 变更点 2026-09-09，此前账本为 2.5% 宽度。
+      pb_stop_hi: 0.035               # 2026-09-10 在**修正后的 800 只池**上重跑 8 个宽度变体
+                                      # （scripts/d_stop_grid.py --label is_2026_800 / oos_2025h2_800）：
+                                      #   变体            IS2026 Sharpe   OOS2025H2 Sharpe   max-min
+                                      #   flat_3p5（现役）    0.67            0.40           0.40  ← 冠军
+                                      #   atr_1p0_25_35       0.98            0.29           0.29
+                                      #   atr_1p0_25_40      −0.12            0.65          −0.12
+                                      #   atr_1p5_25_40      −0.13            1.10          −0.13
+                                      # 选择规则不变（跨两窗口 max-min）→ flat_3p5 仍胜出；
+                                      # 两窗口排序互相冲突（Spearman ≈ −0.19），差异均在噪声内
+                                      # （159/82 日、|t|<1），故只把它当"值得跟踪"而非"可切换"。
+                                      # 2026-09-09 的旧版说明（+16.36%/1.66 等）随 301 只截面一并作废，
+                                      # 历史见 docs/D_TRACK_EVIDENCE.md §三。
       pb_breakeven_r: 1.0             # +1R 后止损上移至成本
       pb_trail_r: 1.5                 # +1.5R 后启用追踪
       pb_exit_into_strength_r: 3.0    # +3R 且乖离 EMA21>8% 冲高离场（锁定 parabolic 利润）

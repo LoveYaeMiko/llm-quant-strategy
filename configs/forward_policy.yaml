@@ -61,19 +61,23 @@ forward:
     soft:
       record_only: [sharpe, max_drawdown, excess_return, hit_rate, n_fills, turnover]
 
-  # --- 2 前向候选：atr_1p0_25_40 --------------------------------------
-  # 独立影子账本 + 独立状态文件；同一数据/同一代码/同一执行制度；只记录不自动切换。
-  # 与现役口径的日收益相关性 ≈ 0.84 ⇒ 必须做「配对」比较（差值序列），否则 120 日
-  # 窗口的噪声会淹没 3.4pp 的差异。
+  # --- 2 前向候选（2026-09-10 在修正后的 800 只池上重选） ----------------
+  # 两条臂都是「同一冻结规则集的重放」，唯一差异是止损宽度；只记录不自动切换。
+  # 与现役口径的日收益相关性 ≈ 0.88 ⇒ 必须做「配对」比较（差值序列）。
+  #
+  # 为什么换候选（2026-09-10）：原候选 atr_1p0_25_40 的"支持"来自**有缺陷的
+  # 301 只截面**。在修正后的 800 只池上按项目原有选择规则（跨两窗口 max-min）
+  # 重排，它是四只备选里**最差**的一只（min Sharpe −0.12），而 atr_1p0_25_35
+  # 是最好的一只（min 0.29）。现役 flat_3p5 仍然是 max-min 冠军（0.40），
+  # 因此**不切换部署**，只把前向跟踪目标换成证据支持最强的那只备选。
   candidates:
-    atr_1p0_25_40:
+    atr_1p0_25_35:
       enabled: true
       account_suffix: "_FWD_ATR"
-      ledger: "outputs/forward/candidate_atr_1p0_25_40/ledger.sqlite"
-      status_json: "outputs/forward/candidate_atr_1p0_25_40/status.json"
-      params: {pb_atr_mult: 1.0, pb_stop_lo: 0.025, pb_stop_hi: 0.040}
-      # 候选只改止损宽度；入场/退出/执行制度必须与现役完全一致（含 14:50 订单列表），
-      # 否则配对比较混入了第二种差异。
+      ledger: "outputs/forward/candidate_atr_1p0_25_35/ledger.sqlite"
+      status_json: "outputs/forward/candidate_atr_1p0_25_35/status.json"
+      params: {pb_atr_mult: 1.0, pb_stop_lo: 0.025, pb_stop_hi: 0.035}
+      # 唯一的差异就是止损宽度；数据/股票池/入场/退出/执行制度全部相同。
       inherit_execution: true
       switch_rule:
         window_days: 120            # 前向配对评估窗（交易日）
@@ -82,14 +86,25 @@ forward:
         counts_as_new_trial: true   # 一次切换 = 一次新试验，必须重新预注册
         may_never_separate: true    # 接受「永不分离」——不设时间压力，不追切
       evidence:
-        # 干净窗口（2025-09-01→12-31，回补后）实测：候选好 1.74pp，但配对 t 仅 0.38；
-        # 按观测到的效应量，要达到 t>1.5 需要 ~1291 个配对交易日（≈5.1 年）。
-        window: ["2025-09-01", "2025-12-31"]
-        flat_3p5: {cum: 0.0164, sharpe: 0.40, max_dd: 0.0500, fills: 106}
-        atr_1p0_25_40: {cum: 0.0338, sharpe: 0.65, max_dd: 0.0725, fills: 114}
-        paired: {corr: 0.8841, mean_diff_pp_per_day: 0.0226, cum_diff_pp: 1.73,
-                 annualized_diff_pp: 5.68, t_stat: 0.376, days_needed_for_t_1p5: 1291}
-        note: "历史窗口只能说明「值得前向跟踪」，不能作为切换依据"
+        # 2026-09-10 双窗口网格（800 只池，outputs/d_stop_grid_*_800.json），
+        # 选择规则 = 跨窗口最差 Sharpe 最大（与 2026-09-09 次相同）：
+        #   variant            IS2026 Sharpe   OOS2025H2 Sharpe   max-min
+        #   flat_3p5（现役）        0.67            0.40           0.40  ← 冠军
+        #   atr_1p0_25_35          0.98            0.29           0.29  ← 前向候选
+        #   atr_1p0_25_40         −0.12            0.65          −0.12  ← 原候选（作废）
+        #   atr_1p5_25_40         −0.13            1.10          −0.13
+        is_2026: {flat_3p5: {cum: 0.0572, sharpe: 0.67, max_dd: 0.0842, fills: 236},
+                  atr_1p0_25_35: {cum: 0.0928, sharpe: 0.98, max_dd: 0.0831, fills: 258},
+                  atr_1p0_25_40: {cum: -0.0172, sharpe: -0.12, max_dd: 0.1538, fills: 221}}
+        oos_2025h2: {flat_3p5: {cum: 0.0164, sharpe: 0.40, max_dd: 0.0500, fills: 106},
+                     atr_1p0_25_35: {cum: 0.0110, sharpe: 0.29, max_dd: 0.0633, fills: 120},
+                     atr_1p0_25_40: {cum: 0.0338, sharpe: 0.65, max_dd: 0.0725, fills: 114}}
+        note: "两个窗口的排序互相冲突（IS 偏 25_35、OOS 偏 25_40/1p5_25_40），差异均在噪声内；历史窗口只能说明「值得前向跟踪」，不能作为切换依据"
+    atr_1p0_25_40:
+      enabled: false                # 原候选：支持来自 301 只缺陷截面，2026-09-10 作废
+      note: "见 docs/D_TRACK_EVIDENCE.md §三；其 120 日配对数（≈1291）已在预注册记录里留档"
+      ledger: "outputs/forward/candidate_atr_1p0_25_40/ledger.sqlite"
+      params: {pb_atr_mult: 1.0, pb_stop_lo: 0.025, pb_stop_hi: 0.040}
 
   # --- 3 数据地基：偏差压力测试前置条件 -------------------------------
   # 在开启任何 alpha 层自进化之前，必须证明幸存者偏差 < 0.3 × 目标 alpha。

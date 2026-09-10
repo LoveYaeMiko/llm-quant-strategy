@@ -142,6 +142,12 @@ python scripts/prereg.py list
 * `write_preregistration` 拒绝覆盖内容不同的同名记录；
 * 任何人在看结果后手改 JSON，`record_sha256` 会立刻对不上（`verify` 退出码 1）。
 
+**版本号 ≠ 试验次数**（2026-09-10 明确）：`version` 是记录自身的修订号，`trials.this_trial`
+数的是**规则/参数选择**的次数（多重比较记账用），`trials.amendments` 记录**不改变任何被测
+规则的记账性重签**（例如把 `code_fingerprint` 的覆盖范围从「含 configs」收窄为
+「src/scripts/tests」——配置的**值**本来就由 `policy_sha256` 绑定，注释级改动不该使冻结失效）。
+只有 `this_trial` 变化才算新的一次试验。
+
 **冻结是「锁」而不是「记录」**（2026-09-10 审计 H-1）：闸门运行时
 （`prereg_gate`）会做五项检查，任一不通过即 `verdict: fail`：
 
@@ -165,7 +171,7 @@ python scripts/prereg.py list
 
 ---
 
-## 2. 前向候选：`atr_1p0_25_40`
+## 2. 前向候选：`atr_1p0_25_35`（2026-09-10 换标）
 
 ```bash
 python scripts/forward_candidate.py run                     # 推进两条臂（自动补跑缺失日）
@@ -173,10 +179,25 @@ python scripts/forward_candidate.py report                  # 配对比较
 python scripts/forward_candidate.py daily                   # run + report（PAICC 每日任务）
 ```
 
-* **两条臂、唯一差异**（2026-09-10 重新设计）：`incumbent`（现役 flat 3.5%）与
-  `candidate`（ATR 1.0 clip 到 [2.5%, 4.0%]）跑**同一份代码、同一数据切片、同一股票池、
-  同一控制档位、同一初始状态**，唯一差异是止损宽度。各自独立账本：
-  `outputs/forward/incumbent_replay/` 与 `outputs/forward/candidate_atr_1p0_25_40/`。
+> **候选换标（②的连带结论）**：原候选 `atr_1p0_25_40` 的"支持"来自**有缺陷的 301 只截面**。
+> 在修正后的 800 只池上按项目原有的跨窗口 max-min 规则重排（网格见
+> `outputs/d_stop_grid_is_2026_800.json` / `d_stop_grid_oos_2025h2_800.json`）：
+>
+> | 变体 | IS2026 Sharpe | OOS2025H2 Sharpe | max-min |
+> | --- | --- | --- | --- |
+> | **flat_3p5（现役）** | 0.67 | 0.40 | **0.40 ← 冠军，部署不变** |
+> | **atr_1p0_25_35（新前向候选）** | **0.98** | 0.29 | **0.29** |
+> | atr_1p0_25_40（原候选，作废） | **−0.12** | 0.65 | −0.12 |
+> | atr_1p5_25_40 | −0.13 | **1.10** | −0.13 |
+>
+> 两个窗口排序互相冲突、差异全在噪声内；max-min 只用来挑一只**值得前向跟踪**的备选，
+> 不作为切换依据。换标属新的一次试验（`trials` 14），已重新预注册；
+> **政策面变化同时触发闸门记录重签**（v5）——这正是 `policy_sha256` 绑定要拦的情形。
+
+* **两条臂、唯一差异**：`incumbent`（现役 flat 3.5%）与 `candidate`（ATR 1.0 clip 到
+  [2.5%, 3.5%]）跑**同一份代码、同一数据切片、同一股票池、同一控制档位、同一初始状态**，
+  唯一差异是止损宽度。各自独立账本：`outputs/forward/incumbent_replay/` 与
+  `outputs/forward/candidate_atr_1p0_25_35/`。
 * **两条臂都是「重放」而不是生产账本**。v1 让候选继承生产的 14:50 订单清单
   （`pb_preclose_account`）：在 live 日期 runner 执行的是那份清单、不算自己的目标，
   且日内扫描被门控关闭 —— 止损宽度**不驱动任何决策**，两条账本逐位相同
@@ -190,7 +211,7 @@ python scripts/forward_candidate.py daily                   # run + report（PAI
   某条臂没有产出可用交易日时**不写坏 status**，直接返回失败码。
 * **配对比较**（而不是比较两个 Sharpe）：配对窗口只取**两条臂各自独立推进的交易日**
   （种子截止日之后）——种子区间是同一份生产历史，逐位相同，计入样本只会虚增 n。
-  两本书日收益相关性实测 **0.884**，共同因子占绝大部分方差，必须用**同日差值序列**做检验。
+  两本书日收益相关性实测 **0.88**，共同因子占绝大部分方差，必须用**同日差值序列**做检验。
 
 ### 预注册切换规则
 
@@ -303,17 +324,42 @@ python scripts/forward_candidate.py daily                   # run + report（PAI
 
 | 频率 | 命令 | 作用 |
 | --- | --- | --- |
-| 每日（收盘后） | `python scripts/forward_candidate.py daily` | 推进候选影子账本 + 配对报告 |
-| 每周 | `python scripts/forward_health.py` | 风险闸门全量评估（含重放跟踪误差） |
+| 每日（收盘后） | `python scripts/forward_candidate.py daily` | 推进两条候选臂（自动补跑缺失日）+ 配对报告 |
+| 每日（收盘后） | `python scripts/forward_sample.py` | 追加当日一行**前向样本**（只追加、幂等） |
+| 每日（收盘后） | `python scripts/forward_health.py` | 风险闸门全量评估（含重放跟踪误差） |
 | 每周 | `python scripts/check_adjust_anchor.py --compare` | 复权锚点漂移检测 |
 | 每次发布证据前 | `python scripts/check_provenance.py` | 工件 provenance 完整性（五项必填） |
 | 每月 | `python scripts/bias_stress_test.py` | 偏差压力测试（自进化闸门） |
+| 需要时 | `python scripts/shadow_series.py` | 影子盘历史的**口径标注** + 当前口径修正序列 |
 
 * `forward_health.py --no-replay` 只用于排障：重放被跳过后跟踪误差与符号覆盖率
   均为「未测量」，闸门必然失败（这是设计，不是 bug）。
-* PAICC 调度：`quant_forward_candidate`（周一至五 15:20，日度闭环之后）、
-  `quant_forward_health`（周六 `quant_forward_health_time`，默认 18:30）。
-  后者的退出码 1 = 硬闸门失败，属**有效结果**，面板以 `verdict` 展示而非当作任务失败。
+* PAICC 调度（周一至五）：`quant_forward_candidate` **15:20** →
+  `quant_forward_sample` **15:35** → `quant_forward_health` **15:40**；
+  三者都注册了启动补跑（**顺序执行**，避免两次市场构建同时吃内存）。
+  闸门退出码 1 = 硬闸门失败，属**有效结果**，面板以 `verdict` 展示而非当作任务失败。
+
+### 4.2 前向样本（③：从 2026-09-11 起积累）
+
+`outputs/forward/forward_samples.jsonl`（只追加，一天一行）：
+
+| 字段 | 含义 |
+| --- | --- |
+| `date` / `equity` / `daily_return` / `n_fills` / `fills_by_source` | 当日账本事实 |
+| `live_heartbeat` | 当日**决策窗口**心跳覆盖（09:30–11:30 + 13:00–15:00，**午休不算停机**） |
+| `panel_symbols` | 当日截面宽度（来自分钟特征包） |
+| `convention` | 冻结记录的 `rule_id`/`record_sha256` + 当前 `policy_sha256` 与 `code_fingerprint` |
+| **`convention_ok`** | **当日是否在冻结口径下产生**——只有 true 的日子才算「干净样本」 |
+
+```bash
+python scripts/forward_sample.py show     # 看累积情况
+python scripts/forward_sample.py check    # 任何一天非冻结口径 → exit 1
+```
+
+**为什么单独归档**：前向期是这套系统唯一的干净样本，而「干净」有精确定义——
+当日必须由**冻结口径**产出（策略指纹 + 代码指纹都对得上），否则该日以
+`convention_ok: false` 记录（可见、不隐藏）且不计入干净日数。任何后续分析都应使用
+这个文件，而不是混口径的生产净值曲线（见 `scripts/shadow_series.py` 的分段结论）。
 
 ### 4.1 全链路试运行（2026-09-09，窗口 09-01→09-09）
 
@@ -347,6 +393,16 @@ python scripts/forward_candidate.py daily                   # run + report（PAI
 4. **前向窗口对 Sharpe / maxDD / 超额没有功效**（§1.1），软指标仅供留档。
 5. **C1 的偏差是估计上界**：退市名没有价格数据，无法直接回测；压力测试给出的是
    断点与上界，不是精确值。结论的强度取决于「上界 < 0.3α」是否成立。
+
+## 5. 已知未解缺陷（随结论一起引用）
+
+| # | 缺陷 | 现状 |
+| --- | --- | --- |
+| **D-14** | **重放对市场切片起点敏感**：同一代码/口径/面板，`start` 差 4 天 → 首日建仓就不同（1 笔 vs 4 笔），区间结果 +5.72% vs −6.33%（见 `docs/D_TRACK_EVIDENCE.md` §一之二） | **未解**；重放序列标记 `publishable: false`，只作诊断。下一步：用 `--keep-ledger` 保留两次运行的账本，逐日对比**当日实际使用的分数**（而非无关窗口的特征缓存），定位是分数、候选集还是成交路径先分叉 |
+| D-9 | 数据偏差压力测试 → **BLOCKING**（截面构成通道 9.60pp = 1.2×α） | 自进化闭环保持关闭 |
+| D-10 | 市场冲击成本不可测（纸面账户无券商成交） | 实盘前必须用真实成交回填 |
+| C1 | 230 只退市名在现有数据源取不到 bar | 只做到测量 + 阻断自进化 |
+| — | 全市场入库停更：5,205 只快照名中 4,364 只在 2025-12-31 后无 bar | 影响全市场/成分研究，不影响 D 池 |
 
 ## 6. 相关文件
 
