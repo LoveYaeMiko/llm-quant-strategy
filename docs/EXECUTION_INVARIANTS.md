@@ -53,10 +53,25 @@ exposed by `OrderResult.to_dict()`. It is empty on a clean execution.
 A non-empty `skipped` list is never "just noise": it means the order generator
 and the ledger disagreed, and it should be investigated before the next session.
 
+### Where `skipped` ends up
+
+The D track reaches the executor through **both** layers, and the runner wires it
+so nothing is lost:
+
+* ``PaperRunner`` is built with ``long_only`` taken from ``paper.long_only``
+  (**default true**), so the close rebalance is protected as well as the auction;
+* after each `execute` / `execute_orders` call the runner records any refused
+  order (``_note_skipped``) into the run result;
+* ``build_shadow_status`` copies that list into ``shadow_status.json`` under
+  ``equity.skipped_orders`` (empty list on a clean run), so the panel, the daily
+  report and an auditor see the refusal — not merely a trade that did not happen.
+
 ## Known residual (deliberate)
 
 `_plan_delta` can still build a short leg, and `execute` will fill it unless
 `long_only=True`. That is intentional: the retired long/short factor books
 (A/B/C tracks) depend on short semantics, and the D-track paper account is the
 only live book. Enabling the clip is an explicit, per-instance opt-in so retiring
-those books cannot silently change their historical behaviour.
+those books cannot silently change their historical behaviour. The D track opts
+in by default, so reaching the residual now requires an explicit
+``paper.long_only: false``.

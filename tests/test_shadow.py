@@ -45,7 +45,7 @@ def test_threshold_level_mapping():
     assert _threshold_level(25.0, 10.0, 20.0) == "critical"
 
 
-def _build_status(tmp_path):
+def _build_status(tmp_path, result_extra: dict | None = None):
     cfg = load_config()
     market = make_synthetic_market(symbols=10, days=30, seed=0)
     syms = sorted(market.price_panel.columns)
@@ -60,9 +60,27 @@ def _build_status(tmp_path):
                           "total_return": 0.01, "annualized_return": 0.12,
                           "sharpe": 1.0, "max_drawdown": -0.03, "n_days": 5,
                           "n_fills": 1, "total_commission": 2.5}}
+    result.update(result_extra or {})
     status = build_shadow_status(cfg, led, market, result, {"pead": None}, {})
     led.close()
     return status
+
+
+def test_build_shadow_status_surfaces_clipped_orders(tmp_path):
+    """A refused order must be visible in the artifact, not only in memory.
+
+    The executor clips a sell that exceeds the holding (never a short,
+    ``docs/EXECUTION_INVARIANTS.md``); the runner collects those into
+    ``result['skipped_orders']`` and the status now carries them, so a reviewer
+    can see that the submitted list asked for something impossible.
+    """
+    skipped = [{"symbol": "600000.SH", "reason": "sell_exceeds_holding",
+                "wanted": -250.0, "clipped": -200.0, "date": "2026-09-10",
+                "layer": "auction"}]
+    status = _build_status(tmp_path, {"skipped_orders": skipped})
+    assert status["equity"]["skipped_orders"] == skipped
+    # and a clean run reports an empty list rather than omitting the key
+    assert _build_status(tmp_path / "clean").get("equity", {}).get("skipped_orders") == []
 
 
 def test_build_shadow_status_red_lines_have_level(tmp_path):

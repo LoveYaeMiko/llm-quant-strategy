@@ -631,6 +631,11 @@ def build_shadow_status(
             "cash_guard": (
                 ledger.cash_stats() if hasattr(ledger, "cash_stats") else {}
             ),
+            # Orders the executor refused to fill (a sell larger than the holding
+            # is clipped, never turned into a short — docs/EXECUTION_INVARIANTS.md).
+            # Reported so a clipped order leaves a trace in the artifact instead of
+            # existing only inside the run.
+            "skipped_orders": list((result or {}).get("skipped_orders") or []),
         },
         "positions": positions_out[:30],  # Top-30 by |weight| for the dashboard
         "equity_curve": equity_curve_out,
