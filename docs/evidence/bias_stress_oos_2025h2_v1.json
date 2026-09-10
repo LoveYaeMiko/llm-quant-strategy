@@ -1,6 +1,6 @@
 {
   "label": "oos_2025h2_v1",
-  "generated_at": "2026-09-09T23:29:36",
+  "generated_at": "2026-09-10T15:47:49",
   "script": "bias_stress_test.py",
   "window": {
     "start": "2025-09-01",
@@ -18,8 +18,148 @@
     "x_upper_bound": 0.0012668253968253968,
     "drag_at_upper_bound_pp": 1.7519,
     "bias_vs_alpha_ratio": 0.219,
-    "bias_blocking_evolution": false,
-    "verdict_text": "NOT BLOCKING: at the measured annual name-disappearance rate 0.80%/yr the per-entry doom probability bound x<=0.1267% implies a 1.75pp/yr drag on the D book (166 entries/yr, k=6 slots, L=-50%), which is 0.22x the target alpha and below the 2.4pp threshold (break-even x=0.1735%). The measured hazard is 73% of the break-even hazard 1.09%/yr."
+    "bias_blocking_evolution": true,
+    "verdict_text": "BLOCKING: 1 measured data-foundation channel(s) exceed the 2.4pp threshold — cross_section_composition (9.60pp). The delisting channel alone reads 1.75pp, but a verdict may only be as favourable as the WORST measured channel: the same report shows the book's out-of-sample return concentrated in the segment the bias mechanisms act on. Keep the evolution loop closed until the channels are reduced or explained.",
+    "channels": {
+      "delisting_missing_names": {
+        "drag_pp": 1.7519,
+        "threshold_pp": 2.4,
+        "blocking": false,
+        "source": "drag model at the name-disappearance upper bound"
+      },
+      "cross_section_composition": {
+        "drag_pp": 9.5972,
+        "threshold_pp": 2.4,
+        "blocking": true,
+        "source": "de-biased subset run (baseline minus low-price/low-liquidity tail)",
+        "rule": {
+          "price_floor_cny": 3.0,
+          "amount_decile": 0.1,
+          "amount_decile_threshold_cny": 162664158.3,
+          "latest_price_basis": "raw_close on the last price bar at or before window_end (2025-12-31) — unadjusted, PIT-visible at the window's end",
+          "median_amount_basis": "median daily amount over [2025-09-01, 2025-12-31]",
+          "rule": "exclude a shadow-universe symbol iff its last raw_close (on/before window_end) < 3.00 CNY OR its median daily amount over the window is <= the 10% quantile of the shadow universe's median daily amounts; a symbol with no window amount is treated as least liquid and excluded",
+          "n_shadow_universe": 800,
+          "n_with_price_stats": 799,
+          "n_excluded": 97,
+          "n_remaining": 703,
+          "excluded_symbols": [
+            "000027.SZ",
+            "000088.SZ",
+            "000301.SZ",
+            "000429.SZ",
+            "000537.SZ",
+            "000539.SZ",
+            "000598.SZ",
+            "000709.SZ",
+            "000739.SZ",
+            "000785.SZ",
+            "000800.SZ",
+            "000883.SZ",
+            "000898.SZ",
+            "000937.SZ",
+            "000967.SZ",
+            "001221.SZ",
+            "001286.SZ",
+            "001391.SZ",
+            "002032.SZ",
+            "002461.SZ",
+            "002500.SZ",
+            "002508.SZ",
+            "002831.SZ",
+            "003035.SZ",
+            "300140.SZ",
+            "300957.SZ",
+            "301301.SZ",
+            "301606.SZ",
+            "600010.SH",
+            "600032.SH",
+            "600062.SH",
+            "600098.SH",
+            "600131.SH",
+            "600132.SH",
+            "600157.SH",
+            "600161.SH",
+            "600166.SH",
+            "600170.SH",
+            "600177.SH",
+            "600221.SH",
+            "600295.SH",
+            "600299.SH",
+            "600339.SH",
+            "600350.SH",
+            "600369.SH",
+            "600377.SH",
+            "600511.SH",
+            "600566.SH",
+            "600606.SH",
+            "600642.SH",
+            "600655.SH",
+            "600663.SH",
+            "600688.SH",
+            "600707.SH",
+            "600816.SH",
+            "600871.SH",
+            "600906.SH",
+            "600927.SH",
+            "601000.SH",
+            "601016.SH",
+            "601019.SH",
+            "601098.SH",
+            "601139.SH",
+            "601156.SH",
+            "601228.SH",
+            "601236.SH",
+            "601298.SH",
+            "601598.SH",
+            "601618.SH",
+            "601808.SH",
+            "601866.SH",
+            "601868.SH",
+            "601880.SH",
+            "601928.SH",
+            "603077.SH",
+            "603233.SH",
+            "603392.SH",
+            "603565.SH",
+            "603568.SH",
+            "603589.SH",
+            "603658.SH",
+            "603816.SH",
+            "603833.SH",
+            "603858.SH",
+            "603899.SH",
+            "688278.SH",
+            "688281.SH",
+            "688295.SH",
+            "688349.SH",
+            "688363.SH",
+            "688425.SH",
+            "688475.SH",
+            "688520.SH",
+            "688538.SH",
+            "688563.SH",
+            "688708.SH",
+            "688819.SH"
+          ]
+        }
+      },
+      "index_membership": {
+        "drag_pp": null,
+        "threshold_pp": 2.4,
+        "blocking": null,
+        "unmeasured": true,
+        "source": "no historical index-constituent data in the PIT store"
+      }
+    },
+    "blocking_channels": [
+      "cross_section_composition"
+    ],
+    "worst_channel": "cross_section_composition",
+    "worst_channel_drag_pp": 9.5972,
+    "unmeasured_channels": [
+      "index_membership"
+    ]
   },
   "verdict_context": {
     "drag_sign_convention": "drag_at_upper_bound_pp is the annual return LOSS in percentage points (positive = loss); the drag_model grid is SIGNED per the literal formula entries·x·(1/k)·L",
@@ -945,7 +1085,7 @@
       "all_checks_passed": true
     },
     "reused_from": "bias_stress_oos_2025h2_v1.json",
-    "reused_at": "2026-09-09T23:29:36"
+    "reused_at": "2026-09-10T15:47:49"
   },
   "debiased_run": {
     "baseline": {
@@ -1037,7 +1177,7 @@
     "entries_per_year is a point estimate from one window/ledger span; the drag scales linearly with it",
     "the drag model treats a doomed entry as a single -L hit on one slot and ignores correlated doom, suspension illiquidity and the exit path"
   ],
-  "elapsed_seconds": 14.7,
+  "elapsed_seconds": 8.9,
   "provenance": {
     "window": {
       "start": "2025-09-01",
@@ -1045,8 +1185,8 @@
     },
     "convention": "survivorship-bias stress test on the PIT universe/price records; drag model entries_per_year * x * (1/k) * L; de-biased run uses the production D-track assembly on a re-ranked subset",
     "data_as_of": "2025-12-31",
-    "artifact_sha256": "5751b1674877e0755d17adc70b71e5241adf165d51162e6bd8b9fe5226e5a915",
-    "code_commit": "59fbb03503b11699b8b0ae5bf1f75c5ae1482163",
+    "artifact_sha256": "537485c66965870aed787eaa4e365052fd169f76dc4553073816c1c98f182f12",
+    "code_commit": "a0bd26a10c602e4d21942ab92a8e2e134a533182",
     "code_dirty": true
   }
 }

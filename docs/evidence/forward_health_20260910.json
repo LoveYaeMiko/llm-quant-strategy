@@ -1,0 +1,266 @@
+{
+  "account": "D_5W",
+  "window": {
+    "start": "2026-09-11",
+    "end": "2027-03-11"
+  },
+  "measured_window": {
+    "start": "2026-09-11",
+    "end": "2027-03-11"
+  },
+  "config_freeze_date": "2026-09-10",
+  "config_freeze_source": "max(config 2026-09-09, prereg.frozen_at 2026-09-10)",
+  "policy_sha256": "1221bae37c013b769cb6ee0bf1831421498619300140ef434b570da846c1306c",
+  "code_commit": "a346f5981b569d56047b21645c680ae2f1b79f90",
+  "prereg": {
+    "rule_id": "d_forward_2026h2",
+    "version": 3,
+    "frozen_at": "2026-09-10T16:02:49",
+    "record_sha256": "429e197b0255dfcd023a5332c4e72e57b785a3313467c1c0598d4f1576d1fb06",
+    "trials": {
+      "family": "d_forward_risk_gate",
+      "prior_trials": 2,
+      "this_trial": 3,
+      "notes": "v1（2026-09-09 冻结，窗口 2026-09-10 起）在开窗当天被 2026-09-10 审计判定为「锁没装上」：评估不绑定预注册、min_days 可被配置置零绕过、失败闸门在任务卡显示成功、面板渲染试跑工件、代码漂移不报警。修复改变了测量本身（绑定 + 三条新硬闸门 + 重放起点），因此按协议计为新的一次试验，窗口重新起算。  v3：重新冻结以绑定修复后的代码（工作区在 v2 冻结后被修改），窗口尚未开始，属开窗前的修正，不是设计变更。"
+    }
+  },
+  "metrics": {
+    "prereg": {
+      "ok": true,
+      "rule_id": "d_forward_2026h2",
+      "frozen_at": "2026-09-10T16:02:49",
+      "window_match": true,
+      "frozen_before_window": true,
+      "policy_sha256_match": true,
+      "code_commit_match": true,
+      "waived": false,
+      "issues": [],
+      "policy_sha256_stored": "1221bae37c013b76",
+      "policy_sha256_live": "1221bae37c013b76",
+      "code_dirty": false
+    },
+    "tracking_error": {
+      "n_days": 0,
+      "mean_signed_pp": 0.0,
+      "mean_abs_pp": 0.0,
+      "max_abs_pp": 0.0,
+      "rmse_pp": 0.0,
+      "n_pos": 0,
+      "n_neg": 0,
+      "sign_bias_p": 1.0,
+      "worst_date": null,
+      "n_excluded": 0,
+      "excluded_mean_abs_pp": null,
+      "excluded_live_days": [],
+      "config_freeze_date": "2026-09-10",
+      "measured_window": {
+        "start": "2026-09-11",
+        "end": "2027-03-11"
+      }
+    },
+    "cost": {
+      "n_fills": 0,
+      "charged_total": 0.0,
+      "expected_total": 0.0,
+      "fee_deviation_pct": 0.0,
+      "price_integrity_bps": null,
+      "price_integrity_abs_bps": null,
+      "price_integrity_max_bps": null,
+      "n_price_checked": 0,
+      "n_price_skipped": 0,
+      "n_price_unlabelled": 0,
+      "price_check_sources": [],
+      "slippage_model_bps": 2.0,
+      "price_integrity_bps_max": 2.0,
+      "unmeasured": [
+        "market_impact_bps"
+      ],
+      "by_source": {}
+    },
+    "violations": {
+      "t_plus_1": 0,
+      "lot_size": 0,
+      "tick_size": 0,
+      "limit_locked": 0,
+      "suspension": 0,
+      "total": 0,
+      "unmeasured": [],
+      "examples": []
+    },
+    "availability": {
+      "availability": null,
+      "unmeasured": true,
+      "n_days": 0,
+      "n_days_down": null,
+      "down_minutes": null,
+      "window_minutes": null,
+      "worst_day": null,
+      "note": "no trading day in the window yet — availability unmeasured",
+      "measured_from": "2026-09-11"
+    },
+    "data_freshness": {
+      "bar_max_date": "2026-09-10",
+      "last_trading_day": "2026-09-10",
+      "lag_days": 0,
+      "source": "market panel max bar",
+      "ledger_last_date": null,
+      "ledger_lag_days": null
+    },
+    "symbol_coverage": {
+      "min_coverage": null,
+      "n_symbols": 0,
+      "below_threshold": [],
+      "threshold": 0.95,
+      "unmeasured": true,
+      "note": "no tradable day inside the window — coverage unmeasured"
+    },
+    "universe": {
+      "n_columns": 800,
+      "as_of": "2027-03-11",
+      "n_with_price": 800,
+      "effective_ratio": 0.3762,
+      "universe_size": null,
+      "n_warm_20": 301,
+      "n_warm_60": 301,
+      "lookback_days": 120
+    },
+    "soft": {
+      "sharpe": null,
+      "max_drawdown": null,
+      "total_return": null,
+      "excess_return": null,
+      "n_days": 0
+    }
+  },
+  "gate": {
+    "hard": {
+      "prereg_binding": {
+        "ok": true,
+        "rule_id": "d_forward_2026h2",
+        "frozen_at": "2026-09-10T16:02:49",
+        "window_match": true,
+        "frozen_before_window": true,
+        "policy_sha256_match": true,
+        "code_commit_match": true,
+        "waived": false,
+        "waiver_reason": null,
+        "issues": []
+      },
+      "tracking_error_daily_pp": {
+        "value": 0.0,
+        "max": 0.2,
+        "n_days": 0,
+        "min_days": 5,
+        "n_excluded": 0,
+        "ok": false
+      },
+      "tracking_error_sign_bias": {
+        "value": 1.0,
+        "min_p": 0.05,
+        "n_pos": 0,
+        "n_neg": 0,
+        "ok": false
+      },
+      "cost_fee_deviation": {
+        "value_pct": 0.0,
+        "max_pct": 20.0,
+        "ok": true
+      },
+      "cost_price_integrity": {
+        "mean_abs_bps": null,
+        "max_abs_bps": null,
+        "limit_bps": 2.0,
+        "n_price_checked": 0,
+        "n_price_skipped": 0,
+        "unmeasured": [
+          "market_impact_bps"
+        ],
+        "ok": false
+      },
+      "violations": {
+        "value": 0,
+        "max": 0,
+        "unmeasured": [],
+        "ok": true
+      },
+      "availability": {
+        "value": null,
+        "min": 0.99,
+        "unmeasured": true,
+        "ok": false
+      },
+      "data_freshness": {
+        "value_days": 0,
+        "max_days": 1,
+        "ok": true
+      },
+      "symbol_minute_coverage": {
+        "value": null,
+        "min": 0.95,
+        "ok": false
+      },
+      "effective_universe": {
+        "value": 0.3762,
+        "n_columns": 800,
+        "n_with_price": 800,
+        "n_warm_20": 301,
+        "n_warm_60": 301,
+        "min": 0.95,
+        "ok": false
+      }
+    },
+    "soft": {
+      "record_only": [
+        "sharpe",
+        "max_drawdown",
+        "excess_return",
+        "hit_rate",
+        "n_fills",
+        "turnover"
+      ],
+      "values": {
+        "sharpe": null,
+        "max_drawdown": null,
+        "total_return": null,
+        "excess_return": null,
+        "n_days": 0
+      },
+      "note": "no forward-window power: never gates the verdict"
+    },
+    "failed": [
+      "tracking_error_daily_pp",
+      "tracking_error_sign_bias",
+      "cost_price_integrity",
+      "availability",
+      "symbol_minute_coverage",
+      "effective_universe"
+    ],
+    "verdict": "fail",
+    "thresholds": {
+      "tracking_error_daily_pp_max": 0.2,
+      "tracking_error_sign_bias_p_min": 0.05,
+      "tracking_error_min_days": 5,
+      "cost_deviation_max": 0.2,
+      "price_integrity_bps_max": 2.0,
+      "violations_max": 0,
+      "availability_min": 0.99,
+      "data_freshness_days_max": 1,
+      "symbol_minute_coverage_min": 0.95,
+      "effective_universe_min": 0.95
+    }
+  },
+  "n_fills": 0,
+  "n_days": 0,
+  "fills_by_source": {},
+  "provenance": {
+    "window": {
+      "start": "2026-09-11",
+      "end": "2027-03-11"
+    },
+    "convention": "adjusted-close price basis; daily close rebalance at the panel close; live dates fill intraday stops at the confirmed minute print and close orders at the 15:00 auction from outputs/preclose_orders_<acct>.json; T+1; no leverage",
+    "data_as_of": "2026-09-10",
+    "artifact_sha256": "a419994ea8114cc92edac16f1978c0e9fc1545ac1fdfaaae78d1a98b21ee599f",
+    "code_commit": "a346f5981b569d56047b21645c680ae2f1b79f90",
+    "code_dirty": false
+  }
+}

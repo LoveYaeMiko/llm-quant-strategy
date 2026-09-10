@@ -1,0 +1,82 @@
+{
+  "rule_id": "d_forward_atr_candidate_2026h2",
+  "version": 3,
+  "frozen_at": "2026-09-10T16:02:50",
+  "scope": {
+    "account": "D_5W",
+    "universe": "hs300_500",
+    "window": [
+      "2026-09-11",
+      "2027-03-11"
+    ],
+    "params": {
+      "incumbent": {
+        "pb_stop_lo": 0.035,
+        "pb_stop_hi": 0.035
+      },
+      "candidate": {
+        "pb_atr_mult": 1.0,
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.04
+      },
+      "arm_ledgers": {
+        "incumbent": "outputs/forward/incumbent_replay/ledger.sqlite",
+        "candidate": "outputs/forward/candidate_atr_1p0_25_40/ledger.sqlite"
+      },
+      "arm_regime": "两条臂都是同一冻结规则集的重放（日内止损逐分钟 bar + 自算收盘目标），pb_live_intraday_from 置空、不继承生产 14:50 订单清单；生产账本仍是运行记录，不作为对照臂"
+    },
+    "what_changes": "v1 的候选臂在 live 日期继承生产订单清单且日内扫描被门控关闭，导致止损宽度不驱动任何决策——两条账本逐位相同（2026-09-10 实测：净值/收益/Sharpe/成交数全部一致），实验结构上无法回答自己的问题。v2 改为「两条重放臂 + 唯一差异」的设计，并把对照臂也变成重放（生产账本混有 live 成交，无法与重放配对）。",
+    "level": "FORWARD candidate (record only, no auto-switch)"
+  },
+  "decision": {
+    "test": "配对（同日差值）检验：两臂日收益相关性实测 0.884（干净窗口），必须用差值序列而非两个 Sharpe",
+    "switch_rule": "前向 120 个配对交易日：配对日差均值 > 0 且 配对 t > 1.5 → 切换；否则保持现役",
+    "paired_window_start": "两臂各自独立推进的第一天（种子截止日之后）；种子区间是同一份生产历史，不参与配对",
+    "historical_evidence": {
+      "window": [
+        "2025-09-01",
+        "2025-12-31"
+      ],
+      "incumbent": {
+        "cum": 0.0164,
+        "sharpe": 0.4,
+        "max_dd": 0.05,
+        "fills": 106
+      },
+      "candidate": {
+        "cum": 0.0338,
+        "sharpe": 0.65,
+        "max_dd": 0.0725,
+        "fills": 114
+      },
+      "paired": {
+        "corr": 0.8841,
+        "mean_diff_pp_per_day": 0.0226,
+        "cum_diff_pp": 1.73,
+        "annualized_diff_pp": 5.68,
+        "t_stat": 0.376,
+        "hit_rate": 0.494,
+        "days_needed_for_t_1p5": 1291
+      },
+      "read": "历史窗口只能说明「值得前向跟踪」；按观测效应量需 ~1291 配对日（≈5.1 年）才能分离，超过制度有效期"
+    },
+    "verdict": "HOLD（保持现役）；切换需人工执行并重新预注册"
+  },
+  "stopping": {
+    "window_days": 120,
+    "kill": "两臂同时受 d_forward_2026h2 的风险闸门约束；任一 hard 失败即停机",
+    "may_never_separate": true,
+    "no_time_pressure": "不设切换截止日；不为「有结论」降低阈值；不因候选暂时领先而切换"
+  },
+  "trials": {
+    "family": "d_stop_width",
+    "prior_trials": 11,
+    "this_trial": 12,
+    "notes": "既往：8 个宽度变体网格 + flat_3p5 的 OOS 选择 + 回补后重评 4 个候选 + v1 的退化设计（作废）。一次切换 = 一次新试验。  v3：重新冻结以绑定修复后的代码（工作区在 v2 冻结后被修改），窗口尚未开始，属开窗前的修正，不是设计变更。"
+  },
+  "notes": "2026-09-10 的候选日（在 v1 退化设计下推进）作废，不计入配对样本；v2 的两臂从 2026-09-09 的生产状态分叉（各自 seeding），自 2026-09-11 起独立推进。",
+  "supersedes": "d_forward_atr_candidate_2026h2 (v2)",
+  "code_commit": "a346f5981b569d56047b21645c680ae2f1b79f90",
+  "policy_sha256": "1221bae37c013b769cb6ee0bf1831421498619300140ef434b570da846c1306c",
+  "record_sha256": "5d7a5cb509dc7b5766c411fab30d0c636e721d7e0247e8ee4a55bb6753a59155"
+}

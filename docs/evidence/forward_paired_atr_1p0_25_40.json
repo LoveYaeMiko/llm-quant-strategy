@@ -18,17 +18,27 @@
     "diff_gt": 0.0,
     "note": "hold is a legitimate permanent outcome — the two books may never separate",
     "rule_id": "atr_1p0_25_40",
-    "candidate_params": {
-      "pb_atr_mult": 1.0,
-      "pb_stop_lo": 0.025,
-      "pb_stop_hi": 0.04
+    "arms": {
+      "incumbent": {
+        "label": "flat 3.5% (pb_stop_lo = pb_stop_hi = 0.035)",
+        "ledger": "C:\\Users\\wyxwi\\Desktop\\FQA\\outputs\\forward\\incumbent_replay\\ledger.sqlite"
+      },
+      "candidate": {
+        "label": "ATR 1.0 clipped to [2.5%, 4.0%]",
+        "params": {
+          "pb_atr_mult": 1.0,
+          "pb_stop_lo": 0.025,
+          "pb_stop_hi": 0.04
+        },
+        "ledger": "C:\\Users\\wyxwi\\Desktop\\FQA\\outputs\\forward\\candidate_atr_1p0_25_40\\ledger.sqlite"
+      }
     },
-    "incumbent": "flat 3.5% (pb_stop_lo = pb_stop_hi = 0.035)",
-    "incumbent_ledger": "C:\\Users\\wyxwi\\Desktop\\FQA\\outputs\\shadow_ledger_D_5W.sqlite",
-    "candidate_ledger": "C:\\Users\\wyxwi\\Desktop\\FQA\\outputs\\forward\\candidate_atr_1p0_25_40\\ledger.sqlite",
-    "seed_cutoff": "2026-09-08",
-    "paired_from": "2026-09-09",
-    "paired_note": "paired days are those the candidate advanced independently; days at or before seed_cutoff are a copy of production history and cannot differ",
+    "seed_cutoffs": [
+      "2026-09-09",
+      "2026-09-09"
+    ],
+    "paired_from": "2026-09-10",
+    "paired_note": "paired days are those BOTH arms advanced independently; the seeded prefix is a copy of production history in both arms and cannot differ",
     "switch_rule": {
       "window_days": 120,
       "paired_diff_gt": 0.0,
@@ -42,13 +52,13 @@
   },
   "provenance": {
     "window": {
-      "start": "2026-09-09",
-      "end": "2026-09-09"
+      "start": "2026-09-10",
+      "end": "2026-09-10"
     },
-    "convention": "adjusted-close basis; identical universe/data/entry/exit/execution to the D_5W production book; only the stop width differs; close orders inherited from the production 14:50 order list; T+1; no leverage",
-    "data_as_of": "2026-09-09",
-    "artifact_sha256": "ee34413073928f55f15f8e9127e996925f3a09ab361f55a74a8c76332e3b372c",
-    "code_commit": "59fbb03503b11699b8b0ae5bf1f75c5ae1482163",
+    "convention": "adjusted-close basis; two REPLAY arms of the frozen D-track rule set on the same data slice and universe; the only difference is the stop width (flat 3.5% vs ATR 1.0 clipped to [2.5%, 4.0%]); intraday stops evaluated on minute bars, close rebalance at the panel close; T+1; no leverage",
+    "data_as_of": "2026-09-10",
+    "artifact_sha256": "cb3301405433e2f49e1b0f909983d03b44d63192ffb94e0210e6a446e2a7d21a",
+    "code_commit": "a0bd26a10c602e4d21942ab92a8e2e134a533182",
     "code_dirty": true
   }
 }
