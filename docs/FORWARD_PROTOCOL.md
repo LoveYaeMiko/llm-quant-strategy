@@ -140,7 +140,20 @@ python scripts/prereg.py list
 
 * 改规则必须**升版本 + 写 `supersedes`**（等价于承认这是新的一次试验）；
 * `write_preregistration` 拒绝覆盖内容不同的同名记录；
+* `write_preregistration` **也拒绝没有 policy 绑定的记录**（2026-09-10 教训）：`verify` 只查
+  六字段与自哈希，因此一份 `policy_sha256=null` 的记录能 verify 通过、却永远无法通过
+  `prereg_gate` 的绑定检查。这类记录只能由**绕过 CLI** 的调用产生（`python scripts/prereg.py
+  new --file` 会自己盖上 policy 指纹，而直接调 `new_record` 时 `policy_sha256` 默认是 `None`），
+  现在在写入时就被拒绝；
 * 任何人在看结果后手改 JSON，`record_sha256` 会立刻对不上（`verify` 退出码 1）。
+
+**现行记录（2026-09-10 18:48 冻结）**：`d_forward_2026h2` **v7**（trial 5 / amendments 2）与
+`d_forward_atr_candidate_2026h2` **v7**（trial 14 / amendments 2），共同绑定
+policy `302489534115…` + 代码指纹 `0542e5cc…`，窗口 2026-09-11 → 2027-03-11。
+v7 的触发原因是**代码内容指纹变化**（止损宽度证据写进注释与文档；前向候选新增「两条臂都已在
+最新 bar 时不建行情」守卫；`write_preregistration` 增加无绑定拒写）——四条全部是记账性重签，
+`this_trial` 未变。因此**任何 src/scripts/tests 下的改动都必须重签或显式豁免**：
+文档改动不必，代码改动必然。
 
 **版本号 ≠ 试验次数**（2026-09-10 明确）：`version` 是记录自身的修订号，`trials.this_trial`
 数的是**规则/参数选择**的次数（多重比较记账用），`trials.amendments` 记录**不改变任何被测

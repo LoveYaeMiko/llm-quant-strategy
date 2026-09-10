@@ -1,0 +1,81 @@
+{
+  "rule_id": "d_forward_2026h2",
+  "version": 7,
+  "frozen_at": "2026-09-10T18:48:46",
+  "scope": {
+    "account": "D_5W",
+    "universe": "hs300_500",
+    "window": [
+      "2026-09-11",
+      "2027-03-11"
+    ],
+    "params": {
+      "pb_k": 6,
+      "pb_stop_lo": 0.035,
+      "pb_stop_hi": 0.035,
+      "pb_atr_mult": 1.5,
+      "pb_stop_trigger": "close",
+      "pb_stop_open_minutes": 30,
+      "pb_tail_vol_max": 0.5,
+      "pb_max_hold": 40,
+      "pb_full_invest": true
+    },
+    "what_changes": "v5：不改变闸门本身；重签原因是**政策面发生变化**——前向候选由 atr_1p0_25_40 换成 atr_1p0_25_35（修正后 800 只池上的跨窗口 max-min），这落在 policy_payload 的 `forward` 子树上，因此按协议必须升版本重签（这正是 policy_sha256 绑定要拦的情形：改阈值/候选后旧记录立即失效）。窗口不变（2026-09-11 → 2027-03-11），仍在开窗之前。  v6：重签原因：`code_fingerprint` 的覆盖范围收窄为 src/scripts/tests（配置文件的值已由 policy_sha256 绑定，注释级改动不应使冻结失效——2026-09-10 签名后数分钟内即遇到该误伤）。闸门阈值、判定逻辑、窗口、候选参数一字未改，属**记账性重签**（trials.amendments+1，this_trial 不变）。  v7：重签原因是**代码内容指纹**随提交变化（`prereg_binding` 因此按设计判失败）：1ef754c 把 800 只池重跑后的止损宽度证据写进代码注释与文档、并给前向候选补了一条「两条臂都已到最新 bar 时不再构建行情」的守卫（旧路径在同一状态下同样返回 0 且不写任何文件，只是白建一次 ~10 GB 切片）；6d41d4b 让 `write_preregistration` 拒绝「没有 policy 绑定」的记录（起因是 v7 的第一次写入绕过了 CLI，写出的记录 policy_sha256=null —— 它能通过 verify，却永远无法通过 `prereg_gate` 的绑定检查）。闸门阈值、判定逻辑、窗口、两臂规则、候选参数一字未改，属记账性重签（trials.amendments+1，this_trial 不变）。",
+    "level": "FORWARD (live-only shadow, no retroactive trades)"
+  },
+  "decision": {
+    "hard": [
+      "prereg_binding: 存在通过 verify 的记录；frozen_at 早于窗口起点；policy_sha256 与运行时重算一致；评估窗口 == 冻结窗口；code_commit == HEAD（除非显式 --allow-code-drift 并在工件里记为豁免）",
+      "tracking_error_daily_pp <= 0.2 且可计天数 >= 5（min_days 的硬下限为 1，配置为 0 也不能关闭测量）",
+      "tracking_error_sign_bias_p >= 0.05（精确二项检验）",
+      "|fee_deviation_pct| <= 20%（计费 vs 预注册成本规格）",
+      "price_integrity_abs_bps <= 2.0（成交价 vs 市场参考价；仅 replay 来源不参与校验）",
+      "violations (T+1/整手/最小变动价位/涨跌停/停牌) == 0",
+      "availability >= 0.99（决策窗口内心跳覆盖，间隔 <=5 分钟）",
+      "data_freshness_days <= 1（行情截止日 vs 应有交易日；另报 ledger_lag_days）",
+      "symbol_minute_coverage >= 0.95（按各符号自身可交易日为分母）",
+      "effective_universe >= 0.95（已预热符号 / 声明池）"
+    ],
+    "soft": [
+      "sharpe",
+      "max_drawdown",
+      "excess_return",
+      "hit_rate",
+      "n_fills",
+      "turnover"
+    ],
+    "unmeasured": [
+      "market_impact_bps"
+    ],
+    "verdict": "PASS 仅当全部 hard 通过；任一 hard 未测量即判失败；soft 永不参与判定",
+    "tool": "python scripts/forward_health.py (退出码 0=pass, 1=fail)"
+  },
+  "stopping": {
+    "window_days": 120,
+    "kill": "任一 hard 闸门连续 3 个交易日失败 → 停机排查管线（不是「策略不行」）",
+    "power": {
+      "se_formula": "sqrt(252/N)",
+      "years_for_t_2_5": {
+        "sharpe_1.0": 6.3,
+        "sharpe_0.5": 25.0
+      },
+      "regime_matching_horizon_years": 3,
+      "conclusion": "前向窗口对 alpha 无功效；不得以「前向 N 个月」宣称 alpha"
+    },
+    "may_never_separate": true
+  },
+  "trials": {
+    "family": "d_forward_risk_gate",
+    "prior_trials": 4,
+    "this_trial": 5,
+    "notes": "v1（2026-09-09 冻结，窗口 2026-09-10 起）在开窗当天被 2026-09-10 审计判定为「锁没装上」：评估不绑定预注册、min_days 可被配置置零绕过、失败闸门在任务卡显示成功、面板渲染试跑工件、代码漂移不报警。修复改变了测量本身（绑定 + 三条新硬闸门 + 重放起点），因此按协议计为新的一次试验，窗口重新起算。  v3：重新冻结以绑定修复后的代码（工作区在 v2 冻结后被修改），窗口尚未开始，属开窗前的修正，不是设计变更。  v4：冻结改为绑定**代码内容指纹**（src/scripts/configs/tests 下 .py/.yaml 的内容哈希）而不是 commit —— 只改文档的提交不再使冻结失效，而任何行为相关改动（含未提交改动）仍会失效。窗口未开始，属开窗前修正。  v5：政策面变更（候选换标的）导致的重签，闸门阈值与判定逻辑一字未改。  v7：重签原因是**代码内容指纹**随提交变化（`prereg_binding` 因此按设计判失败）：1ef754c 把 800 只池重跑后的止损宽度证据写进代码注释与文档、并给前向候选补了一条「两条臂都已到最新 bar 时不再构建行情」的守卫（旧路径在同一状态下同样返回 0 且不写任何文件，只是白建一次 ~10 GB 切片）；6d41d4b 让 `write_preregistration` 拒绝「没有 policy 绑定」的记录（起因是 v7 的第一次写入绕过了 CLI，写出的记录 policy_sha256=null —— 它能通过 verify，却永远无法通过 `prereg_gate` 的绑定检查）。闸门阈值、判定逻辑、窗口、两臂规则、候选参数一字未改，属记账性重签（trials.amendments+1，this_trial 不变）。",
+    "amendments": 2,
+    "amendment_note": "version = 记录本身的修订号；this_trial = 规则/参数选择的次数（多重比较记账用）；amendments = 不改变任何被测规则的记账性重签。只有 this_trial 变化才算新试验。"
+  },
+  "notes": "政策指纹：configs/forward_policy.yaml（forward / deployment / red_lines / paper / s7_calibration.cost_model）+ 部署账户 D_5W 参数；运行时由 src.forward.prereg.policy_fingerprint 重算并与本记录比对。",
+  "supersedes": "d_forward_2026h2 (v6)",
+  "code_commit": "6d41d4bb50ff3cd1af439d4423b51d846b701271",
+  "code_fingerprint": "0542e5cc77441505ff8c378fd9a086e5cfb0291d6a9fbe59589a38266052af21",
+  "policy_sha256": "3024895341151bfedbebc801a3239dc5810b44e9df77094806a616a20bdc66c5",
+  "record_sha256": "937915c48e110238beab3ecc419bd7964810a11687173cbbdc14785d5c49d16c"
+}

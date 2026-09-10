@@ -25,10 +25,12 @@
 | `d_oos_oos_2025h2_v5.json` | OOS 2025H2（回补后、可引用、含 provenance） | 同上 |
 | `bias_stress_oos_2025h2_v1.json` | 幸存者偏差压力测试（自进化闭环准入判据） | `docs/BIAS_STRESS.md`、`docs/FORWARD_PROTOCOL.md` §3 |
 | `adjust_anchor_baseline.json` | 复权锚点基线（漂移检测参考） | `docs/ADJUST_ANCHOR.md` |
-| `forward_prereg_d_forward_2026h2_v1.json` | 前向期风险闸门预注册记录（v1，**已被 v3 取代**） | `docs/FORWARD_PROTOCOL.md` §1.4 |
-| `forward_prereg_d_forward_atr_candidate_2026h2_v1.json` | 候选切换规则预注册记录（v1，**已被 v3 取代**） | `docs/FORWARD_PROTOCOL.md` §2 |
-| `prereg_d_forward_2026h2_v3.json` | 前向期风险闸门预注册记录（**现行**，绑定 policy_sha256 + commit） | 同上 |
-| `prereg_d_forward_atr_candidate_2026h2_v3.json` | 候选两臂比较预注册记录（**现行**，窗口 2026-09-11 起） | 同上 |
+| `forward_prereg_d_forward_2026h2_v1.json` | 前向期风险闸门预注册记录（v1，**已被 v3/v7 取代**） | `docs/FORWARD_PROTOCOL.md` §1.4 |
+| `forward_prereg_d_forward_atr_candidate_2026h2_v1.json` | 候选切换规则预注册记录（v1，**已被 v3/v7 取代**） | `docs/FORWARD_PROTOCOL.md` §2 |
+| `prereg_d_forward_2026h2_v3.json` | 前向期风险闸门预注册记录（v3，历史：首次绑定 policy_sha256） | 同上 |
+| `prereg_d_forward_atr_candidate_2026h2_v3.json` | 候选两臂比较预注册记录（v3，历史） | 同上 |
+| `prereg_d_forward_2026h2_v7.json` | 前向期风险闸门预注册记录（**现行**，trial 5 / amendments 2；绑定 policy `302489534115…` + 代码指纹 `0542e5cc…`） | 同上 |
+| `prereg_d_forward_atr_candidate_2026h2_v7.json` | 候选两臂比较预注册记录（**现行**，trial 14 / amendments 2，窗口 2026-09-11 起） | 同上 |
 | `forward_health_20260910.json` | 风险闸门首次实评（窗口未开始 → 未测量即失败；`prereg_binding` 通过） | `docs/FORWARD_PROTOCOL.md` §1.3 |
 | `forward_health_shakedown_20260909.json` | 风险闸门全链路试运行（2026-09-01→09-09，**非**前向窗口） | 同上 |
 | `shadow_series_latest.json` | 影子盘历史的**口径分段** + 当前口径重放序列（①） | `docs/D_TRACK_EVIDENCE.md` §一之二 |
@@ -40,6 +42,15 @@
 > 工件、代码漂移不报警；候选臂还因为继承生产订单清单而**结构上无法与现役分离**。修复改变了
 > 测量本身，按协议计为新试验，窗口自 2026-09-11 重新起算（2026-09-10 那天在旧设计下推进，
 > 作废）。v2 是开窗前的中间版本，记录一并保留以示轨迹。
+>
+> **v3 → v7 的取代原因**（同为开窗前、记账性）：v4 把冻结从 commit 改为绑定**代码内容指纹**；
+> v5 因**政策面变化**（候选由 25_40 换成 25_35）重签；v6 收窄指纹覆盖到 src/scripts/tests；
+> v7 因提交 `1ef754c`（止损宽度证据写入注释/文档 + 前向候选的「无事可做就不建行情」守卫）
+> 与 `6d41d4b`（`write_preregistration` 拒绝无 policy 绑定的记录）改变了代码内容指纹而重签。
+> 四次的 `this_trial` 均未变（5 / 14），只有 `amendments` 递增。**v7 的第一次写入作废**：
+> 当时用脚本直接调 `new_record` 绕过了 CLI，写出的记录 `policy_sha256=null` —— 它能通过
+> `prereg verify`（只查六字段与自哈希）却永远无法通过 `prereg_gate` 的绑定检查；两份文件已删除，
+> 真正的 v7 经 `scripts/prereg.py new` 重新冻结，该陷阱现已由 `write_preregistration` 拒绝写入。
 
 ## 口径提醒
 
