@@ -55,6 +55,9 @@ forward:
       availability_min: 0.99               # 决策窗口内实时层可用率 ≥ 99%
       data_freshness_days_max: 1           # 行情截止日落后 ≤ 1 个自然日
       symbol_minute_coverage_min: 0.95     # 符号级分钟覆盖 ≥ 95%（按各自可交易日计）
+      effective_universe_min: 0.95         # 有效股票池：面板中「指标已预热」的符号占声明池的比例
+                                           # 2026-09-10 发现 2026 年价格面板只有 301 只（声明 800），
+                                           # 该闸门用于阻止「截面静默缩小却按完整池上报」
     soft:
       record_only: [sharpe, max_drawdown, excess_return, hit_rate, n_fills, turnover]
 

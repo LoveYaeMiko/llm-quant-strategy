@@ -47,6 +47,7 @@ from src.forward.risk_gate import (  # noqa: E402
     data_freshness,
     evaluate_gate,
     fill_violations,
+    panel_universe_health,
     soft_metrics,
     symbol_minute_coverage,
     tracking_error,
@@ -362,6 +363,11 @@ def main() -> int:
                                       threshold=float(cfg.get("forward.risk_gate.hard.symbol_minute_coverage_min", 0.95))) \
         if len(panel) else {"min_coverage": None, "n_symbols": 0, "below_threshold": [],
                             "threshold": 0.95}
+    universe = panel_universe_health(panel, as_of=end) if len(panel) else {}
+    if universe:
+        print(f"[fwd] effective universe: {universe.get('n_warm_20')}/{universe.get('n_columns')} "
+              f"warm names (ratio {universe.get('effective_ratio')}; "
+              f"{universe.get('n_with_price')} with a bar on {universe.get('as_of')})", flush=True)
 
     fresh = None
     status_path = ROOT / "outputs" / f"shadow_status_{account['name']}.json"
@@ -410,6 +416,7 @@ def main() -> int:
         "availability": avail,
         "data_freshness": fresh or {},
         "symbol_coverage": coverage,
+        "universe": universe,
         "soft": soft,
     }
     gate = evaluate_gate(metrics, GateThresholds.from_config(cfg))

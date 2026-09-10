@@ -21,6 +21,7 @@ from src.forward.risk_gate import (
     evaluate_gate,
     fill_violations,
     paired_comparison,
+    panel_universe_health,
     power_table,
     sharpe_standard_error,
     soft_metrics,
@@ -260,6 +261,8 @@ def _bundle(**over) -> dict:
         "availability": {"availability": 0.995},
         "data_freshness": {"lag_days": 0},
         "symbol_coverage": {"min_coverage": 0.99},
+        "universe": {"n_columns": 800, "n_with_price": 800, "n_warm_20": 800,
+                     "n_warm_60": 800, "effective_ratio": 1.0},
         "soft": {"sharpe": 0.3, "max_drawdown": -0.05},
     }
     for k, v in over.items():
@@ -285,6 +288,8 @@ def test_gate_passes_on_a_healthy_bundle():
     ({"availability": {"availability": 0.9}}, "availability"),
     ({"data_freshness": {"lag_days": 3}}, "data_freshness"),
     ({"symbol_coverage": {"min_coverage": 0.8}}, "symbol_minute_coverage"),
+    ({"universe": {"effective_ratio": 0.38, "n_columns": 800, "n_warm_20": 301}},
+     "effective_universe"),
 ])
 def test_each_hard_gate_fails_independently(mutation, failed_key):
     gate = evaluate_gate(_bundle(**mutation))
@@ -296,8 +301,35 @@ def test_unmeasured_metrics_fail_rather_than_pass():
     gate = evaluate_gate({})
     assert gate["verdict"] == "fail"
     for key in ("tracking_error_daily_pp", "cost_fee_deviation", "violations",
-                "availability", "data_freshness", "symbol_minute_coverage"):
+                "availability", "data_freshness", "symbol_minute_coverage",
+                "effective_universe"):
         assert key in gate["failed"]
+
+
+def test_panel_universe_health_counts_warm_names():
+    """A panel that 'knows' 4 names but only 3 have history is 75% effective.
+
+    Regression for the 2026-09-10 finding: the D track is declared as 800 names
+    while the 2026 price panel carried 301 — a shrunken cross-section must be
+    measured, not assumed away.
+    """
+    idx = pd.date_range("2026-06-01", periods=60, freq="B")
+    panel = pd.DataFrame({"A": 1.0, "B": 2.0, "C": 3.0, "D": np.nan}, index=idx)
+    panel.loc[idx[-1], "D"] = 4.0            # one bar only — not warm
+    out = panel_universe_health(panel, lookback_days=120)
+    assert out["n_columns"] == 4 and out["n_with_price"] == 4
+    assert out["n_warm_20"] == 3 and out["n_warm_60"] == 3
+    assert out["effective_ratio"] == pytest.approx(0.75)
+    # the real 2026 shape: 800 columns, 301 warm
+    wide = pd.DataFrame({f"S{i}": (1.0 if i < 301 else np.nan) for i in range(800)}, index=idx)
+    bad = panel_universe_health(wide, lookback_days=120)
+    assert bad["effective_ratio"] == pytest.approx(0.376, abs=0.01)
+    assert evaluate_gate(_bundle(universe=bad))["failed"] == ["effective_universe"]
+
+
+def test_panel_universe_health_on_an_empty_panel():
+    out = panel_universe_health(pd.DataFrame())
+    assert out["n_columns"] == 0 and out["effective_ratio"] is None
 
 
 def test_soft_metrics_never_gate():

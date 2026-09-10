@@ -471,6 +471,54 @@ def symbol_minute_coverage(
     }
 
 
+def panel_universe_health(
+    price_panel: pd.DataFrame,
+    *,
+    as_of: Optional[str | pd.Timestamp] = None,
+    warm_windows: Sequence[int] = (20, 60),
+    lookback_days: int = 120,
+) -> dict:
+    """Is the price panel actually the universe the spec claims?
+
+    Found 2026-09-10, on the first forward morning: the D track is declared as an
+    800-name (``hs300_500``) book, but the 2026 PIT price panel carried only **301
+    symbols** per day (the incremental daily ingest had covered ~300 names since
+    January), so every 2026 shadow/IS day ran a ~300-name cross-section while the
+    artifact recorded ``universe_size = 800``. The daily ingest widened to 800 on
+    2026-09-08, but those 499 names have an eight-month gap and therefore no warm
+    indicators.
+
+    Three counts, all measured on ``as_of`` (default: the panel's last day):
+
+    * ``n_columns`` — symbols the panel knows about at all;
+    * ``n_with_price`` — symbols with a bar on ``as_of``;
+    * ``n_warm_k`` — symbols with at least ``k`` non-NaN closes inside the
+      trailing ``lookback_days`` (a name needs ~20 bars for ATR20 and ~60 for
+      EMA50 before any rule can rank or stop it).
+
+    ``effective_ratio`` is ``n_warm_20 / n_columns``: the share of the declared
+    universe that can actually be traded. A book whose cross-section silently
+    shrank must not be reported as the full universe.
+    """
+    out: dict = {"n_columns": int(price_panel.shape[1]) if len(price_panel.columns) else 0,
+                 "as_of": None, "n_with_price": 0, "effective_ratio": None,
+                 "universe_size": None}
+    if price_panel is None or not len(price_panel):
+        return out
+    day = pd.Timestamp(as_of) if as_of is not None else pd.Timestamp(price_panel.index.max())
+    out["as_of"] = str(day.date())
+    hist = price_panel.loc[:day].tail(int(lookback_days))
+    if not len(hist):
+        return out
+    out["n_with_price"] = int(hist.iloc[-1].notna().sum())
+    for k in warm_windows:
+        out[f"n_warm_{int(k)}"] = int((hist.notna().sum(axis=0) >= int(k)).sum())
+    base = out.get("n_warm_20") or 0
+    out["effective_ratio"] = round(base / out["n_columns"], 4) if out["n_columns"] else None
+    out["lookback_days"] = int(lookback_days)
+    return out
+
+
 def soft_metrics(equity: pd.Series, benchmark: Optional[pd.Series] = None) -> dict:
     """Sharpe / maxDD / excess return — RECORDED ONLY (no power in a forward window)."""
     eq = pd.Series(equity).dropna().astype(float)
@@ -516,6 +564,7 @@ class GateThresholds:
     availability_min: float = 0.99
     data_freshness_days_max: int = 1
     symbol_minute_coverage_min: float = 0.95
+    effective_universe_min: float = 0.95
     soft_record_only: tuple[str, ...] = ("sharpe", "max_drawdown", "excess_return",
                                          "hit_rate", "n_fills", "turnover")
 
@@ -604,6 +653,19 @@ def evaluate_gate(metrics: Mapping[str, Any], thresholds: Optional[GateThreshold
             "value": cov_min, "min": th.symbol_minute_coverage_min,
             "ok": bool(cov_min is not None and cov_min >= th.symbol_minute_coverage_min),
         },
+        "effective_universe": {
+            "value": (metrics.get("universe") or {}).get("effective_ratio"),
+            "n_columns": (metrics.get("universe") or {}).get("n_columns"),
+            "n_with_price": (metrics.get("universe") or {}).get("n_with_price"),
+            "n_warm_20": (metrics.get("universe") or {}).get("n_warm_20"),
+            "n_warm_60": (metrics.get("universe") or {}).get("n_warm_60"),
+            "min": th.effective_universe_min,
+            # a book that silently runs on a shrunken cross-section is not the
+            # universe its pre-registration claims — measured, not assumed
+            "ok": bool(((metrics.get("universe") or {}).get("effective_ratio") is not None)
+                       and float((metrics.get("universe") or {})["effective_ratio"])
+                       >= th.effective_universe_min),
+        },
     }
     failed = [k for k, v in hard.items()
               if isinstance(v, Mapping) and not v.get("ok", False)]
@@ -624,6 +686,7 @@ def evaluate_gate(metrics: Mapping[str, Any], thresholds: Optional[GateThreshold
             "availability_min": th.availability_min,
             "data_freshness_days_max": th.data_freshness_days_max,
             "symbol_minute_coverage_min": th.symbol_minute_coverage_min,
+            "effective_universe_min": th.effective_universe_min,
         },
     }
 
@@ -705,6 +768,7 @@ __all__ = [
     "evaluate_gate",
     "fill_violations",
     "paired_comparison",
+    "panel_universe_health",
     "power_table",
     "sharpe_standard_error",
     "soft_metrics",
