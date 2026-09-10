@@ -147,13 +147,16 @@ python scripts/prereg.py list
   现在在写入时就被拒绝；
 * 任何人在看结果后手改 JSON，`record_sha256` 会立刻对不上（`verify` 退出码 1）。
 
-**现行记录（2026-09-10 18:48 冻结）**：`d_forward_2026h2` **v7**（trial 5 / amendments 2）与
-`d_forward_atr_candidate_2026h2` **v7**（trial 14 / amendments 2），共同绑定
-policy `302489534115…` + 代码指纹 `0542e5cc…`，窗口 2026-09-11 → 2027-03-11。
-v7 的触发原因是**代码内容指纹变化**（止损宽度证据写进注释与文档；前向候选新增「两条臂都已在
-最新 bar 时不建行情」守卫；`write_preregistration` 增加无绑定拒写）——四条全部是记账性重签，
-`this_trial` 未变。因此**任何 src/scripts/tests 下的改动都必须重签或显式豁免**：
-文档改动不必，代码改动必然。
+**现行记录（2026-09-10 18:57 冻结）**：`d_forward_2026h2` **v8**（trial 5 / amendments 3）与
+`d_forward_atr_candidate_2026h2` **v8**（trial 14 / amendments 3），共同绑定
+policy `302489534115…` + 代码指纹 `4a7e500f…`，窗口 2026-09-11 → 2027-03-11。
+开窗前一晚连续重签三次，全部是**代码内容指纹变化**触发的记账性重签（`this_trial` 未变）：
+v6 收窄指纹覆盖到 src/scripts/tests；v7 对应止损宽度证据写入注释/文档、前向候选的
+「无事可做就不建行情」守卫、以及 `write_preregistration` 拒绝无 policy 绑定的记录；
+v8 对应 `panel_universe_health` 的 `as_of` 改为**实际测量的那根 bar**（首次评估因此写出过
+`as_of = 2027-03-11` 这种未来日期）。因此**任何 src/scripts/tests 下的改动都必须重签或显式
+豁免**：文档改动不必，代码改动必然 —— 每晚重签不是流程失控，而是「冻结的是行为不是提交号」
+这一设计的直接代价。
 
 **版本号 ≠ 试验次数**（2026-09-10 明确）：`version` 是记录自身的修订号，`trials.this_trial`
 数的是**规则/参数选择**的次数（多重比较记账用），`trials.amendments` 记录**不改变任何被测

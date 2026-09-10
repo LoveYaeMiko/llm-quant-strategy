@@ -10,37 +10,39 @@
   },
   "config_freeze_date": "2026-09-10",
   "config_freeze_source": "max(config 2026-09-09, prereg.frozen_at 2026-09-10)",
-  "policy_sha256": "1221bae37c013b769cb6ee0bf1831421498619300140ef434b570da846c1306c",
-  "code_commit": "ca063e23e179960199eb00c389f00778b358f6dd",
+  "policy_sha256": "3024895341151bfedbebc801a3239dc5810b44e9df77094806a616a20bdc66c5",
+  "code_commit": "7ed4da779a8afc1ef92f5f610e8dd81ce196771d",
   "prereg": {
     "rule_id": "d_forward_2026h2",
-    "version": 4,
-    "frozen_at": "2026-09-10T16:41:41",
-    "record_sha256": "f77b7ba1627784fe8d842f70068750e5944188ac845129054ac0c088de130de9",
+    "version": 8,
+    "frozen_at": "2026-09-10T18:57:36",
+    "record_sha256": "d9dad43a1621ddcb44defc3a9b5beecf3937c867c934f9784ce44ecdc90a7fe8",
     "trials": {
       "family": "d_forward_risk_gate",
-      "prior_trials": 3,
-      "this_trial": 4,
-      "notes": "v1（2026-09-09 冻结，窗口 2026-09-10 起）在开窗当天被 2026-09-10 审计判定为「锁没装上」：评估不绑定预注册、min_days 可被配置置零绕过、失败闸门在任务卡显示成功、面板渲染试跑工件、代码漂移不报警。修复改变了测量本身（绑定 + 三条新硬闸门 + 重放起点），因此按协议计为新的一次试验，窗口重新起算。  v3：重新冻结以绑定修复后的代码（工作区在 v2 冻结后被修改），窗口尚未开始，属开窗前的修正，不是设计变更。  v4：冻结改为绑定**代码内容指纹**（src/scripts/configs/tests 下 .py/.yaml 的内容哈希）而不是 commit —— 只改文档的提交不再使冻结失效，而任何行为相关改动（含未提交改动）仍会失效。窗口未开始，属开窗前修正。"
+      "prior_trials": 4,
+      "this_trial": 5,
+      "notes": "v1（2026-09-09 冻结，窗口 2026-09-10 起）在开窗当天被 2026-09-10 审计判定为「锁没装上」：评估不绑定预注册、min_days 可被配置置零绕过、失败闸门在任务卡显示成功、面板渲染试跑工件、代码漂移不报警。修复改变了测量本身（绑定 + 三条新硬闸门 + 重放起点），因此按协议计为新的一次试验，窗口重新起算。  v3：重新冻结以绑定修复后的代码（工作区在 v2 冻结后被修改），窗口尚未开始，属开窗前的修正，不是设计变更。  v4：冻结改为绑定**代码内容指纹**（src/scripts/configs/tests 下 .py/.yaml 的内容哈希）而不是 commit —— 只改文档的提交不再使冻结失效，而任何行为相关改动（含未提交改动）仍会失效。窗口未开始，属开窗前修正。  v5：政策面变更（候选换标的）导致的重签，闸门阈值与判定逻辑一字未改。  v7：重签原因是**代码内容指纹**随提交变化（`prereg_binding` 因此按设计判失败）：1ef754c 把 800 只池重跑后的止损宽度证据写进代码注释与文档、并给前向候选补了一条「两条臂都已到最新 bar 时不再构建行情」的守卫（旧路径在同一状态下同样返回 0 且不写任何文件，只是白建一次 ~10 GB 切片）；6d41d4b 让 `write_preregistration` 拒绝「没有 policy 绑定」的记录（起因是 v7 的第一次写入绕过了 CLI，写出的记录 policy_sha256=null —— 它能通过 verify，却永远无法通过 `prereg_gate` 的绑定检查）。闸门阈值、判定逻辑、窗口、两臂规则、候选参数一字未改，属记账性重签（trials.amendments+1，this_trial 不变）。  v8：重签原因是**代码内容指纹**随提交 7ed4da7 变化（`prereg_binding` 按设计判失败）：`panel_universe_health` 原先把「请求的日期」当成「测量的日期」写进工件——首次前向窗口评估（2026-09-10）因此产出 `as_of = 2027-03-11`（窗口末端，尚未到来），而 800/800 这些计数其实来自最新真实 bar（2026-09-10）。现在改为记录**实际使用的最后一根 bar**，请求日另记`requested_as_of`。计数本身未变，只是标签改正。闸门阈值、判定逻辑、窗口、两臂规则、候选参数一字未改，属记账性重签（trials.amendments+1，this_trial 不变）。",
+      "amendments": 3,
+      "amendment_note": "version = 记录本身的修订号；this_trial = 规则/参数选择的次数（多重比较记账用）；amendments = 不改变任何被测规则的记账性重签。只有 this_trial 变化才算新试验。"
     }
   },
   "metrics": {
     "prereg": {
       "ok": true,
       "rule_id": "d_forward_2026h2",
-      "frozen_at": "2026-09-10T16:41:41",
+      "frozen_at": "2026-09-10T18:57:36",
       "window_match": true,
       "frozen_before_window": true,
       "policy_sha256_match": true,
       "code_commit_match": true,
       "waived": false,
       "issues": [],
-      "policy_sha256_stored": "1221bae37c013b76",
-      "policy_sha256_live": "1221bae37c013b76",
-      "code_commit": "ca063e23e179960199eb00c389f00778b358f6dd",
-      "code_fingerprint_stored": "52f9716c56d1cfa0",
-      "code_fingerprint_live": "52f9716c56d1cfa0",
-      "code_dirty": true
+      "policy_sha256_stored": "3024895341151bfe",
+      "policy_sha256_live": "3024895341151bfe",
+      "code_commit": "7ed4da779a8afc1ef92f5f610e8dd81ce196771d",
+      "code_fingerprint_stored": "4a7e500fd1d2bab0",
+      "code_fingerprint_live": "4a7e500fd1d2bab0",
+      "code_dirty": false
     },
     "tracking_error": {
       "n_days": 0,
@@ -119,7 +121,8 @@
     },
     "universe": {
       "n_columns": 800,
-      "as_of": "2027-03-11",
+      "as_of": "2026-09-10",
+      "requested_as_of": "2027-03-11",
       "n_with_price": 800,
       "effective_ratio": 1.0,
       "universe_size": null,
@@ -143,7 +146,7 @@
       "prereg_binding": {
         "ok": true,
         "rule_id": "d_forward_2026h2",
-        "frozen_at": "2026-09-10T16:41:41",
+        "frozen_at": "2026-09-10T18:57:36",
         "window_match": true,
         "frozen_before_window": true,
         "policy_sha256_match": true,
@@ -267,8 +270,8 @@
     },
     "convention": "adjusted-close price basis; daily close rebalance at the panel close; live dates fill intraday stops at the confirmed minute print and close orders at the 15:00 auction from outputs/preclose_orders_<acct>.json; T+1; no leverage",
     "data_as_of": "2026-09-10",
-    "artifact_sha256": "e078174570946ef9159019dc3a5c167ad3a3e037d419e9b3278a94be85cf4d4f",
-    "code_commit": "ca063e23e179960199eb00c389f00778b358f6dd",
-    "code_dirty": true
+    "artifact_sha256": "68497977bfac729aac1ba2945fd681e35f56a0e46e1a4df10b54dc947ca4d932",
+    "code_commit": "7ed4da779a8afc1ef92f5f610e8dd81ce196771d",
+    "code_dirty": false
   }
 }

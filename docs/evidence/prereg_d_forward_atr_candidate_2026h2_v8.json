@@ -1,0 +1,105 @@
+{
+  "rule_id": "d_forward_atr_candidate_2026h2",
+  "version": 8,
+  "frozen_at": "2026-09-10T18:57:37",
+  "scope": {
+    "account": "D_5W",
+    "universe": "hs300_500",
+    "window": [
+      "2026-09-11",
+      "2027-03-11"
+    ],
+    "params": {
+      "incumbent": {
+        "pb_stop_lo": 0.035,
+        "pb_stop_hi": 0.035
+      },
+      "candidate": {
+        "pb_atr_mult": 1.0,
+        "pb_stop_lo": 0.025,
+        "pb_stop_hi": 0.035
+      },
+      "arm_ledgers": {
+        "incumbent": "outputs/forward/incumbent_replay/ledger.sqlite",
+        "candidate": "outputs/forward/candidate_atr_1p0_25_35/ledger.sqlite"
+      },
+      "arm_regime": "两条臂都是同一冻结规则集的重放（日内止损逐分钟 bar + 自算收盘目标），pb_live_intraday_from 置空、不继承生产 14:50 订单清单；生产账本仍是运行记录，不作为对照臂",
+      "superseded_candidate": {
+        "params": {
+          "pb_atr_mult": 1.0,
+          "pb_stop_lo": 0.025,
+          "pb_stop_hi": 0.04
+        },
+        "ledger": "outputs/forward/candidate_atr_1p0_25_40/ledger.sqlite",
+        "why": "其支持来自 301 只缺陷截面；修正后的 800 只池上它是四只备选里最差的一只"
+      }
+    },
+    "what_changes": "v5：在**修正后的 800 只池**上按项目原有的跨窗口 max-min 规则重选前向候选 —— atr_1p0_25_40（IS Sharpe −0.12 / OOS 0.65，max-min −0.12）换成 atr_1p0_25_35（IS 0.98 / OOS 0.29，max-min 0.29）。现役 flat_3p5 仍是 max-min 冠军（0.40），**部署不变**；只是前向跟踪目标换证据支持最强的那只。窗口仍是 2026-09-11 起（窗口未开始，属开窗前的选择，按协议计为新的一次试验）。  v6：重签原因同上（记账性）：候选参数（atr_1p0_25_35）与两臂设计不变。  v7：重签原因是**代码内容指纹**随提交变化（`prereg_binding` 因此按设计判失败）：1ef754c 把 800 只池重跑后的止损宽度证据写进代码注释与文档、并给前向候选补了一条「两条臂都已到最新 bar 时不再构建行情」的守卫（旧路径在同一状态下同样返回 0 且不写任何文件，只是白建一次 ~10 GB 切片）；6d41d4b 让 `write_preregistration` 拒绝「没有 policy 绑定」的记录（起因是 v7 的第一次写入绕过了 CLI，写出的记录 policy_sha256=null —— 它能通过 verify，却永远无法通过 `prereg_gate` 的绑定检查）。闸门阈值、判定逻辑、窗口、两臂规则、候选参数一字未改，属记账性重签（trials.amendments+1，this_trial 不变）。  v8：重签原因是**代码内容指纹**随提交 7ed4da7 变化（`prereg_binding` 按设计判失败）：`panel_universe_health` 原先把「请求的日期」当成「测量的日期」写进工件——首次前向窗口评估（2026-09-10）因此产出 `as_of = 2027-03-11`（窗口末端，尚未到来），而 800/800 这些计数其实来自最新真实 bar（2026-09-10）。现在改为记录**实际使用的最后一根 bar**，请求日另记`requested_as_of`。计数本身未变，只是标签改正。闸门阈值、判定逻辑、窗口、两臂规则、候选参数一字未改，属记账性重签（trials.amendments+1，this_trial 不变）。",
+    "level": "FORWARD candidate (record only, no auto-switch)"
+  },
+  "decision": {
+    "test": "配对（同日差值）检验：两臂日收益相关性实测 0.884（干净窗口），必须用差值序列而非两个 Sharpe",
+    "switch_rule": "前向 120 个配对交易日：配对日差均值 > 0 且 配对 t > 1.5 → 切换；否则保持现役",
+    "paired_window_start": "两臂各自独立推进的第一天（种子截止日之后）；种子区间是同一份生产历史，不参与配对",
+    "historical_evidence": {
+      "windows": {
+        "is_2026_800": [
+          "2026-01-01",
+          "2026-08-28"
+        ],
+        "oos_2025h2_800": [
+          "2025-09-01",
+          "2025-12-31"
+        ]
+      },
+      "artifacts": [
+        "outputs/d_stop_grid_is_2026_800.json",
+        "outputs/d_stop_grid_oos_2025h2_800.json"
+      ],
+      "sharpe": {
+        "flat_3p5": {
+          "is": 0.67,
+          "oos": 0.4,
+          "max_min": 0.4
+        },
+        "atr_1p0_25_35": {
+          "is": 0.98,
+          "oos": 0.29,
+          "max_min": 0.29
+        },
+        "atr_1p0_25_40": {
+          "is": -0.12,
+          "oos": 0.65,
+          "max_min": -0.12
+        },
+        "atr_1p5_25_40": {
+          "is": -0.13,
+          "oos": 1.1,
+          "max_min": -0.13
+        }
+      },
+      "read": "两个窗口排序互相冲突（IS 偏 25_35、OOS 偏 25_40 / 1p5_25_40），差异均在噪声内；max-min 只用于挑一只值得前向跟踪的备选，不作为切换依据。"
+    },
+    "verdict": "HOLD（保持现役）；切换需人工执行并重新预注册"
+  },
+  "stopping": {
+    "window_days": 120,
+    "kill": "两臂同时受 d_forward_2026h2 的风险闸门约束；任一 hard 失败即停机",
+    "may_never_separate": true,
+    "no_time_pressure": "不设切换截止日；不为「有结论」降低阈值；不因候选暂时领先而切换"
+  },
+  "trials": {
+    "family": "d_stop_width",
+    "prior_trials": 13,
+    "this_trial": 14,
+    "notes": "既往：8 个宽度变体网格 + flat_3p5 的 OOS 选择 + 回补后重评 4 个候选 + v1 的退化设计（作废）。一次切换 = 一次新试验。  v3：重新冻结以绑定修复后的代码（工作区在 v2 冻结后被修改），窗口尚未开始，属开窗前的修正，不是设计变更。  v4：冻结改为绑定**代码内容指纹**（src/scripts/configs/tests 下 .py/.yaml 的内容哈希）而不是 commit —— 只改文档的提交不再使冻结失效，而任何行为相关改动（含未提交改动）仍会失效。窗口未开始，属开窗前修正。  v5：候选本身换了一只（25_40 → 25_35），属新的一次参数选择，计入 trials。原有的 25_40 记录（v1–v4）保留在册，作为「它曾被选出、后因数据缺陷作废」的历史。  v7：重签原因是**代码内容指纹**随提交变化（`prereg_binding` 因此按设计判失败）：1ef754c 把 800 只池重跑后的止损宽度证据写进代码注释与文档、并给前向候选补了一条「两条臂都已到最新 bar 时不再构建行情」的守卫（旧路径在同一状态下同样返回 0 且不写任何文件，只是白建一次 ~10 GB 切片）；6d41d4b 让 `write_preregistration` 拒绝「没有 policy 绑定」的记录（起因是 v7 的第一次写入绕过了 CLI，写出的记录 policy_sha256=null —— 它能通过 verify，却永远无法通过 `prereg_gate` 的绑定检查）。闸门阈值、判定逻辑、窗口、两臂规则、候选参数一字未改，属记账性重签（trials.amendments+1，this_trial 不变）。  v8：重签原因是**代码内容指纹**随提交 7ed4da7 变化（`prereg_binding` 按设计判失败）：`panel_universe_health` 原先把「请求的日期」当成「测量的日期」写进工件——首次前向窗口评估（2026-09-10）因此产出 `as_of = 2027-03-11`（窗口末端，尚未到来），而 800/800 这些计数其实来自最新真实 bar（2026-09-10）。现在改为记录**实际使用的最后一根 bar**，请求日另记`requested_as_of`。计数本身未变，只是标签改正。闸门阈值、判定逻辑、窗口、两臂规则、候选参数一字未改，属记账性重签（trials.amendments+1，this_trial 不变）。",
+    "amendments": 3,
+    "amendment_note": "version = 记录本身的修订号；this_trial = 规则/参数选择的次数（多重比较记账用）；amendments = 不改变任何被测规则的记账性重签。只有 this_trial 变化才算新试验。"
+  },
+  "notes": "2026-09-10 的 800 只池网格（outputs/d_stop_grid_is_2026_800.json / outputs/d_stop_grid_oos_2025h2_800.json）是本次重选的唯一依据；两者都与 flat_3p5 的 d_oos 证据同构（IS：+5.72%/Sharpe 0.67/maxDD 8.42%/236 笔）。",
+  "supersedes": "d_forward_atr_candidate_2026h2 (v7)",
+  "code_commit": "7ed4da779a8afc1ef92f5f610e8dd81ce196771d",
+  "code_fingerprint": "4a7e500fd1d2bab0060a59a34afaa33e984a68fe45590e94f6cd7715d1c56048",
+  "policy_sha256": "3024895341151bfedbebc801a3239dc5810b44e9df77094806a616a20bdc66c5",
+  "record_sha256": "e088d31ed93b06049a0e008adace43d2fc1aedddd0730f2ea41a769c8f53af99"
+}
