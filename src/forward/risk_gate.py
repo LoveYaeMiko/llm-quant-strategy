@@ -541,22 +541,39 @@ def panel_universe_health(
     return out
 
 
-def soft_metrics(equity: pd.Series, benchmark: Optional[pd.Series] = None) -> dict:
-    """Sharpe / maxDD / excess return — RECORDED ONLY (no power in a forward window)."""
+def soft_metrics(equity: pd.Series, benchmark: Optional[pd.Series] = None, *,
+                 fills: Optional[pd.DataFrame] = None) -> dict:
+    """Sharpe / maxDD / excess / hit-rate / turnover — RECORDED ONLY.
+
+    No forward-window power (see the module docstring), so none of these gate
+    anything; they are computed because a reviewer reading the artifact should not
+    have to re-derive them, and because the policy file declares them.
+    """
     eq = pd.Series(equity).dropna().astype(float)
     if len(eq) < 2:
         return {"sharpe": None, "max_drawdown": None, "total_return": None,
-                "excess_return": None, "n_days": int(len(eq))}
+                "excess_return": None, "hit_rate": None, "n_fills": None,
+                "turnover": None, "n_days": int(len(eq))}
     rets = eq.pct_change().dropna()
     vol = float(rets.std(ddof=1)) if len(rets) > 1 else 0.0
     sharpe = float(rets.mean() / vol * math.sqrt(TRADING_DAYS)) if vol > 0 else 0.0
     dd = float((eq / eq.cummax() - 1.0).min())
+    n_fills = int(len(fills)) if fills is not None else None
+    turnover = None
+    if fills is not None and len(fills):
+        notional = float(pd.to_numeric(fills.get("notional"), errors="coerce").fillna(0.0).sum()) \
+            if "notional" in getattr(fills, "columns", []) else 0.0
+        mean_eq = float(eq.mean())
+        turnover = round(notional / mean_eq, 4) if mean_eq > 0 else None
     out = {
         "sharpe": round(sharpe, 3),
         "sharpe_standard_error": round(sharpe_standard_error(len(eq)), 3),
         "max_drawdown": round(dd, 4),
         "total_return": round(float(eq.iloc[-1] / eq.iloc[0] - 1.0), 4),
         "excess_return": None,
+        "hit_rate": round(float((rets > 0).mean()), 4) if len(rets) else None,
+        "n_fills": n_fills,
+        "turnover": turnover,
         "n_days": int(len(eq)),
     }
     if benchmark is not None:

@@ -474,7 +474,7 @@ def main() -> int:
     eq = pd.Series(equity).astype(float)
     eq.index = pd.to_datetime(eq.index)
     eq = eq.loc[(eq.index >= pd.Timestamp(measured_start)) & (eq.index <= pd.Timestamp(end))]
-    soft = soft_metrics(eq)
+    soft = soft_metrics(eq, fills=fills)
 
     metrics = {
         "prereg": binding,

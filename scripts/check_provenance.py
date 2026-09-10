@@ -41,13 +41,13 @@ from src.provenance import check_artifacts  # noqa: E402
 #: factor map + ``record_sha256`` + an append-only history directory, verified by
 #: ``scripts/check_adjust_anchor.py --compare``).
 EVIDENCE_REQUIRED: tuple[str, ...] = (
-    "outputs/d_oos_is_2026_v4.json",
+    "outputs/d_oos_is_2026_v5.json",
     "outputs/d_oos_oos_2025h2_v5.json",
     "outputs/shadow_status_D_5W.json",
     "outputs/forward/forward_health*.json",
     "outputs/forward/paired_*.json",
     "outputs/bias_stress_*.json",
-    "docs/evidence/d_oos_is_2026_v4.json",
+    "docs/evidence/d_oos_is_2026_v5.json",
     "docs/evidence/d_oos_oos_2025h2_v5.json",
     "docs/evidence/bias_stress_oos_2025h2_v1.json",
 )

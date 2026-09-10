@@ -1887,7 +1887,14 @@ def _stamp_shadow_status(status: dict, shadow: dict) -> dict:
             data_as_of=last,
         )
     except Exception as exc:  # noqa: BLE001 — a status file must still be written
-        print(f"WARNING: provenance stamp failed ({exc})", file=sys.stderr)
+        # Fail-visible, not fail-open: the file is written (the daily loop must not
+        # lose its status) but the defect is recorded IN the payload, so the
+        # provenance sweeper, the panel and any reader can see that this artifact
+        # carries no verifiable provenance.
+        print(f"ERROR: provenance stamp failed ({exc}) — writing the status WITHOUT "
+              "provenance and flagging it", file=sys.stderr)
+        status = dict(status)
+        status["provenance_error"] = f"{type(exc).__name__}: {exc}"
         return status
 
 

@@ -134,8 +134,12 @@ def cmd_new(args) -> int:
 def cmd_verify(args) -> int:
     paths = [Path(p) for p in args.paths] or sorted((args.dir or DEFAULT_DIR).glob("prereg_*.json"))
     if not paths:
-        print("[prereg] no records to verify", file=sys.stderr)
-        return 0
+        # An empty record directory is NOT success: the whole forward protocol is
+        # built on a frozen record, so "nothing to verify" means the gate has no
+        # lock to bind to (a fresh clone used to exit 0 here, which reads as OK).
+        print("[prereg] NO RECORDS FOUND — nothing is frozen; freeze one with "
+              "`scripts/prereg.py new` before evaluating a forward window", file=sys.stderr)
+        return 1
     bad = 0
     for p in paths:
         try:

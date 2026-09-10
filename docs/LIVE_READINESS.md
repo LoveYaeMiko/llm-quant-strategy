@@ -61,8 +61,11 @@
 | D6 | 前向风险闸门 | [x] | `scripts/forward_health.py`：跟踪误差/成本/违规/可用率/新鲜度/覆盖率；**未测量即判失败**。见 `docs/FORWARD_PROTOCOL.md` |
 | D7 | 预注册（改规则前先冻结） | [x] | `scripts/prereg.py`（六字段 + 哈希 + 只追加）；改规则须升版本 + `supersedes` |
 | D8 | 复权锚点可复现 | [x] | `scripts/check_adjust_anchor.py`（基线冻结 + 漂移检测）；见 `docs/ADJUST_ANCHOR.md` |
-| D9 | 数据偏差压力测试 | [ ] | 幸存者偏差上界须 < 0.3×目标 alpha（2.4pp/年）才能开启自进化；见 `docs/BIAS_STRESS.md` |
+| D9 | 数据偏差压力测试 | [ ] | **判定为 BLOCKING**（2026-09-10 口径修正）：退市通道 1.75pp，但同一工件的截面构成通道实测 **9.60pp/年 = 1.2×α** → `bias_blocking_evolution: true`，**自进化闭环保持关闭**。见 `docs/BIAS_STRESS.md` |
 | D10 | 成本模型标定（真实成交） | [ ] | 市场冲击成本在纸面账户**不可测**；实盘前必须用券商成交回填 `market_impact_bps`（`docs/FORWARD_PROTOCOL.md` §1.3） |
+| D11 | 前向测量绑定预注册 | [x] | `prereg_gate` 五项检查（记录/窗口/`frozen_at`/`policy_sha256` 运行时重算/`code_commit` + 干净工作区）；首次实评 `prereg_binding: PASS` |
+| D12 | 部署股票池 == 声明股票池 | [ ] | **2026 年 PIT 价格面板只有 301 只**（声明 800；2025 年 5,163）；新增硬闸门 `effective_universe` 实测 **0.376 → 判失败**；回补脚本 `scripts/backfill_price_gap.py`（499 只零覆盖），补完需重跑 IS 并重发工件 |
+| D13 | 执行器不得静默开空头 | [x] | 卖出按「卖出 pass 开始时持仓」累计裁剪，超出部分记入 `OrderResult.skipped` 并进入运行结果；`long_only` 默认开启（`docs/EXECUTION_INVARIANTS.md`） |
 
 ## 切换流程（草案）
 

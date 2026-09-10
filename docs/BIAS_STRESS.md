@@ -258,6 +258,33 @@ maxDD 5.00%、106 笔成交（日内 33 / 收盘 73）。本 harness 与 `script
 但同一份 JSON 同时记录：若按“每次入场承担整年退市风险”的过度保守口径，或按 L=−80% 的
 损失假设，判据翻转为**阻断**；且实测退市率已达盈亏平衡值的 73%。
 
+### 六之二、判定口径修正：从「退市通道」改为「所有已测通道的最大值」（2026-09-10）
+
+上面那一行 `bias_blocking_evolution: false` 在 2026-09-10 被判定为**口径过窄**：
+同一份工件的第四节 `debiased_run` 实测「剔除低价+低流动性 12.1%」后年化从 **+5.20%
+掉到 −4.40%（−9.60pp/年 = 1.2 × 目标 alpha）**，而 verdict 只看了 1.75pp 的退市通道，
+对 9.60pp 视而不见。于是判定改为取**所有已测通道的最大值**：
+
+```json
+{
+  "channels": {
+    "delisting_missing_names":    {"drag_pp": 1.75,  "blocking": false, "source": "拖累模型上界"},
+    "cross_section_composition":  {"drag_pp": 9.60,  "blocking": true,
+                                   "source": "去偏子集对照（基线 − 低价/低流动性尾部）"},
+    "index_membership":           {"drag_pp": null,  "blocking": null, "unmeasured": true}
+  },
+  "blocking_channels": ["cross_section_composition"],
+  "worst_channel": "cross_section_composition",
+  "worst_channel_drag_pp": 9.5972,
+  "bias_blocking_evolution": true
+}
+```
+
+**现在的判定是 BLOCKING**：只要**任一已测通道**超过 0.3 × 目标 alpha，就不得开启
+alpha 层自进化；**未测通道**（指数成分前瞻）单独列出，永远不当作「没问题」。
+理由：一个判据只能和它**最差**的已测通道一样乐观——报告自己写着「收益集中在偏差机制
+作用的那一段」，就不能同时说「偏差可忽略」。
+
 ---
 
 ## 七、无法测量的部分（`unmeasured`）
