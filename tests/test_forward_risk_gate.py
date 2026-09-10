@@ -416,6 +416,27 @@ def test_panel_universe_health_on_an_empty_panel():
     assert out["n_columns"] == 0 and out["effective_ratio"] is None
 
 
+def test_panel_universe_health_labels_the_day_it_measured():
+    """``as_of`` is a ceiling: the artifact must name the bar it actually used.
+
+    The first forward-window gate run (2026-09-10) passed the window END
+    (2027-03-11, in the future) as ``as_of``, so the artifact printed
+    「800 with a bar on 2027-03-11」 while the counts came from the newest real bar
+    (2026-09-10). A measurement is allowed to be older than the request; it is not
+    allowed to claim the request's date.
+    """
+    idx = pd.date_range("2026-09-01", periods=10, freq="B")
+    panel = pd.DataFrame({"A": 1.0, "B": 2.0}, index=idx)
+    future = panel_universe_health(panel, as_of="2027-03-11", lookback_days=120)
+    assert future["as_of"] == str(idx[-1].date())            # measured day, not requested
+    assert future["requested_as_of"] == "2027-03-11"
+    assert future["n_with_price"] == 2                       # counted on that day
+    # asked for a day the panel has: the two agree and requested_as_of stays empty
+    exact = panel_universe_health(panel, as_of=str(idx[4].date()), lookback_days=120)
+    assert exact["as_of"] == str(idx[4].date()) and exact["requested_as_of"] is None
+    assert exact["n_with_price"] == 2
+
+
 def test_soft_metrics_never_gate():
     gate = evaluate_gate(_bundle(soft={"sharpe": -2.0, "max_drawdown": -0.9}))
     assert gate["verdict"] == "pass"

@@ -535,17 +535,27 @@ def panel_universe_health(
     ``effective_ratio`` is ``n_warm_20 / n_columns``: the share of the declared
     universe that can actually be traded. A book whose cross-section silently
     shrank must not be reported as the full universe.
+
+    ``as_of`` is a CEILING, not a claim: the counts are measured on the newest bar
+    at or before it, and ``as_of`` in the result names **that** day. The first
+    forward-window gate run (2026-09-10) passed ``as_of = 2027-03-11`` (the window
+    end, still in the future) and the artifact therefore printed
+    「800 with a bar on 2027-03-11」 — a real measurement (on 09-10) wearing a
+    future date. ``requested_as_of`` keeps the ceiling visible when it differs.
     """
     out: dict = {"n_columns": int(price_panel.shape[1]) if len(price_panel.columns) else 0,
-                 "as_of": None, "n_with_price": 0, "effective_ratio": None,
-                 "universe_size": None}
+                 "as_of": None, "requested_as_of": None, "n_with_price": 0,
+                 "effective_ratio": None, "universe_size": None}
     if price_panel is None or not len(price_panel):
         return out
     day = pd.Timestamp(as_of) if as_of is not None else pd.Timestamp(price_panel.index.max())
-    out["as_of"] = str(day.date())
     hist = price_panel.loc[:day].tail(int(lookback_days))
     if not len(hist):
         return out
+    measured = pd.Timestamp(hist.index[-1])
+    out["as_of"] = str(measured.date())
+    if measured != day:
+        out["requested_as_of"] = str(day.date())
     out["n_with_price"] = int(hist.iloc[-1].notna().sum())
     for k in warm_windows:
         out[f"n_warm_{int(k)}"] = int((hist.notna().sum(axis=0) >= int(k)).sum())
