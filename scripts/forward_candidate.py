@@ -233,6 +233,23 @@ def cmd_run(args) -> int:
             print(f"[fwd-cand] arm={arm}: inferred seed_cutoff={prev} from the existing ledger",
                   flush=True)
 
+    # ---- cheap re-check AFTER seeding --------------------------------------
+    # The guard above runs before the arms exist, so it cannot see the freshly
+    # seeded state: on 2026-09-10 18:28 the new candidate arm was seeded from
+    # production (state < 2026-09-11) and every arm already stood at the newest
+    # bar (2026-09-10 = ``target_end``), yet the run still built the full ~10 GB
+    # market slice just to print 「nothing to advance」. Since
+    # ``end = min(target_end, panel.max()) <= target_end``, an arm whose last
+    # advanced day is already >= ``target_end`` can be proven to have nothing to
+    # do WITHOUT the panel — so prove it here and skip the build entirely.
+    # ``None`` (no ledger yet) means the proof does not hold → fall through.
+    lags = {arm: _last_advanced(p) for arm, p in paths.items()}
+    if all(v is not None and pd.Timestamp(v) >= pd.Timestamp(target_end)
+           for v in lags.values()):
+        print(f"[fwd-cand] all arms already advanced through {target_end} after seeding "
+              f"(window starts {start}) — no market build, nothing written", flush=True)
+        return 0
+
     # ---- one market build, shared by both arms ------------------------------
     print(f"[fwd-cand] building the market slice once for both arms …", flush=True)
     market = _build_market_for_paper(cfg, symbols, start, None, seed=1)

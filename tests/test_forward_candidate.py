@@ -15,6 +15,7 @@ THREE properties, all pinned here:
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -105,3 +106,98 @@ def test_arm_meta_roundtrip(tmp_path):
     (tmp_path / "arm_meta.json").write_text('{"seed_cutoff": "2026-09-09"}', encoding="utf-8")
     assert fc._arm_meta(tmp_path / "ledger.sqlite")["seed_cutoff"] == "2026-09-09"
     assert fc._arm_meta(tmp_path / "missing" / "ledger.sqlite") == {}
+
+
+def _no_market(monkeypatch):
+    """Fail loudly if anything tries to build the market slice."""
+    import src.cli as cli
+
+    def _boom(*_a, **_k):
+        raise AssertionError("market slice built although there was nothing to advance")
+
+    monkeypatch.setattr(cli, "_build_market_for_paper", _boom)
+
+
+def test_seeded_arms_do_not_build_a_market_they_cannot_use(tmp_path, monkeypatch):
+    """A window starting AFTER the newest bar must not cost a market build.
+
+    Observed on 2026-09-10 18:28: the fresh candidate arm was seeded from
+    production, so both arms already stood at the newest bar (2026-09-10) while
+    the pre-registered window starts 2026-09-11. The run still built the full
+    ~10 GB market slice, then printed 「nothing to advance」 and returned. The
+    pre-seed guard cannot catch this (the arm ledger does not exist yet when it
+    runs), so the guard after seeding must prove it without the panel:
+    ``end = min(target_end, panel.max()) <= target_end`` and every arm is
+    already at ``target_end`` ⇒ nothing to do, nothing to write.
+    """
+    from types import SimpleNamespace
+
+    import src.autopilot.state as ctrl
+    import src.paper.shadow as shadow
+
+    cfg = _cfg()
+    ledger = tmp_path / "ledger.sqlite"
+    ledger.write_bytes(b"")
+    (tmp_path / "arm_meta.json").write_text(
+        json.dumps({"seed_cutoff": "2026-09-10", "seed_boundary": "2026-09-11"}),
+        encoding="utf-8",
+    )
+    prod = tmp_path / "prod.sqlite"
+    prod.write_bytes(b"")
+
+    monkeypatch.setattr(fc, "_cfg", lambda: cfg)
+    monkeypatch.setattr(fc, "_spec", lambda _c, _rule: SPEC)
+    monkeypatch.setattr(fc, "_ledger_paths", lambda _c, _s: {"production": prod})
+    monkeypatch.setattr(fc, "_arm_paths",
+                        lambda _c, _s: {"incumbent": ledger, "candidate": ledger})
+    monkeypatch.setattr(fc, "_last_advanced", lambda _p: "2026-09-10")
+    monkeypatch.setattr(fc, "_pit_max_bar", lambda _c: "2026-09-10")
+    monkeypatch.setattr(shadow, "resolve_shadow_universe", lambda _c, _u: ["000001"])
+    monkeypatch.setattr(ctrl.ControlState, "load",
+                        classmethod(lambda _cls, _p: SimpleNamespace(gross_scale=1.0)))
+    _no_market(monkeypatch)
+
+    args = SimpleNamespace(rule="atr_1p0_25_35", date="2026-09-10",
+                           start="2026-09-11", fresh=False)
+    assert fc.cmd_run(args) == 0
+    # nothing was written: the arm meta is untouched (no last_run_* stamp)
+    assert fc._arm_meta(ledger).get("seed_cutoff") == "2026-09-10"
+    assert "last_run_date" not in fc._arm_meta(ledger)
+
+
+def test_an_arm_behind_the_newest_bar_still_builds_the_market(tmp_path, monkeypatch):
+    """The guard must NOT swallow real work: one arm at 2026-09-09 ⇒ 09-10 runs.
+
+    ``None`` (no ledger yet) counts as "cannot prove" and falls through to the
+    normal path — here the market builder is reached and then fails, which is
+    exactly how the test observes that the guard let the run continue.
+    """
+    from types import SimpleNamespace
+
+    import src.autopilot.state as ctrl
+    import src.paper.shadow as shadow
+
+    cfg = _cfg()
+    ledger = tmp_path / "ledger.sqlite"
+    ledger.write_bytes(b"")
+    (tmp_path / "arm_meta.json").write_text(
+        json.dumps({"seed_cutoff": "2026-09-09"}), encoding="utf-8")
+    prod = tmp_path / "prod.sqlite"
+    prod.write_bytes(b"")
+
+    monkeypatch.setattr(fc, "_cfg", lambda: cfg)
+    monkeypatch.setattr(fc, "_spec", lambda _c, _rule: SPEC)
+    monkeypatch.setattr(fc, "_ledger_paths", lambda _c, _s: {"production": prod})
+    monkeypatch.setattr(fc, "_arm_paths",
+                        lambda _c, _s: {"incumbent": ledger, "candidate": ledger})
+    monkeypatch.setattr(fc, "_last_advanced", lambda _p: "2026-09-09")
+    monkeypatch.setattr(fc, "_pit_max_bar", lambda _c: "2026-09-10")
+    monkeypatch.setattr(shadow, "resolve_shadow_universe", lambda _c, _u: ["000001"])
+    monkeypatch.setattr(ctrl.ControlState, "load",
+                        classmethod(lambda _cls, _p: SimpleNamespace(gross_scale=1.0)))
+    _no_market(monkeypatch)
+
+    args = SimpleNamespace(rule="atr_1p0_25_35", date="2026-09-10",
+                           start="2026-09-11", fresh=False)
+    with pytest.raises(AssertionError):
+        fc.cmd_run(args)

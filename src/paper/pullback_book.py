@@ -38,11 +38,18 @@ from ..portfolio.alpha_core import _market_trend
 
 #: The DEPLOYED D-track stop width: a FLAT 3.5%. With ``stop_lo == stop_hi`` the
 #: ATR channel is inert (``clip(mult*ATR, lo, hi) == lo`` for every finite ATR and
-#: for NaN), so this single number is the whole stop rule. It was selected on the
-#: clean 2025-09→12 window (``outputs/d_stop_grid.json``: flat_3p5 +16.36% cum /
-#: Sharpe 1.66 / maxDD 6.12% vs flat_2p5 −7.21%) and is now the CODE default, so
-#: deleting ``pb_stop_lo``/``pb_stop_hi`` from the YAML can no longer silently
-#: revert the book to the unvalidated ATR-adaptive band (0.025/0.04).
+#: for NaN), so this single number is the whole stop rule.
+#:
+#: Selection trail (2026-09-10, on the CORRECTED 800-name pool —
+#: ``outputs/d_stop_grid_is_2026_800.json`` / ``d_stop_grid_oos_2025h2_800.json``):
+#: flat_3p5 is the only variant with a positive Sharpe in BOTH windows and wins the
+#: project's cross-window max-min rule (worst-window Sharpe 0.40 vs
+#: atr_1p0_25_35 0.29, atr_1p0_25_40 −0.12, atr_1p5_25_40 −0.13). The numbers this
+#: comment used to cite (+16.36% / Sharpe 1.66 / flat_2p5 −7.21%) came from a
+#: 301-name cross-section and are VOID — see docs/D_TRACK_EVIDENCE.md §三/§六.
+#:
+#: This is the CODE default so that deleting ``pb_stop_lo``/``pb_stop_hi`` from the
+#: YAML cannot silently revert the book to the unvalidated ATR-adaptive band.
 FLAT_STOP_DEFAULT = 0.035
 
 

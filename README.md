@@ -557,8 +557,12 @@ python scripts/d_oos.py                 # OOS 同构重放（14 项断言）
      14:55，LIVE_READINESS 与 FORWARD_PROTOCOL 写 14:50；时间守卫实为 14:45–15:10）。
    - `LIVE_READINESS.md` 的 **D12** 仍是未勾选（引 0.376 判失败），而工件该闸门已读
      **1.00**——回补已完成，勾选状态未同步。
-   - 配对工件 `outputs/forward/paired_atr_1p0_25_40.json` 仍把**已作废的 2026-09-10**
-     计为一个配对日（其 `code_commit` 早于 v4 冻结）。
+   - 配对工件已随候选换标（v5）改写：旧候选的 `paired_atr_1p0_25_40.json`（把**已作废的
+     2026-09-10** 计为一个配对日、`code_commit` 早于 v4 冻结）已移出读数路径，归档为
+     `outputs/forward/history/paired_atr_1p0_25_40_20260910_154348.json`，其证据副本仍在
+     `docs/evidence/forward_paired_atr_1p0_25_40.json`。当前规范件是
+     `outputs/forward/paired_atr_1p0_25_35.json`：`n_days = 0`、`paired_from = 2026-09-11`、
+     `verdict = hold`——即「前向窗口尚未产生任何配对日」，这是唯一正确的读数。
    - `LANDING_PLAN.md` 阶段 6 的「2025-10-27→12-12 分钟数据回补」仍标 `[ ]`，
      但该回补已完成、对应 OOS 窗口已 `citable=true`。
    - `CONTEXT.md` 的数字滞后：融资融券写 192k 条（报告为 788,304）、测试基线写
