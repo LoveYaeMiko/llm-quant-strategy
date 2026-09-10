@@ -141,12 +141,15 @@ def tracking_error(
     }
 
 
-#: Fill provenances whose recorded price is a MARKET price and can therefore be
-#: checked against a reference. ``replay`` is excluded: a replayed intraday stop
-#: is booked at ``min(stop, bar_close)`` — a deliberate conservative model of the
-#: fill, not a traded price, so comparing it with the bar close would measure the
-#: model's conservatism, not execution quality.
-PRICE_CHECKABLE_SOURCES: tuple[str, ...] = ("live", "auction", "close")
+#: Fill provenance whose recorded price is a MODEL, not a market print: a
+#: replayed intraday stop is booked at ``min(stop, bar_close)``, so comparing it
+#: with the bar close would measure the model's conservatism, not execution
+#: quality. Every other source — including the legacy rows whose ``source`` is
+#: empty but whose ``time`` field tells us which reference to use — is checkable.
+PRICE_UNCHECKABLE_SOURCES: tuple[str, ...] = ("replay",)
+
+#: Kept for backwards compatibility with callers that imported the old name.
+PRICE_CHECKABLE_SOURCES: tuple[str, ...] = ("live", "auction", "close", "unlabelled")
 
 
 def cost_deviation(
@@ -179,7 +182,8 @@ def cost_deviation(
     empty = {"n_fills": 0, "charged_total": 0.0, "expected_total": 0.0,
              "fee_deviation_pct": 0.0, "price_integrity_bps": None,
              "price_integrity_abs_bps": None, "price_integrity_max_bps": None,
-             "n_price_checked": 0, "n_price_skipped": 0, "price_check_sources": [],
+             "n_price_checked": 0, "n_price_skipped": 0, "n_price_unlabelled": 0,
+             "price_check_sources": [],
              "slippage_model_bps": float(modeled_slippage_bps),
              "price_integrity_bps_max": float(price_integrity_bps_max),
              "unmeasured": ["market_impact_bps"], "by_source": {}}
@@ -208,13 +212,19 @@ def cost_deviation(
     # --- price integrity on the market-price fills ---------------------------
     signed: list[float] = []
     skipped = 0
+    n_unlabelled = 0
     checked_sources: set[str] = set()
     if reference_prices:
         for r in df.itertuples():
             src = str(getattr(r, "source", "") or "unlabelled")
-            if src not in PRICE_CHECKABLE_SOURCES:
+            if src in PRICE_UNCHECKABLE_SOURCES:
                 skipped += 1
                 continue
+            if src == "unlabelled":
+                # legacy rows predate the source column; their ``time`` field still
+                # says which reference applies (empty → the day's close), so they
+                # ARE checkable and must not be waved through unchecked
+                n_unlabelled += 1
             key = (str(pd.Timestamp(r.date).date()), str(r.symbol))
             ref = reference_prices.get(key)
             if ref is None or not np.isfinite(ref) or ref <= 0:
@@ -247,6 +257,7 @@ def cost_deviation(
         "price_integrity_max_bps": integrity_max,
         "n_price_checked": len(signed),
         "n_price_skipped": skipped,
+        "n_price_unlabelled": n_unlabelled,
         "price_check_sources": sorted(checked_sources),
         "slippage_model_bps": float(modeled_slippage_bps),
         "price_integrity_bps_max": float(price_integrity_bps_max),
@@ -570,9 +581,25 @@ class GateThresholds:
 
     @classmethod
     def from_config(cls, cfg) -> "GateThresholds":
+        """Load the hard/soft thresholds, REFUSING unknown keys.
+
+        A misspelled key used to be filtered away silently, so
+        ``tracking_eror_daily_pp_max`` produced a gate that quietly ran on the
+        default 0.2 while the config looked like it had set something else. For a
+        gate whose whole purpose is "no undeclared threshold", an unrecognised
+        key must stop the run.
+        """
         hard = dict(cfg.get("forward.risk_gate.hard", {}) or {})
         soft = cfg.get("forward.risk_gate.soft.record_only", None)
-        kwargs = {k: v for k, v in hard.items() if k in cls.__dataclass_fields__}
+        known = set(cls.__dataclass_fields__) - {"soft_record_only"}
+        unknown = sorted(set(hard) - known)
+        if unknown:
+            raise ValueError(
+                f"unknown forward gate threshold key(s): {unknown} — "
+                f"known keys are {sorted(known)} (a typo must not silently fall back "
+                "to the built-in default)"
+            )
+        kwargs = {k: v for k, v in hard.items() if k in known}
         if soft:
             kwargs["soft_record_only"] = tuple(str(x) for x in soft)
         return cls(**kwargs)
@@ -592,8 +619,15 @@ def evaluate_gate(metrics: Mapping[str, Any], thresholds: Optional[GateThreshold
     avail = dict(metrics.get("availability") or {})
     fresh = dict(metrics.get("data_freshness") or {})
     cov = dict(metrics.get("symbol_coverage") or {})
+    prereg = dict(metrics.get("prereg") or {})
 
     te_days = int(te.get("n_days", 0) or 0)
+    # A configurable floor must never be able to switch the measurement off:
+    # ``tracking_error_min_days: 0`` plus ``--no-replay`` used to yield
+    # ``n_days=0, mean_abs_pp=0.0, p=1.0`` → every tracking-error gate passed on
+    # EMPTY series, which is precisely the "unmeasured read as fine" failure this
+    # gate exists to prevent. One measurable day is now an unconditional floor.
+    min_days = max(1, int(th.tracking_error_min_days))
     te_abs = te.get("mean_abs_pp")
     te_p = te.get("sign_bias_p")
     cost_fee = cost.get("fee_deviation_pct")
@@ -605,18 +639,32 @@ def evaluate_gate(metrics: Mapping[str, Any], thresholds: Optional[GateThreshold
     cov_min = cov.get("min_coverage")
 
     hard = {
-        "tracking_error_measured": te_days >= th.tracking_error_min_days,
+        # The evaluation must be BOUND to a frozen pre-registration: an unbound
+        # number is produced by whatever the thresholds happened to be, so it is
+        # not evidence (see src.forward.prereg.prereg_gate).
+        "prereg_binding": {
+            "ok": bool(prereg.get("ok")),
+            "rule_id": prereg.get("rule_id"),
+            "frozen_at": prereg.get("frozen_at"),
+            "window_match": prereg.get("window_match"),
+            "frozen_before_window": prereg.get("frozen_before_window"),
+            "policy_sha256_match": prereg.get("policy_sha256_match"),
+            "code_commit_match": prereg.get("code_commit_match"),
+            "waived": bool(prereg.get("waived")),
+            "waiver_reason": prereg.get("waiver_reason"),
+            "issues": list(prereg.get("issues") or []),
+        },
         "tracking_error_daily_pp": {
             "value": te_abs, "max": th.tracking_error_daily_pp_max,
-            "n_days": te_days, "min_days": th.tracking_error_min_days,
+            "n_days": te_days, "min_days": min_days,
             "n_excluded": te.get("n_excluded"),
-            "ok": bool(te_days >= th.tracking_error_min_days and te_abs is not None
+            "ok": bool(te_days >= min_days and te_abs is not None
                        and te_abs <= th.tracking_error_daily_pp_max),
         },
         "tracking_error_sign_bias": {
             "value": te_p, "min_p": th.tracking_error_sign_bias_p_min,
             "n_pos": te.get("n_pos"), "n_neg": te.get("n_neg"),
-            "ok": bool(te_days >= th.tracking_error_min_days and te_p is not None
+            "ok": bool(te_days >= min_days and te_p is not None
                        and te_p >= th.tracking_error_sign_bias_p_min),
         },
         "cost_fee_deviation": {
@@ -667,8 +715,17 @@ def evaluate_gate(metrics: Mapping[str, Any], thresholds: Optional[GateThreshold
                        >= th.effective_universe_min),
         },
     }
-    failed = [k for k, v in hard.items()
-              if isinstance(v, Mapping) and not v.get("ok", False)]
+    # A hard gate may be expressed either as a mapping (``{"ok": ...}``) or as a
+    # plain bool. Filtering on ``isinstance(v, Mapping)`` alone silently DROPPED
+    # every bool gate — so a future "this must be true" check would never fail.
+    def _failed(v: Any) -> bool:
+        if isinstance(v, Mapping):
+            return not v.get("ok", False)
+        if isinstance(v, bool):
+            return not v
+        return True  # an unrecognisable gate entry is a failure, not a pass
+
+    failed = [k for k, v in hard.items() if _failed(v)]
     soft = dict(metrics.get("soft") or {})
     return {
         "hard": hard,
@@ -679,7 +736,7 @@ def evaluate_gate(metrics: Mapping[str, Any], thresholds: Optional[GateThreshold
         "thresholds": {
             "tracking_error_daily_pp_max": th.tracking_error_daily_pp_max,
             "tracking_error_sign_bias_p_min": th.tracking_error_sign_bias_p_min,
-            "tracking_error_min_days": th.tracking_error_min_days,
+            "tracking_error_min_days": min_days,
             "cost_deviation_max": th.cost_deviation_max,
             "price_integrity_bps_max": th.price_integrity_bps_max,
             "violations_max": th.violations_max,

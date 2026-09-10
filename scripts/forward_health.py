@@ -105,6 +105,7 @@ def _active_prereg(cfg, account: dict) -> dict | None:
 
 
 def _window(cfg, account: dict, args) -> tuple[str, str, dict | None]:
+    """Requested window: explicit args, else the active pre-registration's scope."""
     rec = _active_prereg(cfg, account)
     start = args.start or (str((rec or {}).get("scope", {}).get("window", [None])[0] or "") or None)
     end = args.end or (str((rec or {}).get("scope", {}).get("window", [None, None])[1] or "") or None)
@@ -115,6 +116,35 @@ def _window(cfg, account: dict, args) -> tuple[str, str, dict | None]:
         )
     end = end or pd.Timestamp.today().normalize().date().isoformat()
     return start, end, rec
+
+
+def _effective_freeze(cfg, prereg: dict | None) -> tuple[str | None, str]:
+    """The date the deployed configuration took effect — and why that date.
+
+    Two sources, and the IMMUTABLE one wins: the active pre-registration's
+    ``frozen_at`` date (hashed into the record) outranks the mutable
+    ``forward.config_freeze_date`` config key. Moving the config key earlier can
+    therefore no longer drop days from the sample — the exemption knob is pinned
+    to a signed artifact.
+    """
+    cfg_date = str(cfg.get("forward.config_freeze_date", "") or "")
+    rec_date = ""
+    if prereg:
+        try:
+            rec_date = str(pd.Timestamp(prereg.get("frozen_at")).date())
+        except (ValueError, TypeError):
+            rec_date = ""
+    if cfg_date and rec_date:
+        return max(cfg_date, rec_date), f"max(config {cfg_date}, prereg.frozen_at {rec_date})"
+    return (cfg_date or rec_date or None), ("config" if cfg_date else "prereg" if rec_date else "none")
+
+
+def _trading_days_between(panel_index, start, end) -> list[pd.Timestamp]:
+    """Panel dates inside ``[start, end]`` — the book's own calendar."""
+    if panel_index is None or not len(panel_index):
+        return []
+    idx = pd.DatetimeIndex(panel_index)
+    return [pd.Timestamp(d) for d in idx[(idx >= pd.Timestamp(start)) & (idx <= pd.Timestamp(end))]]
 
 
 def _daily_returns(ledger_path: Path, start: str, end: str) -> pd.Series:
@@ -261,10 +291,15 @@ def main() -> int:
     ap.add_argument("--no-replay", action="store_true",
                     help="skip the tracking-error replay (leaves that gate unmeasured → fail)")
     ap.add_argument("--out", default=None, help="artifact path (default: policy health_json)")
+    ap.add_argument("--allow-code-drift", action="store_true",
+                    help="record an explicit waiver when HEAD differs from the frozen "
+                         "commit (the waiver is written into the artifact)")
     ap.add_argument("--json", action="store_true", help="print the artifact to stdout")
     args = ap.parse_args()
 
     from src.config import load_config
+    from src.forward.prereg import policy_fingerprint, prereg_gate, verify_preregistration
+    from src.provenance import git_commit, git_dirty
 
     cfg = load_config()
     account = _account(cfg, args.account)
@@ -277,8 +312,36 @@ def main() -> int:
     from src.paper.shadow import resolve_shadow_universe
 
     symbols = resolve_shadow_universe(cfg, account.get("universe"))
-    print(f"[fwd] account={account['name']} window=[{start}, {end}] universe={len(symbols)} "
-          f"prereg={(prereg or {}).get('rule_id')}", flush=True)
+    freeze, freeze_src = _effective_freeze(cfg, prereg)
+    # The MEASURED window starts at the freeze date: a replay under today's
+    # configuration cannot reproduce days recorded before it took effect, and
+    # seeding the clone earlier than that carries the pre-freeze divergence into
+    # every later day (the 2026-09-09 shakedown: 0.99pp/day, then 2.36pp on the
+    # one day that survived the exclusion). Starting the window at the freeze
+    # removes the need for a self-service exclusion list altogether.
+    measured_start = max(pd.Timestamp(start), pd.Timestamp(freeze)) if freeze else pd.Timestamp(start)
+    measured_start = str(measured_start.date())
+    print(f"[fwd] account={account['name']} window=[{start}, {end}] "
+          f"measured=[{measured_start}, {end}] freeze={freeze} ({freeze_src}) "
+          f"universe={len(symbols)} prereg={(prereg or {}).get('rule_id')}", flush=True)
+
+    # ---- 0. pre-registration binding (the lock) ---------------------------
+    code_commit = git_commit(ROOT)
+    code_dirty = git_dirty(ROOT)
+    pol_sha = policy_fingerprint(cfg)
+    binding = prereg_gate(
+        record=prereg, window=(start, end), data_as_of=end,
+        policy_sha256=pol_sha, code_commit=code_commit, code_dirty=code_dirty,
+        allow_code_drift=bool(args.allow_code_drift),
+    )
+    if binding["ok"]:
+        print(f"[fwd] prereg bound: {binding['rule_id']} frozen {binding['frozen_at']} "
+              f"policy={pol_sha[:12]} commit={code_commit[:12]}"
+              + (" (code drift WAIVED)" if binding.get("waived") else ""), flush=True)
+    else:
+        print("[fwd] PRE-REGISTRATION NOT BOUND — the evaluation is not evidence:", flush=True)
+        for issue in binding["issues"]:
+            print(f"  - {issue}", flush=True)
 
     # ---- 1. tracking error ------------------------------------------------
     # The FULL fill history is needed before the replay: a date on which the
@@ -286,39 +349,29 @@ def main() -> int:
     # event the bar replay cannot reproduce (it is gated off on live dates by
     # design), so it is excluded from the gate and reported separately.
     fills_all = _fills(prod_ledger)
-    recorded = _daily_returns(prod_ledger, start, end)
+    recorded = _daily_returns(prod_ledger, measured_start, end)
     live_days: list[str] = []
     if len(fills_all) and "source" in fills_all.columns:
         live_rows = fills_all[fills_all["source"].astype(str) == "live"]
         live_days = sorted({
             str(pd.Timestamp(d).date()) for d in live_rows["date"]
-            if pd.Timestamp(start) <= pd.Timestamp(d) <= pd.Timestamp(end)
+            if pd.Timestamp(measured_start) <= pd.Timestamp(d) <= pd.Timestamp(end)
         })
-    # Days recorded BEFORE the deployed configuration took effect cannot be
-    # reproduced by a replay under the CURRENT configuration (the 2026-09-09 stop
-    # width change alone moves exits): they are excluded like live-fill days, and
-    # counted so the gate can refuse to pass on too few measured days.
-    freeze = str(cfg.get("forward.config_freeze_date", "") or "")
-    pre_freeze_days: list[str] = []
-    if freeze:
-        pre_freeze_days = [str(pd.Timestamp(d).date()) for d in recorded.index
-                           if pd.Timestamp(d) < pd.Timestamp(freeze)]
-    exclude_days = sorted(set(live_days) | set(pre_freeze_days))
+    exclude_days = list(live_days)
     market = None
     if args.no_replay:
         te = tracking_error(pd.Series(dtype=float), pd.Series(dtype=float))
         print("[fwd] replay skipped → tracking error unmeasured", flush=True)
     else:
-        print("[fwd] replaying the window from the pre-window state …", flush=True)
-        replay, market = _replay(cfg, account, symbols, start, end, prod_ledger)
+        print(f"[fwd] replaying [{measured_start}, {end}] from the pre-window state …", flush=True)
+        replay, market = _replay(cfg, account, symbols, measured_start, end, prod_ledger)
         te = tracking_error(recorded, replay, exclude_dates=exclude_days)
         te["excluded_live_days"] = live_days
-        te["excluded_pre_freeze_days"] = pre_freeze_days
-        te["config_freeze_date"] = freeze or None
+        te["config_freeze_date"] = freeze
+        te["measured_window"] = {"start": measured_start, "end": end}
         print(f"[fwd] tracking error: {te['mean_abs_pp']}pp/day over {te['n_days']} days "
-              f"(sign bias p={te['sign_bias_p']}; excluded {len(exclude_days)} day(s): "
-              f"{len(live_days)} live-fill + {len(pre_freeze_days)} pre-freeze; their mean "
-              f"|diff| {te['excluded_mean_abs_pp']}pp)", flush=True)
+              f"(sign bias p={te['sign_bias_p']}; excluded {te['n_excluded']} live-fill "
+              f"day(s), their mean |diff| {te['excluded_mean_abs_pp']}pp)", flush=True)
 
     # ---- 2. cost ----------------------------------------------------------
     # (``fills_all`` was loaded above for the live-day exclusion.)
@@ -345,21 +398,21 @@ def main() -> int:
         limit_fn = lambda s, d, up=True: board_limit(s, d, up)  # noqa: E731
     violations = fill_violations(
         fills_all, panel if len(panel) else None, limit_fn=limit_fn,
-        since=start, until=end,
+        since=measured_start, until=end,
     )
     hb = _heartbeats(account)
     days = [pd.Timestamp(d) for d in recorded.index]
-    avail_start = start
+    avail_start = measured_start
     if len(hb) and "ts" in hb.columns:
         first_hb = str(hb["ts"].min().date())
-        avail_start = max(pd.Timestamp(start), pd.Timestamp(first_hb)).date().isoformat()
+        avail_start = max(pd.Timestamp(measured_start), pd.Timestamp(first_hb)).date().isoformat()
     avail = availability(hb, [d for d in days if d >= pd.Timestamp(avail_start)])
     avail["measured_from"] = avail_start
 
     from src.data.intraday import load_intraday_frames
 
     frames = load_intraday_frames(cfg, symbols)
-    coverage = symbol_minute_coverage(frames, panel, start, end,
+    coverage = symbol_minute_coverage(frames, panel, measured_start, end,
                                       threshold=float(cfg.get("forward.risk_gate.hard.symbol_minute_coverage_min", 0.95))) \
         if len(panel) else {"min_coverage": None, "n_symbols": 0, "below_threshold": [],
                             "threshold": 0.95}
@@ -369,14 +422,22 @@ def main() -> int:
               f"warm names (ratio {universe.get('effective_ratio')}; "
               f"{universe.get('n_with_price')} with a bar on {universe.get('as_of')})", flush=True)
 
+    # Freshness must be measured against the MARKET, not against the book's own
+    # last row: a ledger that stopped updating on 2026-08-10 would otherwise look
+    # "0 days stale" forever. ``lag_days`` = newest bar vs the trading day we are
+    # entitled to expect; ``ledger_lag_days`` = the book vs that same bar.
     fresh = None
-    status_path = ROOT / "outputs" / f"shadow_status_{account['name']}.json"
-    last_trading_day = str(pd.Timestamp(days[-1]).date()) if days else end
+    expected_last = pd.Timestamp(pd.Timestamp.now().normalize())
+    hhmm = pd.Timestamp.now().strftime("%H:%M")
+    if expected_last.weekday() >= 5 or hhmm < "15:00":
+        # before the close (or on a weekend) the newest complete session is earlier
+        expected_last -= pd.Timedelta(days=1)
+        while expected_last.weekday() >= 5:
+            expected_last -= pd.Timedelta(days=1)
+    bar_max = None
     if len(panel):
-        fresh = data_freshness(str(pd.Timestamp(panel.index.max()).date()), last_trading_day)
-        fresh["source"] = "market panel max bar"
+        bar_max = pd.Timestamp(panel.index.max())
     else:
-        # no replay → no panel; ask the PIT store directly (cheap aggregate)
         url = cfg.get("data.pit_database_url")
         if url:
             try:
@@ -386,11 +447,17 @@ def main() -> int:
                 bar_max = store.max_valid_from("price")
                 if hasattr(store, "close"):
                     store.close()
-                if bar_max is not None and not pd.isna(bar_max):
-                    fresh = data_freshness(str(pd.Timestamp(bar_max).date()), last_trading_day)
-                    fresh["source"] = "pit_records.max(valid_from) price"
             except Exception as exc:  # noqa: BLE001
                 print(f"WARNING: data freshness unavailable ({exc})", file=sys.stderr)
+    if bar_max is not None and not pd.isna(bar_max):
+        fresh = data_freshness(str(pd.Timestamp(bar_max).date()), str(expected_last.date()))
+        fresh["source"] = "market panel max bar" if len(panel) else "pit_records.max(valid_from) price"
+        ledger_last = days[-1] if days else None
+        fresh["ledger_last_date"] = str(pd.Timestamp(ledger_last).date()) if ledger_last is not None else None
+        fresh["ledger_lag_days"] = (
+            int((pd.Timestamp(bar_max).normalize() - pd.Timestamp(ledger_last).normalize()).days)
+            if ledger_last is not None else None
+        )
     if fresh is None:
         fresh = {"lag_days": None, "unmeasured": True,
                  "note": "no market panel and no reachable PIT store"}
@@ -406,10 +473,11 @@ def main() -> int:
         led.close()
     eq = pd.Series(equity).astype(float)
     eq.index = pd.to_datetime(eq.index)
-    eq = eq.loc[(eq.index >= pd.Timestamp(start)) & (eq.index <= pd.Timestamp(end))]
+    eq = eq.loc[(eq.index >= pd.Timestamp(measured_start)) & (eq.index <= pd.Timestamp(end))]
     soft = soft_metrics(eq)
 
     metrics = {
+        "prereg": binding,
         "tracking_error": te,
         "cost": cost,
         "violations": violations,
@@ -423,6 +491,11 @@ def main() -> int:
     artifact = {
         "account": account["name"],
         "window": {"start": start, "end": end},
+        "measured_window": {"start": measured_start, "end": end},
+        "config_freeze_date": freeze,
+        "config_freeze_source": freeze_src,
+        "policy_sha256": pol_sha,
+        "code_commit": code_commit,
         "prereg": None if prereg is None else {
             "rule_id": prereg.get("rule_id"), "version": prereg.get("version"),
             "frozen_at": prereg.get("frozen_at"), "record_sha256": prereg.get("record_sha256"),

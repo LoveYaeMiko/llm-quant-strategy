@@ -67,6 +67,153 @@ class PreregError(ValueError):
     """A pre-registration record is invalid, tampered with, or being overwritten."""
 
 
+#: Config subtrees that decide what the forward gate MEASURES and how it judges.
+#: Hashing the whole merged config would be over-strict (it carries API keys and
+#: unrelated research knobs whose rotation must not invalidate a freeze), while
+#: hashing none of it — the pre-2026-09-10 behaviour — made the freeze a
+#: decoration: thresholds could be edited after seeing the results without any
+#: failure. These five subtrees are the policy surface.
+POLICY_PATHS: tuple[str, ...] = (
+    "forward",          # gate thresholds, candidate params, switch rule, power
+    "deployment",       # observe vs live, the real-money gate
+    "red_lines",        # the shadow red-line thresholds
+    "paper",            # cost model actually charged by the executor
+    "s7_calibration.cost_model",
+)
+
+
+def policy_payload(cfg) -> dict:
+    """The policy surface of a config, as a plain dict (see :data:`POLICY_PATHS`).
+
+    The deployed account is included under ``account`` because its parameters
+    (stop width, gates, universe) ARE the rule under test.
+    """
+    payload: dict = {}
+    for path in POLICY_PATHS:
+        node = cfg.get(path, None)
+        if node is not None:
+            payload[path] = node
+    accounts = cfg.get("shadow.accounts", None)
+    if accounts:
+        payload["account"] = next(
+            (dict(a) for a in accounts if str(a.get("name")) == "D_5W"), None
+        )
+    return payload
+
+
+def policy_fingerprint(cfg) -> str:
+    """SHA-256 over :func:`policy_payload` — the value a freeze is bound to."""
+    return sha256_of(policy_payload(cfg))
+
+
+def prereg_gate(
+    *,
+    record: Optional[Mapping[str, Any]],
+    window: Mapping[str, Any] | tuple[str, str],
+    data_as_of: str,
+    policy_sha256: str,
+    code_commit: str,
+    code_dirty: Optional[bool] = None,
+    allow_code_drift: bool = False,
+) -> dict:
+    """Hard gate: the evaluation must be BOUND to a frozen pre-registration.
+
+    An unbound evaluation is not evidence — it is a number produced by whatever
+    the thresholds happened to be at the moment it ran. Five checks, all of which
+    must pass:
+
+    1. **a verified record exists** for this account/window;
+    2. **frozen before the window opened** (``frozen_at`` strictly earlier than the
+       window start) and before the data cut-off;
+    3. **the policy has not moved since the freeze** — the live policy fingerprint
+       must equal the record's ``policy_sha256`` (this is the lock: editing a
+       threshold after seeing the results fails until a NEW version is frozen);
+    4. **the evaluated window is the frozen window** (not a hand-picked sub-range);
+    5. **the code matches the frozen commit** — unless the caller explicitly passes
+       ``allow_code_drift``, which is recorded as a waiver in the artifact rather
+       than silently accepted.
+
+    Returns a gate-shaped mapping (``ok`` + the evidence), never raises.
+    """
+    start, end = (window.get("start"), window.get("end")) if isinstance(window, Mapping) \
+        else (window[0], window[1])
+    out: dict = {
+        "ok": False, "rule_id": None, "frozen_at": None,
+        "window_match": False, "frozen_before_window": False,
+        "policy_sha256_match": False, "code_commit_match": False,
+        "waived": False, "issues": [],
+    }
+    if not record:
+        out["issues"].append("no verified pre-registration covers this window — "
+                             "freeze one with `python scripts/prereg.py new`")
+        return out
+    out["rule_id"] = record.get("rule_id")
+    out["frozen_at"] = record.get("frozen_at")
+
+    frozen = pd.Timestamp(record.get("frozen_at"))
+    win_start, win_end = pd.Timestamp(start), pd.Timestamp(end)
+    if pd.isna(frozen):
+        out["issues"].append("the record has no usable frozen_at")
+    else:
+        if frozen.date() >= win_start.date():
+            out["issues"].append(
+                f"frozen_at {frozen.date()} is not before the window start {win_start.date()}"
+                " — a rule frozen inside its own window is not pre-registered"
+            )
+        else:
+            out["frozen_before_window"] = True
+        if data_as_of and frozen.date() > pd.Timestamp(data_as_of).date():
+            out["issues"].append(f"frozen_at {frozen.date()} is after data_as_of {data_as_of}")
+
+    scope = dict(record.get("scope") or {})
+    rec_win = scope.get("window") or []
+    if len(rec_win) == 2:
+        out["window_match"] = (str(rec_win[0])[:10] == str(start)[:10]
+                               and str(rec_win[1])[:10] == str(end)[:10])
+        if not out["window_match"]:
+            out["issues"].append(
+                f"evaluated window [{start}, {end}] is not the frozen window "
+                f"[{rec_win[0]}, {rec_win[1]}] — a sub-range chosen after the fact is a new trial"
+            )
+    else:
+        out["issues"].append("the record has no scope.window to bind against")
+
+    stored_policy = str(record.get("policy_sha256") or record.get("config_sha256") or "")
+    out["policy_sha256_match"] = bool(stored_policy) and stored_policy == policy_sha256
+    if not out["policy_sha256_match"]:
+        out["issues"].append(
+            "the live policy fingerprint does not match the frozen record — thresholds "
+            "or deployed parameters changed after the freeze; freeze a new version "
+            "(`scripts/prereg.py new` with version+1 and supersedes) before evaluating"
+        )
+    out["policy_sha256_stored"] = stored_policy[:16] or None
+    out["policy_sha256_live"] = str(policy_sha256)[:16]
+
+    stored_commit = str(record.get("code_commit") or "")
+    out["code_commit_match"] = bool(stored_commit) and stored_commit == code_commit
+    drift = ""
+    if not out["code_commit_match"]:
+        drift = (f"code drifted since the freeze: record {stored_commit[:12] or '—'} "
+                 f"vs HEAD {str(code_commit)[:12]}")
+    elif code_dirty:
+        # matching HEAD is not enough: an uncommitted working tree means the code
+        # that produced these numbers is NOT the frozen commit
+        drift = "the working tree was DIRTY at evaluation time"
+    if drift:
+        if allow_code_drift:
+            out["waived"] = True
+            out["waiver_reason"] = drift + " (explicitly waived for this run)"
+        else:
+            out["issues"].append(
+                drift + " — re-freeze, or pass --allow-code-drift to record the "
+                "waiver (a behaviour change invalidates the frozen rule)"
+            )
+    out["code_dirty"] = code_dirty
+
+    out["ok"] = not out["issues"]
+    return out
+
+
 def _now() -> str:
     return pd.Timestamp.now().isoformat(timespec="seconds")
 
@@ -83,6 +230,7 @@ def new_record(
     supersedes: Optional[str] = None,
     notes: str = "",
     code_commit: Optional[str] = None,
+    policy_sha256: Optional[str] = None,
     repo_root: str | Path | None = None,
     extra: Optional[Mapping[str, Any]] = None,
 ) -> dict:
@@ -91,6 +239,11 @@ def new_record(
     ``frozen_at`` defaults to now; pass an explicit timestamp to reconstruct a
     record that was frozen earlier (the value is what the record CLAIMS — the
     verifier only checks that it is in the past and that the hash holds).
+
+    ``policy_sha256`` binds the record to the policy surface (:func:`policy_payload`:
+    forward thresholds, deployment gate, red lines, cost model and the deployed
+    account). The gate refuses to evaluate when the live fingerprint differs, so
+    a threshold edited after the freeze cannot be used to judge the window.
     """
     record: dict[str, Any] = {
         "rule_id": str(rule_id),
@@ -103,6 +256,7 @@ def new_record(
         "notes": notes,
         "supersedes": supersedes,
         "code_commit": (code_commit or git_commit(repo_root)).strip(),
+        "policy_sha256": policy_sha256,
     }
     if extra:
         record.update(dict(extra))
@@ -238,11 +392,15 @@ def trial_count(dir: str | Path | None, family: str) -> int:
 
 __all__ = [
     "DEFAULT_DIR",
+    "POLICY_PATHS",
     "PREREG_FIELDS",
     "PreregError",
     "list_preregistrations",
     "load_preregistration",
     "new_record",
+    "policy_fingerprint",
+    "policy_payload",
+    "prereg_gate",
     "record_path",
     "record_sha256",
     "trial_count",

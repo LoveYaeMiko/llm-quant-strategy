@@ -365,6 +365,52 @@ def test_verdict_block_flags_blocking_when_drag_exceeds_threshold():
     assert v["bias_vs_alpha_ratio"] > 0.3
 
 
+# --------------------------------------------------------------------------- #
+# the all-channels verdict (2026-09-10 audit): the delisting channel alone read
+# "not blocking" while the SAME artifact's de-biased run measured a 9.60pp/yr
+# cross-section-composition swing (1.2x the target alpha).
+# --------------------------------------------------------------------------- #
+def _not_blocking_base() -> dict:
+    return bst.verdict_block(
+        target_alpha=0.08, threshold_ratio=0.3, x_upper_bound=0.0012667, epy=166.0,
+        k=6, loss_mid=-0.5, h_annual=0.008, breakeven=0.001424,
+    )
+
+
+def test_verdict_with_channels_blocks_on_the_worst_measured_channel():
+    base = _not_blocking_base()
+    assert base["bias_blocking_evolution"] is False
+    v = bst.verdict_with_channels(base_verdict=base, debiased_delta_annual_pp=9.5972,
+                                  debiased_rule="low price + bottom-decile amount")
+    assert v["bias_blocking_evolution"] is True
+    assert v["blocking_channels"] == [bst.CHANNEL_COMPOSITION]
+    assert v["worst_channel"] == bst.CHANNEL_COMPOSITION
+    assert v["worst_channel_drag_pp"] == pytest.approx(9.5972)
+    assert v["verdict_text"].startswith("BLOCKING")
+    # the delisting numbers are preserved, not overwritten
+    assert v["drag_at_upper_bound_pp"] == base["drag_at_upper_bound_pp"]
+    assert v["channels"][bst.CHANNEL_DELISTING]["blocking"] is False
+    assert v["unmeasured_channels"] == ["index_membership"]
+
+
+def test_verdict_with_channels_keeps_not_blocking_when_every_channel_is_small():
+    v = bst.verdict_with_channels(base_verdict=_not_blocking_base(),
+                                  debiased_delta_annual_pp=1.0)
+    assert v["bias_blocking_evolution"] is False
+    assert v["blocking_channels"] == []
+    assert v["verdict_text"].startswith("NOT BLOCKING")
+
+
+def test_verdict_with_channels_without_a_debiased_run_is_not_a_pass():
+    """An unmeasured channel must stay visible: blocking falls back to the
+    delisting channel but the composition channel is reported as None."""
+    v = bst.verdict_with_channels(base_verdict=_not_blocking_base(),
+                                  debiased_delta_annual_pp=None)
+    assert v["channels"][bst.CHANNEL_COMPOSITION]["drag_pp"] is None
+    assert v["channels"][bst.CHANNEL_COMPOSITION]["blocking"] is None
+    assert v["unmeasured_channels"] == ["index_membership"]
+
+
 def test_verdict_sentence_mentions_break_even_and_hazard():
     txt = bst.verdict_sentence(
         blocking=False, drag_pp=2.13, threshold_pp=2.4, ratio=0.27,

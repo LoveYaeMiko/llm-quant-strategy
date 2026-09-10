@@ -529,6 +529,77 @@ def verdict_block(
     }
 
 
+#: The data-foundation channels whose sensitivity the admission gate must consider.
+#: The first version of this verdict only looked at the DELISTING channel (1.75pp)
+#: and declared "not blocking" — while the same artifact's own de-biased run
+#: measured a 9.60pp/yr swing from dropping the low-price/low-liquidity 12% of the
+#: universe (a cross-section-composition channel). A verdict that reads
+#: "bias is negligible" while its own report contains a 1.2x-alpha channel is
+#: wrong even when every number in it is right (2026-09-10 audit).
+CHANNEL_DELISTING = "delisting_missing_names"
+CHANNEL_COMPOSITION = "cross_section_composition"
+
+
+def verdict_with_channels(
+    *,
+    base_verdict: dict[str, Any],
+    debiased_delta_annual_pp: Optional[float],
+    debiased_rule: Optional[str] = None,
+) -> dict[str, Any]:
+    """Final verdict over ALL measured channels, not just the delisting one.
+
+    ``bias_blocking_evolution`` becomes True when the LARGEST measured channel
+    exceeds the threshold; unmeasured channels are listed as such and never count
+    as "fine".
+    """
+    threshold_pp = float(base_verdict["threshold_pp"])
+    out = dict(base_verdict)
+    channels: dict[str, dict[str, Any]] = {
+        CHANNEL_DELISTING: {
+            "drag_pp": base_verdict["drag_at_upper_bound_pp"],
+            "threshold_pp": threshold_pp,
+            "blocking": bool(base_verdict["bias_blocking_evolution"]),
+            "source": "drag model at the name-disappearance upper bound",
+        },
+        CHANNEL_COMPOSITION: {
+            "drag_pp": (round(abs(float(debiased_delta_annual_pp)), 4)
+                        if debiased_delta_annual_pp is not None else None),
+            "threshold_pp": threshold_pp,
+            "blocking": (None if debiased_delta_annual_pp is None
+                         else bool(abs(float(debiased_delta_annual_pp)) > threshold_pp)),
+            "source": "de-biased subset run (baseline minus low-price/low-liquidity tail)",
+            "rule": debiased_rule,
+        },
+        "index_membership": {
+            "drag_pp": None, "threshold_pp": threshold_pp, "blocking": None,
+            "unmeasured": True,
+            "source": "no historical index-constituent data in the PIT store",
+        },
+    }
+    measured = {k: v for k, v in channels.items() if v.get("drag_pp") is not None}
+    blocking_channels = sorted(k for k, v in measured.items() if v.get("blocking"))
+    worst = max(measured.items(), key=lambda kv: kv[1]["drag_pp"]) if measured else None
+    out.update({
+        "channels": channels,
+        "blocking_channels": blocking_channels,
+        "worst_channel": worst[0] if worst else None,
+        "worst_channel_drag_pp": worst[1]["drag_pp"] if worst else None,
+        "unmeasured_channels": sorted(k for k, v in channels.items() if v.get("unmeasured")),
+        "bias_blocking_evolution": bool(blocking_channels),
+    })
+    if blocking_channels:
+        names = ", ".join(f"{k} ({measured[k]['drag_pp']:.2f}pp)" for k in blocking_channels)
+        out["verdict_text"] = (
+            f"BLOCKING: {len(blocking_channels)} measured data-foundation channel(s) exceed the "
+            f"{threshold_pp:.1f}pp threshold — {names}. The delisting channel alone reads "
+            f"{base_verdict['drag_at_upper_bound_pp']:.2f}pp, but a verdict may only be as "
+            f"favourable as the WORST measured channel: the same report shows the book's "
+            f"out-of-sample return concentrated in the segment the bias mechanisms act on. "
+            f"Keep the evolution loop closed until the channels are reduced or explained."
+        )
+    return out
+
+
 def verdict_sentence(
     *,
     blocking: bool,
@@ -1234,6 +1305,28 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             target_alpha=args.target_alpha, threshold_ratio=THRESHOLD_RATIO,
             x_upper_bound=x_ub, epy=epy, k=k_slots, loss_mid=LOSS_MID,
             h_annual=h_full, breakeven=breakeven, breakeven_h=be_h,
+        )
+        # the verdict must reflect EVERY measured data-foundation channel, not
+        # just the delisting one (2026-09-10 audit): the de-biased run in this very
+        # artifact measures a cross-section-composition sensitivity that is 1.2x
+        # the target alpha, which is larger than the delisting bound it reports
+        delta_ann = None
+        if debiased_run:
+            delta = (debiased_run.get("delta_debiased_minus_baseline") or {})
+            # ``metric_delta`` reports already-percentage-point keys
+            for key in ("annualized_return_pp", "annualized_return"):
+                raw = delta.get(key)
+                if isinstance(raw, (int, float)):
+                    delta_ann = abs(float(raw)) * (1.0 if key.endswith("_pp") else 100.0)
+                    break
+            if delta_ann is None:
+                unmeasured.append(
+                    "cross-section-composition channel (the de-biased run reported no "
+                    "annualized-return delta to size it with)"
+                )
+        verdict = verdict_with_channels(
+            base_verdict=verdict, debiased_delta_annual_pp=delta_ann,
+            debiased_rule=debias_rule if debiased_run else None,
         )
     else:
         verdict = {

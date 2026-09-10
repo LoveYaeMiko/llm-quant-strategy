@@ -251,6 +251,10 @@ def test_symbol_coverage_ignores_pre_listing_days():
 # --------------------------------------------------------------------------- #
 def _bundle(**over) -> dict:
     base = {
+        "prereg": {"ok": True, "rule_id": "d_forward_test",
+                   "frozen_at": "2026-09-09T23:04:47", "window_match": True,
+                   "frozen_before_window": True, "policy_sha256_match": True,
+                   "code_commit_match": True, "issues": []},
         "tracking_error": {"n_days": 40, "mean_abs_pp": 0.05, "sign_bias_p": 0.4,
                            "n_pos": 20, "n_neg": 20},
         "cost": {"fee_deviation_pct": 1.0, "price_integrity_abs_bps": 0.4,
@@ -300,10 +304,55 @@ def test_each_hard_gate_fails_independently(mutation, failed_key):
 def test_unmeasured_metrics_fail_rather_than_pass():
     gate = evaluate_gate({})
     assert gate["verdict"] == "fail"
-    for key in ("tracking_error_daily_pp", "cost_fee_deviation", "violations",
-                "availability", "data_freshness", "symbol_minute_coverage",
-                "effective_universe"):
+    for key in ("prereg_binding", "tracking_error_daily_pp", "cost_fee_deviation",
+                "violations", "availability", "data_freshness",
+                "symbol_minute_coverage", "effective_universe"):
         assert key in gate["failed"]
+
+
+def test_prereg_binding_is_a_hard_gate():
+    """An evaluation that is not bound to a frozen record is not evidence."""
+    ok = evaluate_gate(_bundle())
+    assert ok["verdict"] == "pass" and ok["hard"]["prereg_binding"]["ok"] is True
+    for mutation in (
+        {"prereg": {"ok": False, "issues": ["no verified pre-registration"]}},
+        {"prereg": {"ok": False, "policy_sha256_match": False,
+                    "issues": ["the live policy fingerprint does not match"]}},
+        {"prereg": {"ok": False, "code_commit_match": False,
+                    "issues": ["code drifted since the freeze"]}},
+    ):
+        gate = evaluate_gate(_bundle(**mutation))
+        assert gate["verdict"] == "fail"
+        assert "prereg_binding" in gate["failed"]
+
+
+def test_bool_hard_gates_are_not_silently_dropped():
+    """``failed`` used to filter on ``isinstance(v, Mapping)`` — a plain bool
+    hard gate could never fail. Both shapes must gate now."""
+    from src.forward.risk_gate import evaluate_gate as ev
+
+    th = GateThresholds()
+    metrics = _bundle()
+    gate = ev(metrics, th)
+    assert gate["verdict"] == "pass"
+    # inject a bool gate by monkeypatching the shape through a tiny subclass-free
+    # path: evaluate a bundle whose prereg entry is a bare bool
+    metrics_bad = dict(metrics, prereg=False)
+    assert ev(metrics_bad, th)["verdict"] == "fail"
+
+
+def test_unknown_threshold_key_is_refused():
+    """A typo must raise, not silently fall back to the built-in default."""
+
+    class _Cfg:
+        def get(self, path, default=None):
+            if path == "forward.risk_gate.hard":
+                return {"tracking_eror_daily_pp_max": 0.5}   # typo
+            return default
+
+    with pytest.raises(ValueError) as exc:
+        GateThresholds.from_config(_Cfg())
+    assert "tracking_eror_daily_pp_max" in str(exc.value)
 
 
 def test_panel_universe_health_counts_warm_names():
@@ -348,6 +397,19 @@ def test_tracking_error_needs_a_minimum_number_of_days():
     ok = evaluate_gate(_bundle(tracking_error={"n_days": 6, "mean_abs_pp": 0.0,
                                                "sign_bias_p": 1.0, "n_pos": 3, "n_neg": 3}))
     assert ok["verdict"] == "pass"
+
+
+def test_zero_min_days_cannot_switch_the_measurement_off():
+    """``tracking_error_min_days: 0`` + ``--no-replay`` used to yield PASS on
+    empty series (n_days=0, mean_abs_pp=0.0, p=1.0) — the exact 'unmeasured read
+    as fine' failure the gate exists to prevent."""
+    th = GateThresholds(tracking_error_min_days=0)
+    empty = _bundle(tracking_error={"n_days": 0, "mean_abs_pp": 0.0, "sign_bias_p": 1.0,
+                                    "n_pos": 0, "n_neg": 0})
+    gate = evaluate_gate(empty, th)
+    assert gate["verdict"] == "fail"
+    assert gate["hard"]["tracking_error_daily_pp"]["min_days"] == 1   # unconditional floor
+    assert "tracking_error_daily_pp" in gate["failed"]
 
 
 def test_soft_metrics_arithmetic():

@@ -18,6 +18,8 @@ from src.forward.prereg import (
     list_preregistrations,
     load_preregistration,
     new_record,
+    policy_fingerprint,
+    prereg_gate,
     record_path,
     record_sha256,
     trial_count,
@@ -131,3 +133,102 @@ def test_list_and_trial_count(tmp_path):
 
 def test_record_path_sanitizes_rule_id():
     assert record_path("a/b c", 3).name == "prereg_a_b_c_v3.json"
+
+
+# --------------------------------------------------------------------------- #
+# the binding gate (audit H-1, 2026-09-10): a freeze that is not enforced is a
+# decoration — the whole point is that editing a threshold after seeing the
+# results must FAIL until a new version is frozen.
+# --------------------------------------------------------------------------- #
+class _Cfg:
+    """Minimal config stub for :func:`policy_fingerprint`."""
+
+    def __init__(self, payload=None):
+        self._payload = payload if payload is not None else {
+            "forward": {"risk_gate": {"hard": {"violations_max": 0}}},
+            "deployment": {"mode": "observe"},
+            "shadow": {"accounts": [{"name": "D_5W", "pb_stop_lo": 0.035}]},
+        }
+
+    def get(self, path, default=None):
+        node = self._payload
+        for part in path.split("."):
+            if isinstance(node, dict) and part in node:
+                node = node[part]
+            else:
+                return default
+        return node
+
+
+WINDOW = {"start": "2026-09-10", "end": "2027-03-09"}   # matches _record()'s scope.window
+
+
+def test_policy_fingerprint_tracks_the_policy_surface():
+    base = _Cfg()
+    a = policy_fingerprint(base)
+    changed = dict(base._payload)
+    changed["forward"] = {"risk_gate": {"hard": {"violations_max": 1}}}
+    assert policy_fingerprint(_Cfg(changed)) != a, "a threshold change must move the hash"
+    unrelated = dict(base._payload, llm={"api_key": "sk-rotated"})
+    assert policy_fingerprint(_Cfg(unrelated)) == a, "unrelated keys must not invalidate a freeze"
+
+
+def test_prereg_gate_passes_a_properly_bound_record():
+    rec = _record(policy_sha256="p" * 64)
+    out = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
+                      policy_sha256="p" * 64, code_commit="a" * 40)
+    assert out["ok"], out
+    assert out["frozen_before_window"] and out["window_match"]
+    assert out["policy_sha256_match"] and out["code_commit_match"]
+
+
+def test_prereg_gate_fails_without_a_record():
+    out = prereg_gate(record=None, window=WINDOW, data_as_of="2026-09-10",
+                      policy_sha256="p" * 64, code_commit="a" * 40)
+    assert not out["ok"] and "no verified pre-registration" in out["issues"][0]
+
+
+def test_prereg_gate_fails_on_policy_drift():
+    rec = _record(policy_sha256="p" * 64)
+    out = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
+                      policy_sha256="q" * 64, code_commit="a" * 40)
+    assert not out["ok"] and not out["policy_sha256_match"]
+    assert any("fingerprint" in i for i in out["issues"])
+
+
+def test_prereg_gate_fails_on_a_hand_picked_window():
+    rec = _record(policy_sha256="p" * 64)
+    out = prereg_gate(record=rec, window={"start": "2026-10-01", "end": "2027-03-09"},
+                      data_as_of="2026-10-01", policy_sha256="p" * 64, code_commit="a" * 40)
+    assert not out["ok"] and not out["window_match"]
+    assert any("sub-range" in i for i in out["issues"])
+
+
+def test_prereg_gate_fails_when_frozen_inside_the_window():
+    rec = _record(frozen_at="2026-09-15T10:00:00", policy_sha256="p" * 64)
+    out = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-15",
+                      policy_sha256="p" * 64, code_commit="a" * 40)
+    assert not out["ok"] and not out["frozen_before_window"]
+    assert any("not before the window start" in i for i in out["issues"])
+
+
+def test_prereg_gate_code_drift_needs_an_explicit_waiver():
+    rec = _record(policy_sha256="p" * 64)
+    strict = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
+                         policy_sha256="p" * 64, code_commit="b" * 40)
+    assert not strict["ok"] and not strict["code_commit_match"]
+    waived = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
+                         policy_sha256="p" * 64, code_commit="b" * 40, allow_code_drift=True)
+    assert waived["ok"] and waived["waived"] and "waived" in waived["waiver_reason"]
+
+
+def test_prereg_gate_fails_on_a_dirty_working_tree():
+    """Matching HEAD is not enough: uncommitted code is not the frozen commit."""
+    rec = _record(policy_sha256="p" * 64)
+    dirty = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
+                        policy_sha256="p" * 64, code_commit="a" * 40, code_dirty=True)
+    assert not dirty["ok"] and dirty["code_commit_match"] is True
+    assert any("DIRTY" in i for i in dirty["issues"])
+    ok = prereg_gate(record=rec, window=WINDOW, data_as_of="2026-09-10",
+                     policy_sha256="p" * 64, code_commit="a" * 40, code_dirty=False)
+    assert ok["ok"]

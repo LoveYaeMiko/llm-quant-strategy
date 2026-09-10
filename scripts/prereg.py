@@ -72,10 +72,13 @@ def _template(rule_id: str) -> dict:
 
 
 def _config_sha() -> str:
+    """Fingerprint of the POLICY surface the freeze binds to (see prereg.policy_payload)."""
     try:
-        return sha256_of(load_config().to_dict())
+        from src.forward.prereg import policy_fingerprint
+
+        return policy_fingerprint(load_config())
     except Exception as exc:  # noqa: BLE001 — provenance must not break the CLI
-        print(f"WARNING: cannot hash config ({exc})", file=sys.stderr)
+        print(f"WARNING: cannot fingerprint the policy ({exc})", file=sys.stderr)
         return "unknown"
 
 
@@ -113,7 +116,7 @@ def cmd_new(args) -> int:
         notes=str(raw.get("notes", "")),
         frozen_at=frozen_at,
         code_commit=args.code_commit or git_commit(ROOT),
-        extra={"config_sha256": _config_sha()},
+        policy_sha256=_config_sha(),
     )
     try:
         path = write_preregistration(rec, dir=args.dir or DEFAULT_DIR, force=args.force)
@@ -121,7 +124,8 @@ def cmd_new(args) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     print(f"[prereg] frozen {rec['rule_id']} v{rec['version']} at {rec['frozen_at']}")
-    print(f"[prereg] commit={rec['code_commit'][:12]} config_sha256={rec['config_sha256'][:16]}…")
+    print(f"[prereg] commit={rec['code_commit'][:12]} "
+          f"policy_sha256={str(rec.get('policy_sha256'))[:16]}…")
     print(f"[prereg] record_sha256={rec['record_sha256']}")
     print(f"[prereg] → {path}")
     return 0

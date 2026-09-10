@@ -66,7 +66,13 @@ def resolve_shadow_universe(cfg, name=None) -> list[str]:
 
 
 def paper_runner_kwargs(cfg) -> dict[str, Any]:
-    """``PaperRunner`` kwargs from the ``paper`` config section (cost model included)."""
+    """``PaperRunner`` kwargs from the ``paper`` config section (cost model included).
+
+    ``long_only`` defaults to True: the surviving D track is a long-only A-share
+    book, so the executor must clip a sell to the holding rather than open a short
+    (``docs/EXECUTION_INVARIANTS.md``). Set ``paper.long_only: false`` for a
+    long/short factor book.
+    """
     pcfg = cfg.section("paper")
     return {
         "cash": float(pcfg.get("initial_cash", 100_000.0)),
@@ -78,6 +84,7 @@ def paper_runner_kwargs(cfg) -> dict[str, Any]:
         "max_position_pct": float(pcfg.get("max_position_pct", 0.05)),
         "rebalance_days": int(pcfg.get("rebalance_days", 1)),
         "pit_strict": bool(pcfg.get("pit_strict", True)),
+        "long_only": bool(pcfg.get("long_only", True)),
     }
 
 

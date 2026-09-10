@@ -28,6 +28,7 @@ three-layer portfolio in production and a fake alpha in tests.
 
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 import numpy as np
@@ -36,6 +37,8 @@ import pandas as pd
 from ..backtest.metrics import annualized_return, max_drawdown, sharpe_ratio, t_statistic
 from ..online.order_executor import Fill, OrderExecutor
 from .ledger import PaperLedger
+
+logger = logging.getLogger(__name__)
 
 
 class PaperRunner:
@@ -62,6 +65,7 @@ class PaperRunner:
         notional_floor: float = 0.0,
         band_frac: float = 0.0,
         preclose_provider=None,
+        long_only: bool = False,
     ) -> None:
         self.portfolio = portfolio
         self.market = market
@@ -80,6 +84,13 @@ class PaperRunner:
         self.seed = int(seed)
         self.notional_floor = float(notional_floor)
         self.band_frac = float(band_frac)
+        #: Long-only account: the executor clips any sell to the holding instead
+        #: of opening a short (``docs/EXECUTION_INVARIANTS.md``).
+        self.long_only = bool(long_only)
+        #: Orders the executor refused to fill (clipped/skipped), day by day —
+        #: surfaced in the run result so a mismatch between the submitted list and
+        #: the account state is visible rather than silently dropped.
+        self.skipped_orders: list[dict] = []
         # Closing-auction layer: callable(date) -> "__normal__" (compute the
         # book at the close, the historical path) | list of {symbol, shares}
         # orders (decided at 14:55, filled at the 15:00 auction) | None (a live
@@ -101,7 +112,32 @@ class PaperRunner:
             seed=self.seed,
             notional_floor=self.notional_floor,
             band_frac=self.band_frac,
+            # The D track is long-only (A-shares: you cannot sell what you do not
+            # hold). This makes the executor clip any sell/short leg to the
+            # holding instead of silently opening a position — see
+            # docs/EXECUTION_INVARIANTS.md. A long/short book would construct the
+            # runner without this flag.
+            long_only=bool(self.long_only),
         )
+
+    def _note_skipped(self, date: pd.Timestamp, layer: str, res) -> None:
+        """Keep clipped/skipped orders visible instead of silently dropping them.
+
+        ``OrderResult.skipped`` says the submitted list asked for something the
+        account could not do (e.g. selling more than it held). Recording it per
+        day means the run's return value — and therefore the shadow status and the
+        forward gate — can see it, rather than the trade simply not happening.
+        """
+        skipped = list(getattr(res, "skipped", None) or [])
+        if not skipped:
+            return
+        day = str(pd.Timestamp(date).date())
+        for entry in skipped:
+            record = dict(entry)
+            record.update({"date": day, "layer": layer})
+            self.skipped_orders.append(record)
+        logger.warning("%s %s: %d order(s) clipped/skipped: %s",
+                       day, layer, len(skipped), skipped[:3])
 
     @staticmethod
     def _trading_dates(prices: pd.DataFrame, start, end) -> list[pd.Timestamp]:
@@ -239,6 +275,7 @@ class PaperRunner:
                         if self.pit_strict:
                             self._check_fills(d, close, res.fills)
                         fills.extend(res.fills)
+                        self._note_skipped(d, "close", res)
                 elif preclose:
                     # 14:55 order list (possibly empty → no trades)
                     res = ex.execute_orders(
@@ -247,6 +284,7 @@ class PaperRunner:
                     if self.pit_strict:
                         self._check_fills(d, close, res.fills)
                     fills.extend(res.fills)
+                    self._note_skipped(d, "auction", res)
                 # else: preclose is None → the 14:55 job never ran for this live
                 # date → skip the rebalance entirely (mark-only day).
 
@@ -267,6 +305,8 @@ class PaperRunner:
             "metrics": self._metrics(eq, ret),
             "equity": {str(pd.Timestamp(k).date()): float(v) for k, v in eq.items()},
             "resumed": resumed,
+            # clipped/skipped orders for this run (empty on a clean execution)
+            "skipped_orders": list(self.skipped_orders),
         }
 
     def _metrics(self, eq: pd.Series, ret: pd.Series) -> dict:

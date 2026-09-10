@@ -58,6 +58,11 @@ class OrderResult:
             "cash": round(self.cash, 4),
             "gross_exposure": round(sum(abs(v) for v in self.positions.values()), 4),
             "positions": {k: round(v, 6) for k, v in self.positions.items()},
+            # Clipped/skipped orders (2026-09-10 audit, defect 2). Without this
+            # key a clipped sell left NO trace in any report: the order simply
+            # vanished between the 14:50 list and the ledger. JSON-serialisable
+            # list of dicts so the runner/scorer can surface it verbatim.
+            "skipped": [dict(s) for s in self.skipped],
         }
 
 
@@ -84,6 +89,7 @@ class OrderExecutor:
         seed: int = 0,
         notional_floor: float = 0.0,
         band_frac: float = 0.0,
+        long_only: bool = False,
     ) -> None:
         self.slippage_bps = slippage_bps
         self.commission_bps = commission_bps
@@ -104,6 +110,11 @@ class OrderExecutor:
         # band (band rebalancing) — exits always execute.
         self.notional_floor = float(notional_floor)
         self.band_frac = float(band_frac)
+        #: Opt-in long-only enforcement for the WEIGHT path (:meth:`execute`).
+        #: OFF by default: the retired long/short factor books (A/B/C tracks)
+        #: legitimately hold shorts and their semantics must not change. The
+        #: D-track paper account sets this True — see `execute`.
+        self.long_only = bool(long_only)
 
     def restore(self, cash: float, positions: dict[str, float]) -> None:
         """Resume from a persisted account state (paper-trading ledger)."""
@@ -191,6 +202,26 @@ class OrderExecutor:
                 delta = self._plan_delta(symbol, row, px, equity, date, locked)
                 if delta is None or abs(delta) < 1e-9:
                     continue
+                if self.long_only and delta < 0:
+                    # Opt-in long-only enforcement for the weight path
+                    # (2026-09-10 audit, defect 1 sibling): the same invariant
+                    # execute_orders enforces unconditionally. A planned sell can
+                    # only ever reduce a long to zero — never cross it. OFF by
+                    # default so the retired long/short books keep their shorts.
+                    held = float(self.positions.get(symbol, 0.0))
+                    coverable = max(0.0, held)
+                    if coverable <= 1e-9:
+                        result.skipped.append(
+                            {"symbol": symbol, "reason": "sell_without_holding",
+                             "wanted": float(delta), "clipped": 0.0}
+                        )
+                        continue
+                    if -delta > coverable + 1e-9:
+                        result.skipped.append(
+                            {"symbol": symbol, "reason": "sell_exceeds_holding",
+                             "wanted": float(delta), "clipped": -coverable}
+                        )
+                        delta = -coverable
                 planned[symbol] = float(delta)
             # Two passes over the planned deltas: SELLS first (an exit frees cash
             # and needs no buying power), then BUYS clipped to available cash.
@@ -383,6 +414,14 @@ class OrderExecutor:
         Same cash discipline as :meth:`execute`: sells settle first, then buys
         are clipped to the proceeds (a pre-submitted list can be larger than the
         account's cash — the old code filled it anyway and went negative).
+
+        **Long-only invariant (A-share account):** the sum of sells for a symbol
+        never exceeds the shares held when the sell pass started; a sell with
+        nothing to cover is skipped and reported, never filled as a short. The
+        availability is tracked CUMULATIVELY across the sell pass, so a
+        duplicated sell line (two sells of 100 against a 100-share holding)
+        cannot open a short on the second line — the first consumes the
+        availability and the second is recorded in ``result.skipped``.
         """
         result = OrderResult()
         valid: list[tuple[str, float, float]] = []
@@ -400,15 +439,16 @@ class OrderExecutor:
                 # a short position (found 2026-09-09 when a forward candidate
                 # with a fresh ledger executed production's sell list). The
                 # excess is reported, never filled.
+                # 2026-09-10 audit (defect 1): the clip is CUMULATIVE, not per
+                # order — the check below only sees the *pre-pass* holding, so
+                # clips are applied later, in the sell pass, against a running
+                # availability map. Two sells of 100 on a 100-share holding used
+                # to produce positions={'A02': -100} with an EMPTY skipped list.
                 held = float(self.positions.get(symbol, 0.0))
                 if held <= 0:
                     result.skipped.append({"symbol": symbol, "reason": "sell_without_holding",
                                            "wanted": shares, "clipped": 0.0})
                     continue
-                if -shares > held + 1e-9:
-                    result.skipped.append({"symbol": symbol, "reason": "sell_exceeds_holding",
-                                           "wanted": shares, "clipped": -held})
-                    shares = -held
             if limit_locked is not None:
                 lv = limit_locked.get(symbol, np.nan)
                 if np.isfinite(lv):
@@ -423,10 +463,37 @@ class OrderExecutor:
                         continue  # selling into a limit-down close
             valid.append((symbol, shares, price))
 
+        # Cumulative sell availability, snapshotted ONCE at the start of the sell
+        # pass: what has not yet been consumed by an earlier sell line of the same
+        # symbol. A sell is clipped to it; nothing left → skipped, never filled.
+        sellable = {s: float(q) for s, q in self.positions.items()}
         for pass_side in ("sell", "buy"):
             for symbol, shares, price in valid:
                 if (shares < 0) != (pass_side == "sell"):
                     continue
+                wanted = shares
+                if pass_side == "sell":
+                    available = sellable.get(symbol, 0.0)
+                    if -shares > available + 1e-9:
+                        # partial clip → report the excess; nothing left → skip
+                        # outright. Either way the fill can never cross zero.
+                        result.skipped.append(
+                            {
+                                "symbol": symbol,
+                                "reason": (
+                                    "sell_without_holding"
+                                    if available <= 1e-9
+                                    else "sell_exceeds_holding"
+                                ),
+                                "wanted": float(wanted),
+                                # 0.0 (not -0.0) when nothing at all is coverable
+                                "clipped": float(0.0 if available <= 1e-9 else -available),
+                            }
+                        )
+                        shares = -available
+                    if shares >= -1e-9:
+                        continue  # nothing to cover — a skipped sell, not a short
+                    sellable[symbol] = available + shares  # consume what we filled
                 if pass_side == "buy":
                     shares = self._affordable_shares(symbol, shares, price)
                     if shares <= 0:
