@@ -394,10 +394,16 @@ B +0.82% / Sharpe 0.18 / maxDD 26.13%——**均劣于 D 轨的回撤买入纪�
 ### 前向期风险闸门（替代能力闸门）
 
 前向窗口在统计上**无法证明 alpha**（见 §6 功效计算），因此前向期只回答三类高信噪比
-问题：**管线跟踪误差 / 成本模型标定 / 运行可靠性**。11 项硬闸门任一失败即判定前向期
-失败并停机排查，**「未测量」一律判失败**（不是「完美」）；Sharpe / maxDD / 超额
-只记录、不参与判定。当前因为窗口尚未开始（2026-09-11 起），5 项读数「未测量」→
-verdict = `fail`，这是设计行为。协议见 [docs/FORWARD_PROTOCOL.md](docs/FORWARD_PROTOCOL.md)。
+问题：**管线跟踪误差 / 成本模型标定 / 运行可靠性**。**10 项硬闸门**（文档表格拆成 11 行，
+`tracking_error_min_days` 是跟踪误差两项的内部条件）任一失败即判定前向期失败并停机排查，
+**「未测量」一律判失败**（不是「完美」）；Sharpe / maxDD / 超额只记录、不参与判定。
+当前因为窗口尚未开始（2026-09-11 起），5 项读数「未测量」→ verdict = `fail`，
+这是设计行为。协议见 [docs/FORWARD_PROTOCOL.md](docs/FORWARD_PROTOCOL.md)。
+
+十个闸门：`prereg_binding` / `tracking_error_daily_pp` / `tracking_error_sign_bias` /
+`cost_fee_deviation` / `cost_price_integrity` / `violations` / `availability` /
+`data_freshness` / `symbol_minute_coverage` / `effective_universe`。
+任一硬闸门连续 3 个交易日失败 → 停机排查管线（不是「策略不行」）。
 
 ### 前向候选：两条重放臂的配对检验
 
@@ -406,6 +412,11 @@ verdict = `fail`，这是设计行为。协议见 [docs/FORWARD_PROTOCOL.md](doc
 日差均值 > 0 且配对 t > 1.5。干净窗口实测两臂日收益相关性 0.884、t = 0.376，
 按观测效应量要达到 t > 1.5 需 **~1,291 个配对交易日 ≈ 5.1 年** → 当前结论 **HOLD**，
 且接受「永不分离」（`may_never_separate: true`）。
+
+> v1 设计曾让候选继承生产的订单清单、并关掉日内扫描，结果**两条账本逐位相同**——
+> 2026-09-10 实测两臂状态文件净值 `62,278.45` / 成交 `253` 笔 / Sharpe `1.8553`
+> 完全一致（仅 `last_run` 差 1 秒）。该实验"结构上无法回答自己的问题"，
+> 按协议计为新试验，窗口自 2026-09-11 重新起算。
 
 ### 实盘接入前置条件
 
@@ -416,7 +427,7 @@ verdict = `fail`，这是设计行为。协议见 [docs/FORWARD_PROTOCOL.md](doc
 |---|---|
 | C1 / C2 / C5 / C6 / C7 | 券商适配器（必须先过 `src/deploy.assert_simulated_only()`）、账户与资金划拨、面板一键熔断、券商 vs 账本对账、灾备回滚 |
 | D2 / D3 | 实时执行样本仍偏少（n=1）、Sharpe 置信区间仍宽 |
-| **D9（阻断）** | 偏差压力测试：全通道最大拖累 **9.60pp/年 = 1.2× 目标 α** > 阈值 2.4pp → **自进化闭环保持关闭** |
+| **D9（阻断）** | 偏差压力测试：退市通道 1.75pp（0.22×α，不阻断），但**截面构成通道实测 9.60pp/年 = 1.2× 目标 α** > 阈值 2.4pp → `bias_blocking_evolution: true`，**自进化闭环保持关闭**。另有一条**未测通道**（指数成分前瞻：`resolve_shadow_universe()` 把今天的 HS300+ZZ500 名单套用到 2025 窗口，PIT 库无历史成分数据）——按纪律「未测」永不当作「没问题」 |
 | D10 | 纸面账户**不可测**市场冲击成本，实盘前必须用券商成交回填 `market_impact_bps` |
 | D12 | 有效股票池：301 只缺口已回补、闸门读数 1.00，但文档勾选状态与工件窗口口径尚未同步 |
 
@@ -498,7 +509,7 @@ python scripts/d_oos.py                 # OOS 同构重放（14 项断言）
 |---|---|
 | [CONTEXT.md](CONTEXT.md) | 领域词汇表 + ADR 索引 + 数据地基/研究状态快照 |
 | [docs/D_TRACK_EVIDENCE.md](docs/D_TRACK_EVIDENCE.md) | **D 轨证据分级与全部口径说明（引用数字前必读）** |
-| [docs/FORWARD_PROTOCOL.md](docs/FORWARD_PROTOCOL.md) | 前向期协议：预注册、冻结、11 项闸门、候选切换 |
+| [docs/FORWARD_PROTOCOL.md](docs/FORWARD_PROTOCOL.md) | 前向期协议：预注册、冻结、10 项硬闸门、候选切换 |
 | [docs/LIVE_READINESS.md](docs/LIVE_READINESS.md) | 实盘接入放行清单（A/B/C/D 四组） |
 | [docs/LANDING_PLAN.md](docs/LANDING_PLAN.md) | 落地清单与逐项验收 |
 | [docs/EXECUTION_INVARIANTS.md](docs/EXECUTION_INVARIANTS.md) | 执行器不变式（含 long_only 与裁剪语义） |
@@ -520,10 +531,13 @@ python scripts/d_oos.py                 # OOS 同构重放（14 项断言）
    绝对数字已作废，**相对排序也尚未验证**。
 3. **前向积累样本**：干净窗口自 2026-09-11 起算；实时执行样本要从 1 笔积累到至少几十笔。
 4. **偏差压力测试（D9，阻断）**：截面构成通道 9.60pp/年 = 1.2× alpha，未降到
-   0.3× α（2.4pp）以下前不得开启自进化闭环。
+   0.3× α（2.4pp）以下前不得开启自进化闭环。退市通道 1.75pp 单独看不阻断，
+   但**判定只取最差通道**；另有「指数成分前瞻」通道因缺历史成分名单**无法测量**，
+   需要补齐成分股历史或明确接受 L=−80% 情形。
 5. **实盘通道补齐**（C1/C2/C5/C6/C7）与**成本标定**（D10，需真实成交回填冲击成本）。
-6. **文档/口径一致性**：`preclose` 的 14:50 与 14:55 命名并存；LIVE_READINESS 的 D12
-   勾选状态与工件读数（1.00）不一致；配对工件仍把已作废的 2026-09-10 计为一个配对日。
+6. **文档/口径一致性**：`preclose` 的 14:50 与 14:55 命名并存（守卫实为 14:45–15:10）；
+   LIVE_READINESS 的 D12 勾选状态与工件读数（1.00）不一致；配对工件仍把已作废的
+   2026-09-10 计为一个配对日。
 
 ---
 
